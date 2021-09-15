@@ -46,17 +46,18 @@ task('full:deploy-oracles', 'Deploy oracles for dev enviroment')
         ...reserveAssets,
         USD: UsdAddress,
       };
-      const [tokens, aggregators] = getPairsTokenAggregator(tokensToWatch, chainlinkAggregators);
 
       let aaveOracle: AaveOracle;
       if (notFalsyOrZeroAddress(aaveOracleAddress)) {
         aaveOracle = await await getAaveOracle(aaveOracleAddress);
-        const owner = await aaveOracle.owner();
-        const signer = DRE.ethers.provider.getSigner(owner);
+        // Oracle from v1 is good enough for moola.
+        // const owner = await aaveOracle.owner();
+        // const signer = DRE.ethers.provider.getSigner(owner);
 
-        aaveOracle = await (await getAaveOracle(aaveOracleAddress)).connect(signer);
-        await waitForTx(await aaveOracle.setAssetSources(tokens, aggregators));
+        // aaveOracle = await (await getAaveOracle(aaveOracleAddress)).connect(signer);
+        // await waitForTx(await aaveOracle.setAssetSources(tokens, aggregators));
       } else {
+        const [tokens, aggregators] = getPairsTokenAggregator(tokensToWatch, chainlinkAggregators);
         aaveOracle = await deployAaveOracle(
           [tokens, aggregators, fallbackOracleAddress, await getWethAddress(poolConfig)],
           verify

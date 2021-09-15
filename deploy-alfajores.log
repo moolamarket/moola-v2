@@ -1,0 +1,255 @@
+Migration started
+
+0. Deploy address provider registry
+*** LendingPoolAddressesProviderRegistry ***
+
+Network: alfajores
+tx: 0xf308ff3abcd8705b9707695939ce4db32faa72a8d67563f1914b636a6ecead0f
+contract address: 0x801443470c119F2eac65F13886D9e293CdecE2DF
+deployer address: 0x643C574128c7C56A1835e021Ad0EcC2592E72624
+gas price: 510000000
+gas used: 541511
+
+******
+
+Registry Address: 0x801443470c119F2eac65F13886D9e293CdecE2DF
+1. Deploy address provider
+Registry Address 0x801443470c119F2eac65F13886D9e293CdecE2DF
+*** LendingPoolAddressesProvider ***
+
+Network: alfajores
+tx: 0xeefdc5ccab1e8b960b4108e8ead0fa6911348eeab7592c6b44b022a2ac1099a8
+contract address: 0xb3072f5F0d5e8B9036aEC29F37baB70E86EA0018
+deployer address: 0x643C574128c7C56A1835e021Ad0EcC2592E72624
+gas price: 510000000
+gas used: 1601044
+
+******
+
+Pool Admin 0x643C574128c7C56A1835e021Ad0EcC2592E72624
+Emergency Admin 0x8af18653bE89B968FeAfCb75Fd79912ae51991e9
+2. Deploy lending pool
+        Deploying new lending pool implementation & libraries...
+*** ReserveLogic ***
+
+Network: alfajores
+tx: 0x457712e580f1a6fe26de11712f22b181b0fc7775be06b7ea4286e1ff51138fe1
+contract address: 0xA3AF5f7d13a14c48056F43DC9D7530D0165E16C3
+deployer address: 0x643C574128c7C56A1835e021Ad0EcC2592E72624
+gas price: 510000000
+gas used: 176615
+
+******
+
+*** GenericLogic ***
+
+Network: alfajores
+tx: 0x06fe509ecb4404ca399817fb0c8611cccee3c6d9a2164ef5f5f1fb176657e876
+contract address: 0xE99eF38aeb4359EA36190C7d2c16802c2Edf399E
+deployer address: 0x643C574128c7C56A1835e021Ad0EcC2592E72624
+gas price: 510000000
+gas used: 855592
+
+******
+
+*** ValidationLogic ***
+
+Network: alfajores
+tx: 0xa4fedaaf26bb034e0d84ebc41989e4a2d9f0b76cc88fda8eac3d22d76ecef383
+contract address: 0x4f3f9e0152A936A522A461969313Ed1Cc09cAfD2
+deployer address: 0x643C574128c7C56A1835e021Ad0EcC2592E72624
+gas price: 510000000
+gas used: 1840021
+
+******
+
+*** LendingPool ***
+
+Network: alfajores
+tx: 0xca7a8d9f55f7d2e6528dabf86405277ed98316d155147ac14987778bbf30a472
+contract address: 0x931Cbb9Ad04d9e624597fbfEF659567aD662cb49
+deployer address: 0x643C574128c7C56A1835e021Ad0EcC2592E72624
+gas price: 510000000
+gas used: 4795028
+
+******
+
+        Setting lending pool implementation with address: 0x931Cbb9Ad04d9e624597fbfEF659567aD662cb49
+        Deploying new configurator implementation...
+*** LendingPoolConfigurator ***
+
+Network: alfajores
+tx: 0x995d13fbde5b72894cfd72e2bfc3ec8dae0e3b29e5f64bed59257def90442b58
+contract address: 0x30ECD96d6E66b9C8fed861E6EA5F04f4FDe11dDB
+deployer address: 0x643C574128c7C56A1835e021Ad0EcC2592E72624
+gas price: 510000000
+gas used: 3483225
+
+******
+
+        Setting lending pool configurator implementation with address: 0x30ECD96d6E66b9C8fed861E6EA5F04f4FDe11dDB
+*** StableAndVariableTokensHelper ***
+
+Network: alfajores
+tx: 0x06d63c4febd65e19071d3d6ee49293c7aac798ae93f25f82e5464a43a4bd863b
+contract address: 0xcba8E38DE9DD21CD666D848898b28330cADB9833
+deployer address: 0x643C574128c7C56A1835e021Ad0EcC2592E72624
+gas price: 510000000
+gas used: 3694162
+
+******
+
+*** ATokensAndRatesHelper ***
+
+Network: alfajores
+tx: 0x4d9844483323f6f3abf2b1079670e9ee638659467da4038cd6ed754ff41ad585
+contract address: 0x22025E88f47e59cF89c2746D32CA40C84fE8aD23
+deployer address: 0x643C574128c7C56A1835e021Ad0EcC2592E72624
+gas price: 510000000
+gas used: 3782084
+
+******
+
+3. Deploy oracles
+*** LendingRateOracle ***
+
+Network: alfajores
+tx: 0x0d4996e11d4fc82605085b0268e25e170dfed37c570494c6ab29ed17bfe37629
+contract address: 0x300062ea5B3E26Ff00D7b0628ee11564700Ef61d
+deployer address: 0x643C574128c7C56A1835e021Ad0EcC2592E72624
+gas price: 510000000
+gas used: 343246
+
+******
+
+- Oracle borrow initalization in 1 txs
+  - Setted Oracle Borrow Rates for: CELO, CUSD, CEUR
+ORACLES: 0x88A4a87eF224D8b1F463708D0CD62b17De593DAd and 0x300062ea5B3E26Ff00D7b0628ee11564700Ef61d
+4. Deploy Data Provider
+*** AaveProtocolDataProvider ***
+
+Network: alfajores
+tx: 0x5ba24a00a3df6dbcaa15b888971e3d3ef19f8fae3e3c5fc3d167b6c6782a5a43
+contract address: 0x31ccB9dC068058672D96E92BAf96B1607855822E
+deployer address: 0x643C574128c7C56A1835e021Ad0EcC2592E72624
+gas price: 510000000
+gas used: 1555842
+
+******
+
+Skipping WethGateway
+6. Initialize lending pool
+*** StableDebtToken ***
+
+Network: alfajores
+tx: 0xb148896a83ae7b641b249c06d5b8c0ed9cdd4a6d102377e5eda76e60c9bd6341
+contract address: 0xB6a5059A228a16Fa2827E28E52ceC96BBC63D639
+deployer address: 0x643C574128c7C56A1835e021Ad0EcC2592E72624
+gas price: 510000000
+gas used: 1710247
+
+******
+
+*** VariableDebtToken ***
+
+Network: alfajores
+tx: 0xbaec4aa628df47d5f9702e9ec0417533d3878dc9634747eb271c329d65dcf9c4
+contract address: 0xB65b6a6a6F78E4daABF259c756567ae346699687
+deployer address: 0x643C574128c7C56A1835e021Ad0EcC2592E72624
+gas price: 510000000
+gas used: 1414892
+
+******
+
+*** AToken ***
+
+Network: alfajores
+tx: 0x51ff32bac961a6ef65a7655f859169c04963c4c64e2c6ff81a8db2a5b8ea671c
+contract address: 0xe8B286649713447D8d5fBeBC28c731830d19B6C9
+deployer address: 0x643C574128c7C56A1835e021Ad0EcC2592E72624
+gas price: 510000000
+gas used: 2319225
+
+******
+
+*** DefaultReserveInterestRateStrategy ***
+
+Network: alfajores
+tx: 0x77f8fe5d0d54dda4f1347f5e1670aaeed3f2008490858c6c47a2b79c79f6abed
+contract address: 0x3C06Fb2f5Ab65b0e35F91073d88afE2b017D04b8
+deployer address: 0x643C574128c7C56A1835e021Ad0EcC2592E72624
+gas price: 510000000
+gas used: 790693
+
+******
+
+Strategy address for asset CELO: 0x3C06Fb2f5Ab65b0e35F91073d88afE2b017D04b8
+*** DefaultReserveInterestRateStrategy ***
+
+Network: alfajores
+tx: 0x545ee27d146def281f90a899e44d8e46ad511cb64440b3ace83fc3065f725478
+contract address: 0x5B41b0c78659636c6664f08F7cCb620ceA3F1206
+deployer address: 0x643C574128c7C56A1835e021Ad0EcC2592E72624
+gas price: 510000000
+gas used: 790693
+
+******
+
+Strategy address for asset CUSD: 0x5B41b0c78659636c6664f08F7cCb620ceA3F1206
+Strategy address for asset CEUR: 0x5B41b0c78659636c6664f08F7cCb620ceA3F1206
+- Reserves initialization in 1 txs
+  - Reserve ready for: CELO, CUSD, CEUR
+    * gasUsed 5714955
+- Configure reserves in 1 txs
+  - Init for: CELO, CUSD, CEUR
+*** LendingPoolCollateralManager ***
+
+Network: alfajores
+tx: 0x98e072058ac634c94454704e60f42686a34f219d9095f809807d3ac1c909ae60
+contract address: 0x25E8B3bcf21163BE6EE6c4dc2E2680DeAe703281
+deployer address: 0x643C574128c7C56A1835e021Ad0EcC2592E72624
+gas price: 510000000
+gas used: 2371385
+
+******
+
+        Setting lending pool collateral manager implementation with address 0x25E8B3bcf21163BE6EE6c4dc2E2680DeAe703281
+*** WalletBalanceProvider ***
+
+Network: alfajores
+tx: 0xad7aae4156689b45ad6307ce5079874eb780fb907507ea0f21040a86de5a4f3f
+contract address: 0x7523e4D37c8267E59d0d983f1a4b64f96B0f9657
+deployer address: 0x643C574128c7C56A1835e021Ad0EcC2592E72624
+gas price: 510000000
+gas used: 627116
+
+******
+
+
+Finished migrations
+Contracts deployed at alfajores
+---------------------------------
+N# Contracts: 23
+LendingPoolAddressesProviderRegistry: 0x801443470c119F2eac65F13886D9e293CdecE2DF
+LendingPoolAddressesProvider: 0xb3072f5F0d5e8B9036aEC29F37baB70E86EA0018
+ReserveLogic: 0xA3AF5f7d13a14c48056F43DC9D7530D0165E16C3
+GenericLogic: 0xE99eF38aeb4359EA36190C7d2c16802c2Edf399E
+ValidationLogic: 0x4f3f9e0152A936A522A461969313Ed1Cc09cAfD2
+LendingPoolImpl: 0x931Cbb9Ad04d9e624597fbfEF659567aD662cb49
+LendingPool: 0x58ad305f1eCe49ca55ADE0D5cCC90114C3902E88
+LendingPoolConfiguratorImpl: 0x30ECD96d6E66b9C8fed861E6EA5F04f4FDe11dDB
+LendingPoolConfigurator: 0x39fe2A4a4174bB5cAC5568ce0715a0b320bcB231
+StableAndVariableTokensHelper: 0xcba8E38DE9DD21CD666D848898b28330cADB9833
+ATokensAndRatesHelper: 0x22025E88f47e59cF89c2746D32CA40C84fE8aD23
+LendingRateOracle: 0x300062ea5B3E26Ff00D7b0628ee11564700Ef61d
+AaveProtocolDataProvider: 0x31ccB9dC068058672D96E92BAf96B1607855822E
+StableDebtToken: 0xB6a5059A228a16Fa2827E28E52ceC96BBC63D639
+VariableDebtToken: 0xB65b6a6a6F78E4daABF259c756567ae346699687
+AToken: 0xe8B286649713447D8d5fBeBC28c731830d19B6C9
+aTokenImpl: 0xe8B286649713447D8d5fBeBC28c731830d19B6C9
+DefaultReserveInterestRateStrategy: 0x5B41b0c78659636c6664f08F7cCb620ceA3F1206
+rateStrategyWETH: 0x3C06Fb2f5Ab65b0e35F91073d88afE2b017D04b8
+rateStrategyStableTwo: 0x5B41b0c78659636c6664f08F7cCb620ceA3F1206
+LendingPoolCollateralManagerImpl: 0x25E8B3bcf21163BE6EE6c4dc2E2680DeAe703281
+LendingPoolCollateralManager: 0x25E8B3bcf21163BE6EE6c4dc2E2680DeAe703281
+WalletBalanceProvider: 0x7523e4D37c8267E59d0d983f1a4b64f96B0f9657

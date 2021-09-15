@@ -1,7 +1,7 @@
 {
-  "name": "@aave/protocol-v2",
+  "name": "moola/protocol-v2",
   "version": "1.0.1",
-  "description": "Aave Protocol V2 smart contracts",
+  "description": "Moola Protocol V2 smart contracts",
   "files": [
     "contracts",
     "artifacts"
@@ -13,6 +13,8 @@
     "hardhat:tenderly-main": "hardhat --network tenderlyMain",
     "hardhat:ropsten": "hardhat--network ropsten",
     "hardhat:main": "hardhat --network main",
+    "hardhat:celo": "hardhat --network celo",
+    "hardhat:alfajores": "hardhat --network alfajores",
     "hardhat:docker": "hardhat --network hardhatevm_docker",
     "hardhat:mumbai": "hardhat --network mumbai",
     "hardhat:matic": "hardhat --network matic",
@@ -79,9 +81,12 @@
     "kovan:initialize-tokens": "npm run compile && hardhat --network kovan full:initialize-tokens --pool Aave",
     "external:deploy-assets-kovan": "npm run compile && hardhat --network kovan external:deploy-new-asset --symbol ${SYMBOL} --verify",
     "external:deploy-assets-main": "npm run compile && hardhat --network main external:deploy-new-asset --symbol ${SYMBOL} --verify",
-    "prepublishOnly": "npm run compile"
+    "prepublishOnly": "npm run compile",
+    "moola:alfajores:full:migration": "npm run compile && npm run hardhat:alfajores -- moola:alfajores",
+    "moola:celo:full:migration": "npm run compile && npm run hardhat:celo -- moola:celo"
   },
   "devDependencies": {
+    "@celo/contractkit": "^1.2.4",
     "@nomiclabs/buidler": "^1.4.7",
     "@nomiclabs/buidler-ethers": "2.0.0",
     "@nomiclabs/buidler-etherscan": "^2.1.0",
@@ -133,7 +138,7 @@
       "pre-commit": "pretty-quick --staged --pattern 'contracts/**/*.sol' --pattern 'helpers/**/*.ts'  --pattern 'test-suites/test-aave/**/*.ts' --pattern 'tasks/**/*.ts'"
     }
   },
-  "author": "Aave",
+  "author": "Aave, Moola",
   "contributors": [
     "Ernesto Boado <ernesto@aave.com>",
     "Emilio Frangella <emilio@aave.com>",
@@ -141,6 +146,7 @@
     "David Racero <david.k@aave.com>",
     "Pol Sendra <pol@aave.com>",
     "David Truong <david@aave.com>"
+    "Oleksii Matiiasevych <oleksii@ambisafe.com>"
   ],
   "license": "AGPLv3",
   "dependencies": {

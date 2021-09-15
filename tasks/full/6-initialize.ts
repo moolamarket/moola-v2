@@ -13,7 +13,7 @@ import {
   getTreasuryAddress,
 } from '../../helpers/configuration';
 import { getWETHGateway } from '../../helpers/contracts-getters';
-import { eNetwork, ICommonConfiguration } from '../../helpers/types';
+import { eNetwork, ICommonConfiguration, eEthereumNetwork, eCeloNetwork } from '../../helpers/types';
 import { notFalsyOrZeroAddress, waitForTx } from '../../helpers/misc-utils';
 import { initReservesByHelper, configureReservesByHelper } from '../../helpers/init-helpers';
 import { exit } from 'process';
@@ -91,6 +91,9 @@ task('full:initialize-lending-pool', 'Initialize lending pool configuration.')
 
       const lendingPoolAddress = await addressesProvider.getLendingPool();
 
+      if (network === eCeloNetwork.celo || network === eCeloNetwork.alfajores) {
+        return;
+      }
       let gateWay = getParamPerNetwork(WethGateway, network);
       if (!notFalsyOrZeroAddress(gateWay)) {
         gateWay = (await getWETHGateway()).address;

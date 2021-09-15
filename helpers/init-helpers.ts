@@ -204,7 +204,7 @@ export const initReservesByHelper = async (
       incentivesController: ZERO_ADDRESS,
       underlyingAssetName: reserveSymbols[i],
       aTokenName: `${aTokenNamePrefix} ${reserveSymbols[i]}`,
-      aTokenSymbol: `a${symbolPrefix}${reserveSymbols[i]}`,
+      aTokenSymbol: `m${symbolPrefix}${reserveSymbols[i]}`,
       variableDebtTokenName: `${variableDebtTokenNamePrefix} ${symbolPrefix}${reserveSymbols[i]}`,
       variableDebtTokenSymbol: `variableDebt${symbolPrefix}${reserveSymbols[i]}`,
       stableDebtTokenName: `${stableDebtTokenNamePrefix} ${reserveSymbols[i]}`,
@@ -240,10 +240,10 @@ export const getPairsTokenAggregator = (
   },
   aggregatorsAddresses: { [tokenSymbol: string]: tEthereumAddress }
 ): [string[], string[]] => {
-  const { ETH, USD, WETH, ...assetsAddressesWithoutEth } = allAssetsAddresses;
+  const { ETH, USD, WETH, CELO, ...assetsAddressesWithoutEth } = allAssetsAddresses;
 
   const pairs = Object.entries(assetsAddressesWithoutEth).map(([tokenSymbol, tokenAddress]) => {
-    if (tokenSymbol !== 'WETH' && tokenSymbol !== 'ETH') {
+    if (tokenSymbol !== 'WETH' && tokenSymbol !== 'ETH' && tokenSymbol !== 'CELO') { // This if seems to be not needed.
       const aggregatorAddressIndex = Object.keys(aggregatorsAddresses).findIndex(
         (value) => value === tokenSymbol
       );
@@ -457,7 +457,7 @@ export const initTokenReservesByHelper = async (
           poolAddress,
           tokenAddresses[symbol],
           ZERO_ADDRESS, // Incentives controller
-          `Aave stable debt bearing ${symbol}`,
+          `Moola stable debt bearing ${symbol}`,
           `stableDebt${symbol}`,
         ],
         verify
@@ -470,7 +470,7 @@ export const initTokenReservesByHelper = async (
           poolAddress,
           tokenAddresses[symbol],
           ZERO_ADDRESS, // Incentives Controller
-          `Aave variable debt bearing ${symbol}`,
+          `Moola variable debt bearing ${symbol}`,
           `variableDebt${symbol}`,
         ],
         verify
@@ -488,8 +488,8 @@ export const initTokenReservesByHelper = async (
           tokenAddresses[symbol],
           treasuryAddress,
           ZERO_ADDRESS,
-          `Aave interest bearing ${symbol}`,
-          `a${symbol}`,
+          `Moola interest bearing ${symbol}`,
+          `m${symbol}`,
         ],
         verify
       );
@@ -551,11 +551,11 @@ export const initTokenReservesByHelper = async (
       treasury: treasuryAddress,
       incentivesController: ZERO_ADDRESS,
       underlyingAssetName: reserveSymbols[i],
-      aTokenName: `Aave interest bearing ${reserveSymbols[i]}`,
-      aTokenSymbol: `a${reserveSymbols[i]}`,
-      variableDebtTokenName: `Aave variable debt bearing ${reserveSymbols[i]}`,
+      aTokenName: `Moola interest bearing ${reserveSymbols[i]}`,
+      aTokenSymbol: `m${reserveSymbols[i]}`,
+      variableDebtTokenName: `Moola variable debt bearing ${reserveSymbols[i]}`,
       variableDebtTokenSymbol: `variableDebt${reserveSymbols[i]}`,
-      stableDebtTokenName: `Aave stable debt bearing ${reserveSymbols[i]}`,
+      stableDebtTokenName: `Moola stable debt bearing ${reserveSymbols[i]}`,
       stableDebtTokenSymbol: `stableDebt${reserveSymbols[i]}`,
       params: '0x10'
     });

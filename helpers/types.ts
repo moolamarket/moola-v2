@@ -4,7 +4,7 @@ export interface SymbolMap<T> {
   [symbol: string]: T;
 }
 
-export type eNetwork = eEthereumNetwork | ePolygonNetwork | eXDaiNetwork;
+export type eNetwork = eEthereumNetwork | ePolygonNetwork | eXDaiNetwork | eCeloNetwork;
 
 export enum eEthereumNetwork {
   buidlerevm = 'buidlerevm',
@@ -14,6 +14,11 @@ export enum eEthereumNetwork {
   coverage = 'coverage',
   hardhat = 'hardhat',
   tenderlyMain = 'tenderlyMain',
+}
+
+export enum eCeloNetwork {
+  celo = 'celo',
+  alfajores = 'alfajores',
 }
 
 export enum ePolygonNetwork {
@@ -32,12 +37,15 @@ export enum EthereumNetworkNames {
   matic = 'matic',
   mumbai = 'mumbai',
   xdai = 'xdai',
+  celo = 'celo',
+  alfajores = 'alfajores',
 }
 
 export enum AavePools {
   proto = 'proto',
   matic = 'matic',
   amm = 'amm',
+  moola = 'moola',
 }
 
 export enum eContractid {
@@ -199,6 +207,11 @@ export interface iAssetCommon<T> {
   [key: string]: T;
 }
 export interface iAssetBase<T> {
+  CUSD: T;
+  CEUR: T;
+  CELO: T;
+  MOO: T;
+  UBE: T;
   WETH: T;
   DAI: T;
   TUSD: T;
@@ -305,6 +318,11 @@ export type iXDAIPoolAssets<T> = Pick<
   'DAI' | 'USDC' | 'USDT' | 'WBTC' | 'WETH' | 'STAKE'
 >;
 
+export type iMoolaPoolAssets<T> = Pick<
+  iAssetsWithoutUSD<T>,
+  'CELO' | 'CUSD' | 'CEUR'
+>;
+
 export type iMultiPoolsAssets<T> = iAssetCommon<T> | iAavePoolAssets<T>;
 
 export type iAavePoolTokens<T> = Omit<iAavePoolAssets<T>, 'ETH'>;
@@ -312,6 +330,11 @@ export type iAavePoolTokens<T> = Omit<iAavePoolAssets<T>, 'ETH'>;
 export type iAssetAggregatorBase<T> = iAssetsWithoutETH<T>;
 
 export enum TokenContractId {
+  CELO = 'CELO',
+  CUSD = 'CUSD',
+  CEUR = 'CEUR',
+  MOO = 'MOO',
+  UBE = 'UBE',
   DAI = 'DAI',
   AAVE = 'AAVE',
   TUSD = 'TUSD',
@@ -394,12 +417,14 @@ export interface IMarketRates {
 export type iParamsPerNetwork<T> =
   | iEthereumParamsPerNetwork<T>
   | iPolygonParamsPerNetwork<T>
-  | iXDaiParamsPerNetwork<T>;
+  | iXDaiParamsPerNetwork<T>
+  | iCeloParamsPerNetwork<T>;
 
 export interface iParamsPerNetworkAll<T>
   extends iEthereumParamsPerNetwork<T>,
     iPolygonParamsPerNetwork<T>,
-    iXDaiParamsPerNetwork<T> {}
+    iXDaiParamsPerNetwork<T>,
+    iCeloParamsPerNetwork<T> {}
 
 export interface iEthereumParamsPerNetwork<T> {
   [eEthereumNetwork.coverage]: T;
@@ -420,10 +445,16 @@ export interface iXDaiParamsPerNetwork<T> {
   [eXDaiNetwork.xdai]: T;
 }
 
+export interface iCeloParamsPerNetwork<T> {
+  [eCeloNetwork.celo]: T;
+  [eCeloNetwork.alfajores]: T;
+}
+
 export interface iParamsPerPool<T> {
   [AavePools.proto]: T;
   [AavePools.matic]: T;
   [AavePools.amm]: T;
+  [AavePools.moola]: T;
 }
 
 export interface iBasicDistributionParams {
@@ -510,8 +541,12 @@ export interface IXDAIConfiguration extends ICommonConfiguration {
   ReservesConfig: iXDAIPoolAssets<IReserveParams>;
 }
 
+export interface IMoolaConfiguration extends ICommonConfiguration {
+  ReservesConfig: iMoolaPoolAssets<IReserveParams>;
+}
+
 export interface ITokenAddress {
   [token: string]: tEthereumAddress;
 }
 
-export type PoolConfiguration = ICommonConfiguration | IAaveConfiguration;
+export type PoolConfiguration = ICommonConfiguration | IAaveConfiguration | IMoolaConfiguration;
