@@ -1,23 +1,22 @@
 ```
-        .///.                .///.     //.            .//  `/////////////-
-       `++:++`              .++:++`    :++`          `++:  `++:......---.`
-      `/+: -+/`            `++- :+/`    /+/         `/+/   `++.
-      /+/   :+/            /+:   /+/    `/+/        /+/`   `++.
-  -::/++::`  /+:       -::/++::` `/+:    `++:      :++`    `++/:::::::::.
-  -:+++::-`  `/+:      --++/---`  `++-    .++-    -++.     `++/:::::::::.
-   -++.       .++-      -++`       .++.    .++.  .++-      `++.
-  .++-         -++.    .++.         -++.    -++``++-       `++.
- `++:           :++`  .++-           :++`    :+//+:        `++:----------`
- -/:             :/-  -/:             :/.     ://:         `/////////////-
+                                           ,dPYb,            
+                                           IP'`Yb            
+                                           I8  8I            
+                                           I8  8'            
+  ,ggg,,ggg,,ggg,     ,ggggg,    ,ggggg,   I8 dP    ,gggg,gg 
+ ,8" "8P" "8P" "8,   dP"  "Y8gggdP"  "Y8gggI8dP    dP"  "Y8I 
+ I8   8I   8I   8I  i8'    ,8I i8'    ,8I  I8P    i8'    ,8I 
+,dP   8I   8I   Yb,,d8,   ,d8',d8,   ,d8' ,d8b,_ ,d8,   ,d8b,
+8P'   8I   8I   `Y8P"Y8888P"  P"Y8888P"   8P'"Y88P"Y8888P"`Y8
 ```
 
-# Aave Protocol v2
+# Moola/Aave Protocol v2
 
-This repository contains the smart contracts source code and markets configuration for Aave Protocol V2. The repository uses Docker Compose and Hardhat as development enviroment for compilation, testing and deployment tasks.
+This repository contains the smart contracts source code and markets configuration for Moola/Aave Protocol V2. The repository uses Docker Compose and Hardhat as development enviroment for compilation, testing and deployment tasks.
 
-## What is Aave?
+## What is Moola/Aave?
 
-Aave is a decentralized non-custodial liquidity markets protocol where users can participate as depositors or borrowers. Depositors provide liquidity to the market to earn a passive income, while borrowers are able to borrow in an overcollateralized (perpetually) or undercollateralized (one-block liquidity) fashion.
+Moola/Aave is a decentralized non-custodial liquidity markets protocol where users can participate as depositors or borrowers. Depositors provide liquidity to the market to earn a passive income, while borrowers are able to borrow in an overcollateralized (perpetually) or undercollateralized (one-block liquidity) fashion.
 
 ## Documentation
 
