@@ -3,6 +3,7 @@ const LendingPoolAddressesProvider = require('./abi/LendingPoolAddressProvider.j
 const LendingPool = require('./abi/LendingPool.json');
 const DataProvider = require('./abi/MoolaProtocolDataProvider.json');
 const MToken = require('./abi/MToken.json');
+const DebtToken = require('./abi/DebtToken.json');
 const BigNumber = require('bignumber.js');
 const Promise = require('bluebird');
 let pk;
@@ -15,6 +16,11 @@ const INTEREST_RATE = {
   2: 'VARIABLE',
   0: 'NONE',
 };
+
+const DEBT_TOKENS = {
+  1: 'stableDebtTokenAddress',
+  2: 'variableDebtTokenAddress',
+}
 
 const ether = '1000000000000000000';
 const ray = '1000000000000000000000000000';
@@ -46,6 +52,9 @@ function printActions() {
   console.info('borrow celo|cusd|ceur address amount stable|variable [privateKey]');
   console.info('repay celo|cusd|ceur address amount|all stable|variable [privateKey]');
   console.info('redeem celo|cusd|ceur address amount|all [privateKey]');
+  console.info('delegate celo|cusd|ceur to address amount|all stable|variable [privateKey]');
+  console.info('borrowFrom celo|cusd|ceur from address amount [privateKey]');
+  console.info('repayFor celo|cusd|ceur for address amount stable|variable [privateKey]');
 }
 
 const retry = async (fun, tries = 5) => {
@@ -161,7 +170,7 @@ async function execute(network, action, ...params) {
   if (action == 'getreservedata') {
     const reserve = reserves[params[0]];
     const data = await dataProvider.methods.getReserveData(reserve).call();
-    const tokens = await dataProvider.methods.getReserveTokensAddresses(reserve).call();
+    const reserveTokens = await dataProvider.methods.getReserveTokensAddresses(reserve).call();
     const parsedData = {
       AvailableLiquidity: print(data.availableLiquidity),
       TotalBorrowsStable: print(data.totalStableDebt),
@@ -172,7 +181,7 @@ async function execute(network, action, ...params) {
       AverageStableRate: printRayRate(data.averageStableBorrowRate),
       LiquidityIndex: printRay(data.liquidityIndex),
       VariableBorrowIndex: printRay(data.variableBorrowIndex),
-      MToken: tokens.aTokenAddress,
+      MToken: reserveTokens.aTokenAddress,
       LastUpdate: (new Date(BN(data.lastUpdateTimestamp).multipliedBy(1000).toNumber())).toLocaleString(),
     };
     console.table(parsedData);
@@ -185,6 +194,10 @@ async function execute(network, action, ...params) {
     const amount = web3.utils.toWei(params[2]);
     if (privateKeyRequired) {
       pk = params[3];
+      if (!pk) {
+        console.error('Missing private key');
+        return;
+      }
       kit.addAccount(pk);
     }
     console.log('Approve', (await token.methods.approve(lendingPool.options.address, amount).send({from: user, gas: 2000000})).transactionHash);
@@ -205,6 +218,10 @@ async function execute(network, action, ...params) {
     const rate = INTEREST_RATE[params[3].toUpperCase()];
     if (privateKeyRequired) {
       pk = params[4];
+      if (!pk) {
+        console.error('Missing private key');
+        return;
+      }
       kit.addAccount(pk);
     }
     try {
@@ -224,6 +241,10 @@ async function execute(network, action, ...params) {
     const rate = INTEREST_RATE[params[3].toUpperCase()];
     if (privateKeyRequired) {
       pk = params[3];
+      if (!pk) {
+        console.error('Missing private key');
+        return;
+      }
       kit.addAccount(pk);
     }
     console.log('Approve', (await token.methods.approve(lendingPool.options.address, amount).send({from: user, gas: 2000000})).transactionHash);
@@ -245,6 +266,10 @@ async function execute(network, action, ...params) {
     const amount = params[2] === 'all' ? maxUint256 : web3.utils.toWei(params[2]);
     if (privateKeyRequired) {
       pk = params[3];
+      if (!pk) {
+        console.error('Missing private key');
+        return;
+      }
       kit.addAccount(pk);
     }
     try {
@@ -254,6 +279,77 @@ async function execute(network, action, ...params) {
       return;
     }
     console.log('Redeem', (await lendingPool.methods.withdraw(reserve, amount, user).send({from: user, gas: 2000000})).transactionHash);
+    return;
+  }
+  if (action == 'delegate') {
+    const reserve = reserves[params[0]];
+    const token = tokens[params[0]];
+    const to = params[1];
+    const user = params[2];
+    const amount = web3.utils.toWei(params[3]);
+    const rate = INTEREST_RATE[params[4].toUpperCase()];
+    if (privateKeyRequired) {
+      pk = params[5];
+      if (!pk) {
+        console.error('Missing private key');
+        return;
+      }
+      kit.addAccount(pk);
+    }
+    const reserveTokens = await dataProvider.methods.getReserveTokensAddresses(reserve).call();
+    const debtToken = new eth.Contract(DebtToken, reserveTokens[DEBT_TOKENS[rate]]);
+    console.log('Approve credit delegation', (await debtToken.methods.approveDelegation(to, amount).send({from: user, gas: 2000000})).transactionHash);
+    return;
+  }
+  if (action == 'borrowfrom') {
+    const reserve = reserves[params[0]];
+    const from = params[1];
+    const user = params[2];
+    const amount = web3.utils.toWei(params[3]);
+    const rate = INTEREST_RATE[params[4].toUpperCase()];
+    if (privateKeyRequired) {
+      pk = params[5];
+      if (!pk) {
+        console.error('Missing private key');
+        return;
+      }
+      kit.addAccount(pk);
+    }
+    try {
+      await retry(() => lendingPool.methods.borrow(reserve, amount, rate, 0, from).estimateGas({from: user, gas: 2000000}));
+    } catch (err) {
+      console.log('Cannot borrow', err.message);
+      return;
+    }
+    console.log('Borrow', (await lendingPool.methods.borrow(reserve, amount, rate, 0, from).send({from: user, gas: 2000000})).transactionHash);
+    return;
+  }
+  if (action == 'repayfor') {
+    const reserve = reserves[params[0]];
+    const token = tokens[params[0]];
+    const repayfor = params[1];
+    const user = params[2];
+    const amount = web3.utils.toWei(params[3]);
+    const rate = INTEREST_RATE[params[4].toUpperCase()];
+    if (privateKeyRequired) {
+      pk = params[5];
+      if (!pk) {
+        console.error('Missing private key');
+        return;
+      }
+      kit.addAccount(pk);
+    }
+    console.log('Approve', (await token.methods.approve(lendingPool.options.address, amount).send({from: user, gas: 2000000})).transactionHash);
+    try {
+      await retry(() => lendingPool.methods.repay(reserve, amount, rate, repayfor).estimateGas({from: user, gas: 2000000}));
+    } catch (err) {
+      console.log('Revoke approve', (await token.methods.approve(lendingPool.options.address, 0).send({from: user, gas: 2000000})).transactionHash);
+      console.log('Cannot repay', err.message);// const pk = require('./pk2.json');
+
+      return;
+    }
+    console.log('Repay', (await lendingPool.methods.repay(reserve, amount, rate, repayfor).send({from: user, gas: 2000000})).transactionHash);
+    console.log('Revoke approve', (await token.methods.approve(lendingPool.options.address, 0).send({from: user, gas: 2000000})).transactionHash);
     return;
   }
   console.error(`Unknown action: ${action}`);
