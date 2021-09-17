@@ -45,8 +45,8 @@ task('aave:mainnet', 'Deploy development enviroment')
     }
 
     if (usingTenderly()) {
-      const postDeployHead = DRE.tenderlyRPC.getHead();
-      const postDeployFork = DRE.tenderlyRPC.getFork();
+      const postDeployHead = (DRE as any).tenderlyRPC.getHead();
+      const postDeployFork = (DRE as any).tenderlyRPC.getFork();
       console.log('Tenderly Info');
       console.log('- Head', postDeployHead);
       console.log('- Fork', postDeployFork);

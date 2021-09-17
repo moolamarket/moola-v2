@@ -79,9 +79,10 @@ task('full:deploy-lending-pool', 'Deploy lending pool for dev enviroment')
       );
     } catch (error) {
       if (DRE.network.name.includes('tenderly')) {
-        const transactionLink = `https://dashboard.tenderly.co/${DRE.config.tenderly.username}/${
-          DRE.config.tenderly.project
-        }/fork/${DRE.tenderlyRPC.getFork()}/simulation/${DRE.tenderlyRPC.getHead()}`;
+        const tDRE: any = DRE;
+        const transactionLink = `https://dashboard.tenderly.co/${tDRE.config.tenderly.username}/${
+          tDRE.config.tenderly.project
+        }/fork/${tDRE.tenderlyRPC.getFork()}/simulation/${tDRE.tenderlyRPC.getHead()}`;
         console.error('Check tx error:', transactionLink);
       }
       throw error;

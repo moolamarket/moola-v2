@@ -42,8 +42,9 @@ task('matic:mainnet', 'Deploy development enviroment')
     }
 
     if (usingTenderly()) {
-      const postDeployHead = DRE.tenderlyRPC.getHead();
-      const postDeployFork = DRE.tenderlyRPC.getFork();
+      const tDRE: any = DRE;
+      const postDeployHead = tDRE.tenderlyRPC.getHead();
+      const postDeployFork = tDRE.tenderlyRPC.getFork();
       console.log('Tenderly Info');
       console.log('- Head', postDeployHead);
       console.log('- Fork', postDeployFork);

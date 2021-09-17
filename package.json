@@ -1,5 +1,5 @@
 {
-  "name": "moola/protocol-v2",
+  "name": "moola-v2",
   "version": "1.0.1",
   "description": "Moola Protocol V2 smart contracts",
   "files": [
@@ -40,7 +40,7 @@
     "test-weth:amm": "hardhat test test-suites/test-amm/__setup.spec.ts test-suites/test-amm/weth-gateway.spec.ts",
     "test-uniswap": "hardhat test test-suites/test-aave/__setup.spec.ts test-suites/test-aave/uniswapAdapters*.spec.ts",
     "test:main:check-list": "MAINNET_FORK=true TS_NODE_TRANSPILE_ONLY=1 hardhat test  test-suites/test-aave/__setup.spec.ts test-suites/test-aave/mainnet/check-list.spec.ts",
-    "dev:coverage": "buidler compile --force && buidler coverage --network coverage",
+    "dev:coverage": "hardhat compile --force && hardhat coverage --network coverage",
     "aave:evm:dev:migration": "npm run compile && hardhat aave:dev",
     "aave:docker:full:migration": "npm run compile && npm run hardhat:docker -- aave:mainnet",
     "aave:kovan:full:migration": "npm run compile && npm run hardhat:kovan -- aave:mainnet --verify",
@@ -123,7 +123,7 @@
     "prettier": "^2.0.5",
     "prettier-plugin-solidity": "^1.0.0-alpha.53",
     "pretty-quick": "^2.0.1",
-    "solidity-coverage": "0.7.10",
+    "solidity-coverage": "^0.7.17",
     "temp-hardhat-etherscan": "^2.0.2",
     "ts-generator": "^0.1.1",
     "ts-node": "^8.10.2",

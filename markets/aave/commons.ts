@@ -11,7 +11,7 @@ export const CommonsConfig: ICommonConfiguration = {
   ATokenNamePrefix: 'Aave interest bearing',
   StableDebtTokenNamePrefix: 'Aave stable debt bearing',
   VariableDebtTokenNamePrefix: 'Aave variable debt bearing',
-  SymbolPrefix: '',
+  SymbolPrefix: 'a',
   ProviderId: 0, // Overriden in index.ts
   ProtocolGlobalParams: {
     TokenDistributorPercentageBase: '10000',

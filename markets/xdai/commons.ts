@@ -11,7 +11,7 @@ export const CommonsConfig: ICommonConfiguration = {
   ATokenNamePrefix: 'Aave XDAI Market',
   StableDebtTokenNamePrefix: 'Aave XDAI Market stable debt',
   VariableDebtTokenNamePrefix: 'Aave XDAI Market variable debt',
-  SymbolPrefix: 'm',
+  SymbolPrefix: 'ax',
   ProviderId: 0, // Overriden in index.ts
   ProtocolGlobalParams: {
     TokenDistributorPercentageBase: '10000',

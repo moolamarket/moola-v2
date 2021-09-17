@@ -87,9 +87,10 @@ task('full:deploy-oracles', 'Deploy oracles for dev enviroment')
       await waitForTx(await addressesProvider.setLendingRateOracle(lendingRateOracle.address));
     } catch (error) {
       if (DRE.network.name.includes('tenderly')) {
+        const tDRE: any = DRE;
         const transactionLink = `https://dashboard.tenderly.co/${DRE.config.tenderly.username}/${
           DRE.config.tenderly.project
-        }/fork/${DRE.tenderlyRPC.getFork()}/simulation/${DRE.tenderlyRPC.getHead()}`;
+        }/fork/${tDRE.tenderlyRPC.getFork()}/simulation/${tDRE.tenderlyRPC.getHead()}`;
         console.error('Check tx error:', transactionLink);
       }
       throw error;

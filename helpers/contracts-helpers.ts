@@ -200,7 +200,7 @@ export const getParamPerPool = <T>({ proto, amm, matic, moola }: iParamsPerPool<
     case AavePools.moola:
       return moola;
     default:
-      return moola;
+      return proto;
   }
 };
 

@@ -11,7 +11,7 @@ export const CommonsConfig: ICommonConfiguration = {
   ATokenNamePrefix: 'Moola interest bearing',
   StableDebtTokenNamePrefix: 'Moola stable debt bearing',
   VariableDebtTokenNamePrefix: 'Moola variable debt bearing',
-  SymbolPrefix: '',
+  SymbolPrefix: 'm',
   ProviderId: 0, // Overriden in index.ts
   ProtocolGlobalParams: {
     TokenDistributorPercentageBase: '10000',
