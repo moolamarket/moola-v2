@@ -91,11 +91,11 @@ async function execute(network, action, ...params) {
       break;
     case 'main':
       kit = newKit('https://forno.celo.org');
-      addressProvider = new kit.web3.eth.Contract(LendingPoolAddressesProvider, '');
+      addressProvider = new kit.web3.eth.Contract(LendingPoolAddressesProvider, '0xD1088091A174d33412a968Fa34Cb67131188B332');
       cEUR = new kit.web3.eth.Contract(MToken, '0xD8763CBa276a3738E6DE85b4b3bF5FDed6D6cA73');
       cUSD = new kit.web3.eth.Contract(MToken, '0x765DE816845861e75A25fCA122bb6898B8B1282a');
       CELO = new kit.web3.eth.Contract(MToken, '0x471EcE3750Da237f93B8E339c536989b8978a438');
-      dataProvider = new kit.web3.eth.Contract(DataProvider, '');
+      dataProvider = new kit.web3.eth.Contract(DataProvider, '0x43d067ed784D9DD2ffEda73775e2CC4c560103A1');
       break;
     default:
       try {
@@ -105,11 +105,11 @@ async function execute(network, action, ...params) {
         console.info(`Available networks: test, main, or custom node URL.`);
         return;
       }
-      addressProvider = new kit.web3.eth.Contract(LendingPoolAddressesProvider, '');
+      addressProvider = new kit.web3.eth.Contract(LendingPoolAddressesProvider, '0xD1088091A174d33412a968Fa34Cb67131188B332');
       cEUR = new kit.web3.eth.Contract(MToken, '0xD8763CBa276a3738E6DE85b4b3bF5FDed6D6cA73');
       cUSD = new kit.web3.eth.Contract(MToken, '0x765DE816845861e75A25fCA122bb6898B8B1282a');
       CELO = new kit.web3.eth.Contract(MToken, '0x471EcE3750Da237f93B8E339c536989b8978a438');
-      dataProvider = new kit.web3.eth.Contract(DataProvider, '');
+      dataProvider = new kit.web3.eth.Contract(DataProvider, '0x43d067ed784D9DD2ffEda73775e2CC4c560103A1');
       privateKeyRequired = false;
   }
   const web3 = kit.web3;

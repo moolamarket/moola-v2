@@ -69,7 +69,7 @@ export const CommonsConfig: ICommonConfiguration = {
     [eCeloNetwork.alfajores]: '',
   },
   ProviderRegistryOwner: {
-    [eCeloNetwork.celo]: '',
+    [eCeloNetwork.celo]: '0x643C574128c7C56A1835e021Ad0EcC2592E72624',
     [eCeloNetwork.alfajores]: '0x643C574128c7C56A1835e021Ad0EcC2592E72624',
   },
   LendingRateOracle: {
