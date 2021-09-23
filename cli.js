@@ -240,7 +240,7 @@ async function execute(network, action, ...params) {
     const amount = params[2] === 'all' ? maxUint256 : web3.utils.toWei(params[2]);
     const rate = INTEREST_RATE[params[3].toUpperCase()];
     if (privateKeyRequired) {
-      pk = params[3];
+      pk = params[4];
       if (!pk) {
         console.error('Missing private key');
         return;
