@@ -1,0 +1,272 @@
+[
+    {
+        "inputs":
+        [
+            {
+                "internalType": "contract ILendingPoolAddressesProviderV1",
+                "name": "providerV1",
+                "type": "address"
+            },
+            {
+                "internalType": "contract ILendingPoolAddressesProvider",
+                "name": "providerV2",
+                "type": "address"
+            },
+            {
+                "internalType": "contract IERC20",
+                "name": "cusd",
+                "type": "address"
+            },
+            {
+                "internalType": "contract IERC20",
+                "name": "ceur",
+                "type": "address"
+            },
+            {
+                "internalType": "contract IERC20",
+                "name": "celo",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "stateMutability": "payable",
+        "type": "fallback"
+    },
+    {
+        "inputs":
+        [],
+        "name": "ADDRESSES_PROVIDER_V1",
+        "outputs":
+        [
+            {
+                "internalType": "contract ILendingPoolAddressesProviderV1",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs":
+        [],
+        "name": "ADDRESSES_PROVIDER_V2",
+        "outputs":
+        [
+            {
+                "internalType": "contract ILendingPoolAddressesProvider",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs":
+        [],
+        "name": "CELO",
+        "outputs":
+        [
+            {
+                "internalType": "contract IERC20",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs":
+        [],
+        "name": "CEUR",
+        "outputs":
+        [
+            {
+                "internalType": "contract IERC20",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs":
+        [],
+        "name": "CUSD",
+        "outputs":
+        [
+            {
+                "internalType": "contract IERC20",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs":
+        [],
+        "name": "LENDING_POOL_CORE_V1",
+        "outputs":
+        [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs":
+        [],
+        "name": "LENDING_POOL_V1",
+        "outputs":
+        [
+            {
+                "internalType": "contract ILendingPoolV1",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs":
+        [],
+        "name": "LENDING_POOL_V2",
+        "outputs":
+        [
+            {
+                "internalType": "contract ILendingPool",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs":
+        [],
+        "name": "RESERVE_CELO",
+        "outputs":
+        [
+            {
+                "internalType": "contract IERC20",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs":
+        [
+            {
+                "internalType": "contract IERC20[]",
+                "name": "assets",
+                "type": "address[]"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "amounts",
+                "type": "uint256[]"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "",
+                "type": "uint256[]"
+            },
+            {
+                "internalType": "address",
+                "name": "initiator",
+                "type": "address"
+            },
+            {
+                "internalType": "bytes",
+                "name": "params",
+                "type": "bytes"
+            }
+        ],
+        "name": "executeOperation",
+        "outputs":
+        [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs":
+        [],
+        "name": "mCELO_V1",
+        "outputs":
+        [
+            {
+                "internalType": "contract IMTokenV1",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs":
+        [],
+        "name": "mCEUR_V1",
+        "outputs":
+        [
+            {
+                "internalType": "contract IMTokenV1",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs":
+        [],
+        "name": "mCUSD_V1",
+        "outputs":
+        [
+            {
+                "internalType": "contract IMTokenV1",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs":
+        [],
+        "name": "migrate",
+        "outputs":
+        [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "stateMutability": "payable",
+        "type": "receive"
+    }
+]

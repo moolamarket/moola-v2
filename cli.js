@@ -3,6 +3,7 @@ const LendingPoolAddressesProvider = require('./abi/LendingPoolAddressProvider.j
 const LendingPool = require('./abi/LendingPool.json');
 const DataProvider = require('./abi/MoolaProtocolDataProvider.json');
 const MToken = require('./abi/MToken.json');
+const MoolaMigratorV1V2 = require('./abi/MoolaMigratorV1V2.json');
 const DebtToken = require('./abi/DebtToken.json');
 const BigNumber = require('bignumber.js');
 const Promise = require('bluebird');
@@ -55,6 +56,7 @@ function printActions() {
   console.info('delegate celo|cusd|ceur to address amount|all stable|variable [privateKey]');
   console.info('borrowFrom celo|cusd|ceur from address amount [privateKey]');
   console.info('repayFor celo|cusd|ceur for address amount stable|variable [privateKey]');
+  console.info('migrate-step-2 address [privateKey]');
 }
 
 const retry = async (fun, tries = 5) => {
@@ -79,6 +81,7 @@ async function execute(network, action, ...params) {
   let CELO;
   let cUSD;
   let cEUR;
+  let migrator;
   let privateKeyRequired = true;
   switch (network) {
     case 'test':
@@ -88,6 +91,7 @@ async function execute(network, action, ...params) {
       cUSD = new kit.web3.eth.Contract(MToken, '0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1');
       CELO = new kit.web3.eth.Contract(MToken, '0xF194afDf50B03e69Bd7D057c1Aa9e10c9954E4C9');
       dataProvider = new kit.web3.eth.Contract(DataProvider, '0x31ccB9dC068058672D96E92BAf96B1607855822E');
+      migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0xB37B84788134DdB0DEcc160A792D306dCa97Dae5');
       break;
     case 'main':
       kit = newKit('https://forno.celo.org');
@@ -96,6 +100,7 @@ async function execute(network, action, ...params) {
       cUSD = new kit.web3.eth.Contract(MToken, '0x765DE816845861e75A25fCA122bb6898B8B1282a');
       CELO = new kit.web3.eth.Contract(MToken, '0x471EcE3750Da237f93B8E339c536989b8978a438');
       dataProvider = new kit.web3.eth.Contract(DataProvider, '0x43d067ed784D9DD2ffEda73775e2CC4c560103A1');
+      migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0x6ad9426Faa7568F0eFDecAec16b023D5667aE5f3');
       break;
     default:
       try {
@@ -110,6 +115,7 @@ async function execute(network, action, ...params) {
       cUSD = new kit.web3.eth.Contract(MToken, '0x765DE816845861e75A25fCA122bb6898B8B1282a');
       CELO = new kit.web3.eth.Contract(MToken, '0x471EcE3750Da237f93B8E339c536989b8978a438');
       dataProvider = new kit.web3.eth.Contract(DataProvider, '0x43d067ed784D9DD2ffEda73775e2CC4c560103A1');
+      migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0x6ad9426Faa7568F0eFDecAec16b023D5667aE5f3');
       privateKeyRequired = false;
   }
   const web3 = kit.web3;
@@ -252,7 +258,7 @@ async function execute(network, action, ...params) {
       await retry(() => lendingPool.methods.repay(reserve, amount, rate, user).estimateGas({from: user, gas: 2000000}));
     } catch (err) {
       console.log('Revoke approve', (await token.methods.approve(lendingPool.options.address, 0).send({from: user, gas: 2000000})).transactionHash);
-      console.log('Cannot repay', err.message);// const pk = require('./pk2.json');
+      console.log('Cannot repay', err.message);
 
       return;
     }
@@ -344,12 +350,43 @@ async function execute(network, action, ...params) {
       await retry(() => lendingPool.methods.repay(reserve, amount, rate, repayfor).estimateGas({from: user, gas: 2000000}));
     } catch (err) {
       console.log('Revoke approve', (await token.methods.approve(lendingPool.options.address, 0).send({from: user, gas: 2000000})).transactionHash);
-      console.log('Cannot repay', err.message);// const pk = require('./pk2.json');
+      console.log('Cannot repay', err.message);
 
       return;
     }
     console.log('Repay', (await lendingPool.methods.repay(reserve, amount, rate, repayfor).send({from: user, gas: 2000000})).transactionHash);
     console.log('Revoke approve', (await token.methods.approve(lendingPool.options.address, 0).send({from: user, gas: 2000000})).transactionHash);
+    return;
+  }
+  if (action == 'migrate-step-2') {
+    const user = params[0];
+    if (privateKeyRequired) {
+      pk = params[1];
+      if (!pk) {
+        console.error('Missing private key');
+        return;
+      }
+      kit.addAccount(pk);
+    }
+    const reserveTokensMCUSD = await dataProvider.methods.getReserveTokensAddresses(reserves.cusd).call();
+    const reserveTokensMCEUR = await dataProvider.methods.getReserveTokensAddresses(reserves.ceur).call();
+    const reserveTokensMCELO = await dataProvider.methods.getReserveTokensAddresses(reserves.celo).call();
+    const debtTokenMCUSD = new eth.Contract(DebtToken, reserveTokensMCUSD.variableDebtTokenAddress);
+    const debtTokenMCEUR = new eth.Contract(DebtToken, reserveTokensMCEUR.variableDebtTokenAddress);
+    const debtTokenMCELO = new eth.Contract(DebtToken, reserveTokensMCELO.variableDebtTokenAddress);
+    console.log('Delegate migrator CUSD', (await debtTokenMCUSD.methods.approveDelegation(migrator.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
+    console.log('Delegate migrator CEUR', (await debtTokenMCEUR.methods.approveDelegation(migrator.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
+    console.log('Delegate migrator CELO', (await debtTokenMCELO.methods.approveDelegation(migrator.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
+    try {
+      await retry(() => migrator.methods.migrate().estimateGas({from: user, gas: 4000000}));
+      console.log('Migrate', (await migrator.methods.migrate().send({from: user, gas: 4000000})).transactionHash);
+    } catch (err) {
+      console.error('Cannot migrate', err.message);
+    }
+    console.log('Revoke delegation from migrator CUSD', (await debtTokenMCUSD.methods.approveDelegation(migrator.options.address, 0).send({from: user, gas: 2000000})).transactionHash);
+    console.log('Revoke delegation from migrator CEUR', (await debtTokenMCEUR.methods.approveDelegation(migrator.options.address, 0).send({from: user, gas: 2000000})).transactionHash);
+    console.log('Revoke delegation from migrator CELO', (await debtTokenMCELO.methods.approveDelegation(migrator.options.address, 0).send({from: user, gas: 2000000})).transactionHash);
+    console.log('Now proceed to moola-v1 migrate-step-3');
     return;
   }
   console.error(`Unknown action: ${action}`);
