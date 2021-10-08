@@ -134,11 +134,11 @@ contract MoolaMigratorV1V2 {
     require(address(this) == initiator, 'Migrator:executeOperation: invalid initiator');
     address payable user = payable(abi.decode(params, (address)));
     for (uint i = 0; i < assets.length; i++) {
-      uint nativeCelo = 0;
-      if (assets[i] == RESERVE_CELO) {
-        nativeCelo = amounts[i];
+      if (assets[i] == CELO) {
+        LENDING_POOL_V1.repay{value: amounts[i]}(RESERVE_CELO, amounts[i], user);
+        continue;
       }
-      LENDING_POOL_V1.repay{value: nativeCelo}(assets[i], amounts[i], user);
+      LENDING_POOL_V1.repay(assets[i], amounts[i], user);
     }
     migrateCollateral(user);
     return true;
