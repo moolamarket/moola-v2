@@ -1,6 +1,7 @@
 const { newKit } = require('@celo/contractkit');
 const LendingPoolAddressesProvider = require('./abi/LendingPoolAddressProvider.json');
 const LendingPool = require('./abi/LendingPool.json');
+const Uniswap = require('./abi/Uniswap.json');
 const DataProvider = require('./abi/MoolaProtocolDataProvider.json');
 const MToken = require('./abi/MToken.json');
 const MoolaMigratorV1V2 = require('./abi/MoolaMigratorV1V2.json');
@@ -43,6 +44,10 @@ function printRayRate(num) {
   return BN(num).dividedBy(ray).multipliedBy(BN(100)).toFixed(2) + '%';
 }
 
+function nowSeconds() {
+  return Math.floor(Date.now() / 1000);
+}
+
 function printActions() {
   console.info('Available actions:');
   console.info('balanceOf celo|cusd|ceur address');
@@ -57,6 +62,7 @@ function printActions() {
   console.info('borrowFrom celo|cusd|ceur from address amount [privateKey]');
   console.info('repayFor celo|cusd|ceur for address amount stable|variable [privateKey]');
   console.info('migrate-step-2 address [privateKey]');
+  console.info('liquidation-bot celonode address [privateKey]');
 }
 
 const retry = async (fun, tries = 5) => {
@@ -390,6 +396,302 @@ async function execute(network, action, ...params) {
     console.log('Revoke delegation from migrator CELO', (await debtTokenMCELO.methods.approveDelegation(migrator.options.address, 0).send({from: user, gas: 2000000})).transactionHash);
     console.log('Now proceed to moola-v1 migrate-step-3');
     return;
+  }
+  if (action == 'liquidation-bot') {
+    if (network == 'test') {
+      throw new Error('Liquidation bot only works on the mainnet.');
+    }
+    const localnode = params[0];
+    const user = params[1];
+    if (privateKeyRequired) {
+      pk = params[2];
+      if (!pk) {
+        console.error('Missing private key');
+        return;
+      }
+      kit.addAccount(pk);
+    }
+    const sushiSwapRouter = '0x1421bDe4B10e8dd459b3BCb598810B1337D56842';
+    const wrappedEth = '0xE919F65739c26a42616b7b8eedC6b5524d1e3aC4';
+    const uniswap = new kit.web3.eth.Contract(Uniswap, sushiSwapRouter);
+    if ((await cUSD.methods.allowance(user, lendingPool.options.address).call()).length < 30) {
+      console.log('Approve', (await cUSD.methods.approve(lendingPool.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
+    }
+    if ((await cEUR.methods.allowance(user, lendingPool.options.address).call()).length < 30) {
+      console.log('Approve', (await cEUR.methods.approve(lendingPool.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
+    }
+    if ((await CELO.methods.allowance(user, uniswap.options.address).call()).length < 30) {
+      console.log('Approve', (await CELO.methods.approve(uniswap.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
+    }
+    const eventsCollector = require('events-collector');
+    let fromBlock = 8955468;
+    let users = {};
+    while(true) {
+      const [newEvents, parsedToBlock] = await eventsCollector({
+        rpcUrl: localnode,
+        log: console.log,
+        abi: LendingPool.filter(el => el.name == 'Borrow'),
+        address: lendingPool.options.address,
+        blockStep: 5000,
+        fromBlock,
+        toBlock: 'latest',
+        blocksExclude: 0,
+        timestamps: false,
+      });
+      fromBlock = parsedToBlock;
+      for (let event of newEvents) {
+        if (event.args.user) {
+          users[event.args.user] = true;
+        }
+        if (event.args.onBehalfOf) {
+          users[event.args.onBehalfOf] = true;
+        }
+      }
+      const usersData = await Promise.map(Object.keys(users), async (address) => [address, await lendingPool.methods.getUserAccountData(address).call()], {concurrency: 20})
+        .filter(([address, data]) => !BN(data.totalDebtETH).isZero());
+      console.log(`Users with debts: ${usersData.length}`);
+      users = usersData.reduce((total, [address, data]) => { total[address] = true; return total; }, {});
+      const riskiest = usersData.sort(([a1, data1], [a2, data2]) => BN(data1.healthFactor).comparedTo(BN(data2.healthFactor)));
+      console.log(`Riskiest users:`);
+      for (let riskiestUser of riskiest.slice(0, 3)) {
+        console.log(`${riskiestUser[0]} ${BN(print(riskiestUser[1].healthFactor)).toFixed(3)} ${BN(print(riskiestUser[1].totalCollateralETH)).toFixed(3)}`);
+      }
+      const risky = usersData.filter(([address, data]) => BN(data.healthFactor).dividedBy(ether).lt(BN(1))).map(el => el[0]);
+      for (let riskUser of risky) {
+        const riskData = await lendingPool.methods.getUserAccountData(riskUser).call();
+        const rates = {
+          cusd: BN((await uniswap.methods.getAmountsOut(ether, [CELO.options.address, wrappedEth, cUSD.options.address]).call())[2]),
+          ceur: BN((await uniswap.methods.getAmountsOut(ether, [CELO.options.address, wrappedEth, cEUR.options.address]).call())[2]),
+          celo: BN(ether),
+        };
+        const positions = [];
+        positions.push(['celo', await dataProvider.methods.getUserReserveData(CELO.options.address, riskUser).call()]);
+        positions.push(['cusd', await dataProvider.methods.getUserReserveData(cUSD.options.address, riskUser).call()]);
+        positions.push(['ceur', await dataProvider.methods.getUserReserveData(cEUR.options.address, riskUser).call()]);
+        const parsedData = {
+          Address: riskUser,
+          TotalCollateral: print(riskData.totalCollateralETH),
+          TotalDebt: print(riskData.totalDebtETH),
+          HealthFactor: print(riskData.healthFactor),
+        };
+        console.table(parsedData);
+
+        const biggestBorrow = positions.sort(([res1, data1], [res2, data2]) => BN(data2.currentStableDebt).plus(data2.currentVariableDebt).multipliedBy(rates[res2]).dividedBy(ether).comparedTo(BN(data1.currentStableDebt).plus(data1.currentVariableDebt).multipliedBy(rates[res1]).dividedBy(ether)))[0];
+        const biggestCollateral = positions.filter(([_, data]) => data.usageAsCollateralEnabled).sort(([res1, data1], [res2, data2]) => BN(data2.currentATokenBalance).multipliedBy(rates[res2]).dividedBy(ether).comparedTo(BN(data1.currentATokenBalance).multipliedBy(rates[res1]).dividedBy(ether)))[0];
+
+        if (biggestCollateral[0] == 'celo') {
+          if (biggestBorrow[0] == 'cusd') {
+            try {
+              await lendingPool.methods.liquidationCall(CELO.options.address, cUSD.options.address, riskUser, await cUSD.methods.balanceOf(user).call(), false).estimateGas({from: user, gas: 2000000});
+              try {
+                const celoBefore = BN(await CELO.methods.balanceOf(user).call());
+                console.log(`cUSD: ${print(await cUSD.methods.balanceOf(user).call())}`);
+                await lendingPool.methods.liquidationCall(CELO.options.address, cUSD.options.address, riskUser, await cUSD.methods.balanceOf(user).call(), false).send({from: user, gas: 2000000});
+                const profit = BN((await CELO.methods.balanceOf(user).call())).minus(celoBefore);
+                if (profit.isNegative()) {
+                  throw new Error('Negative profit');
+                }
+                await retry(async () => {
+                  const amountOut = BN((await uniswap.methods.getAmountsOut(profit, [CELO.options.address, wrappedEth, cUSD.options.address]).call())[2]);
+                  await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), [CELO.options.address, wrappedEth, cUSD.options.address], user, nowSeconds() + 300).estimateGas({from: user, gas: 2000000});
+                  const receipt = await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), [CELO.options.address, wrappedEth, cUSD.options.address], user, nowSeconds() + 300).send({from: user, gas: 2000000});
+                  if (!receipt.status) {
+                    throw Error('Swap failed');
+                  }
+                });
+                console.log(`cUSD: ${print(await cUSD.methods.balanceOf(user).call())}`);
+              } catch (err) {
+                console.log(`[${riskUser}] Cannot send liquidate cUSD->CELO`, err.message);
+              }
+            } catch (err) {
+              console.log(`[${riskUser}] Cannot estimate liquidate cUSD->CELO`, err.message);
+            }
+          }
+          if (biggestBorrow[0] == 'ceur') {
+            try {
+              await lendingPool.methods.liquidationCall(CELO.options.address, cEUR.options.address, riskUser, await cEUR.methods.balanceOf(user).call(), false).estimateGas({from: user, gas: 2000000});
+              try {
+                const celoBefore = BN(await CELO.methods.balanceOf(user).call());
+                console.log(`cEUR: ${print(await cEUR.methods.balanceOf(user).call())}`);
+                await lendingPool.methods.liquidationCall(CELO.options.address, cEUR.options.address, riskUser, await cEUR.methods.balanceOf(user).call(), false).send({from: user, gas: 2000000});
+                const profit = BN((await CELO.methods.balanceOf(user).call())).minus(celoBefore);
+                if (profit.isNegative()) {
+                  throw new Error('Negative profit');
+                }
+                await retry(async () => {
+                  const amountOut = BN((await uniswap.methods.getAmountsOut(profit, [CELO.options.address, wrappedEth, cEUR.options.address]).call())[2]);
+                  await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), [CELO.options.address, wrappedEth, cEUR.options.address], user, nowSeconds() + 300).estimateGas({from: user, gas: 2000000});
+                  const receipt = await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), [CELO.options.address, wrappedEth, cEUR.options.address], user, nowSeconds() + 300).send({from: user, gas: 2000000});
+                  if (!receipt.status) {
+                    throw Error('Swap failed');
+                  }
+                });
+                console.log(`cEUR: ${print(await cEUR.methods.balanceOf(user).call())}`);
+              } catch (err) {
+                console.log(`[${riskUser}] Cannot send liquidate cEUR->CELO`, err.message);
+              }
+            } catch (err) {
+              console.log(`[${riskUser}] Cannot estimate liquidate cEUR->CELO`, err.message);
+            }
+          }
+          if (biggestBorrow[0] == 'celo') {
+            try {
+              await lendingPool.methods.liquidationCall(CELO.options.address, CELO.options.address, riskUser, await CELO.methods.balanceOf(user).call(), false).estimateGas({from: user, gas: 2000000});
+              try {
+                console.log(`CELO: ${print(await CELO.methods.balanceOf(user).call())}`);
+                await lendingPool.methods.liquidationCall(CELO.options.address, CELO.options.address, riskUser, await CELO.methods.balanceOf(user).call(), false).send({from: user, gas: 2000000});
+                console.log(`CELO: ${print(await CELO.methods.balanceOf(user).call())}`);
+              } catch (err) {
+                console.log(`[${riskUser}] Cannot send liquidate CELO->CELO`, err.message);
+              }
+            } catch (err) {
+              console.log(`[${riskUser}] Cannot estimate liquidate CELO->CELO`, err.message);
+            }
+          }
+        }
+        if (biggestCollateral[0] == 'cusd') {
+          if (biggestBorrow[0] == 'cusd') {
+            try {
+              await lendingPool.methods.liquidationCall(cUSD.options.address, cUSD.options.address, riskUser, await cUSD.methods.balanceOf(user).call(), false).estimateGas({from: user, gas: 2000000});
+              try {
+                console.log(`cUSD: ${print(await cUSD.methods.balanceOf(user).call())}`);
+                await lendingPool.methods.liquidationCall(CELO.options.address, cUSD.options.address, riskUser, await cUSD.methods.balanceOf(user).call(), false).send({from: user, gas: 2000000});
+                console.log(`cUSD: ${print(await cUSD.methods.balanceOf(user).call())}`);
+              } catch (err) {
+                console.log(`[${riskUser}] Cannot send liquidate cUSD->cUSD`, err.message);
+              }
+            } catch (err) {
+              console.log(`[${riskUser}] Cannot estimate liquidate cUSD->cUSD`, err.message);
+            }
+          }
+          if (biggestBorrow[0] == 'ceur') {
+            try {
+              await lendingPool.methods.liquidationCall(cUSD.options.address, cEUR.options.address, riskUser, await cEUR.methods.balanceOf(user).call(), false).estimateGas({from: user, gas: 2000000});
+              try {
+                const collateralBefore = BN(await cUSD.methods.balanceOf(user).call());
+                console.log(`cEUR: ${print(await cEUR.methods.balanceOf(user).call())}`);
+                await lendingPool.methods.liquidationCall(cUSD.options.address, cEUR.options.address, riskUser, await cEUR.methods.balanceOf(user).call(), false).send({from: user, gas: 2000000});
+                const profit = BN((await cUSD.methods.balanceOf(user).call())).minus(collateralBefore);
+                if (profit.isNegative()) {
+                  throw new Error('Negative profit');
+                }
+                await retry(async () => {
+                  const amountOut = BN((await uniswap.methods.getAmountsOut(profit, [cUSD.options.address, cEUR.options.address]).call())[1]);
+                  await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), [cUSD.options.address, cEUR.options.address], user, nowSeconds() + 300).estimateGas({from: user, gas: 2000000});
+                  const receipt = await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), [cUSD.options.address, cEUR.options.address], user, nowSeconds() + 300).send({from: user, gas: 2000000});
+                  if (!receipt.status) {
+                    throw Error('Swap failed');
+                  }
+                });
+                console.log(`cEUR: ${print(await cEUR.methods.balanceOf(user).call())}`);
+              } catch (err) {
+                console.log(`[${riskUser}] Cannot send liquidate cEUR->cUSD`, err.message);
+              }
+            } catch (err) {
+              console.log(`[${riskUser}] Cannot estimate liquidate cEUR->cUSD`, err.message);
+            }
+          }
+          if (biggestBorrow[0] == 'celo') {
+            try {
+              await lendingPool.methods.liquidationCall(cUSD.options.address, CELO.options.address, riskUser, await CELO.methods.balanceOf(user).call(), false).estimateGas({from: user, gas: 2000000});
+              try {
+                const collateralBefore = BN(await cUSD.methods.balanceOf(user).call());
+                console.log(`CELO: ${print(await CELO.methods.balanceOf(user).call())}`);
+                await lendingPool.methods.liquidationCall(cUSD.options.address, CELO.options.address, riskUser, await CELO.methods.balanceOf(user).call(), false).send({from: user, gas: 2000000});
+                const profit = BN((await cUSD.methods.balanceOf(user).call())).minus(collateralBefore);
+                if (profit.isNegative()) {
+                  throw new Error('Negative profit');
+                }
+                await retry(async () => {
+                  const amountOut = BN((await uniswap.methods.getAmountsOut(profit, [cUSD.options.address, wrappedEth, CELO.options.address]).call())[2]);
+                  await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), [cUSD.options.address, wrappedEth, CELO.options.address], user, nowSeconds() + 300).estimateGas({from: user, gas: 2000000});
+                  const receipt = await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), [cUSD.options.address, wrappedEth, CELO.options.address], user, nowSeconds() + 300).send({from: user, gas: 2000000});
+                  if (!receipt.status) {
+                    throw Error('Swap failed');
+                  }
+                });
+                console.log(`CELO: ${print(await CELO.methods.balanceOf(user).call())}`);
+              } catch (err) {
+                console.log(`[${riskUser}] Cannot send liquidate CELO->cUSD`, err.message);
+              }
+            } catch (err) {
+              console.log(`[${riskUser}] Cannot estimate liquidate CELO->cUSD`, err.message);
+            }
+          }
+        }
+        if (biggestCollateral[0] == 'ceur') {
+          if (biggestBorrow[0] == 'cusd') {
+            try {
+              await lendingPool.methods.liquidationCall(cEUR.options.address, cUSD.options.address, riskUser, await cUSD.methods.balanceOf(user).call(), false).estimateGas({from: user, gas: 2000000});
+              try {
+                const collateralBefore = BN(await cEUR.methods.balanceOf(user).call());
+                console.log(`cUSD: ${print(await cUSD.methods.balanceOf(user).call())}`);
+                await lendingPool.methods.liquidationCall(cEUR.options.address, cUSD.options.address, riskUser, await cUSD.methods.balanceOf(user).call(), false).send({from: user, gas: 2000000});
+                const profit = BN((await cEUR.methods.balanceOf(user).call())).minus(collateralBefore);
+                if (profit.isNegative()) {
+                  throw new Error('Negative profit');
+                }
+                await retry(async () => {
+                  const amountOut = BN((await uniswap.methods.getAmountsOut(profit, [cEUR.options.address, cUSD.options.address]).call())[1]);
+                  await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), [cEUR.options.address, cUSD.options.address], user, nowSeconds() + 300).estimateGas({from: user, gas: 2000000});
+                  const receipt = await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), [cEUR.options.address, cUSD.options.address], user, nowSeconds() + 300).send({from: user, gas: 2000000});
+                  if (!receipt.status) {
+                    throw Error('Swap failed');
+                  }
+                });
+                console.log(`cUSD: ${print(await cUSD.methods.balanceOf(user).call())}`);
+              } catch (err) {
+                console.log(`[${riskUser}] Cannot send liquidate cUSD->cEUR`, err.message);
+              }
+            } catch (err) {
+              console.log(`[${riskUser}] Cannot estimate liquidate cUSD->cEUR`, err.message);
+            }
+          }
+          if (biggestBorrow[0] == 'ceur') {
+            try {
+              await lendingPool.methods.liquidationCall(cEUR.options.address, cEUR.options.address, riskUser, await cEUR.methods.balanceOf(user).call(), false).estimateGas({from: user, gas: 2000000});
+              try {
+                console.log(`cEUR: ${print(await cEUR.methods.balanceOf(user).call())}`);
+                await lendingPool.methods.liquidationCall(CELO.options.address, cEUR.options.address, riskUser, await cEUR.methods.balanceOf(user).call(), false).send({from: user, gas: 2000000});
+                console.log(`cEUR: ${print(await cEUR.methods.balanceOf(user).call())}`);
+              } catch (err) {
+                console.log(`[${riskUser}] Cannot send liquidate cEUR->cEUR`, err.message);
+              }
+            } catch (err) {
+              console.log(`[${riskUser}] Cannot estimate liquidate cEUR->cEUR`, err.message);
+            }
+          }
+          if (biggestBorrow[0] == 'celo') {
+            try {
+              await lendingPool.methods.liquidationCall(cEUR.options.address, CELO.options.address, riskUser, await CELO.methods.balanceOf(user).call(), false).estimateGas({from: user, gas: 2000000});
+              try {
+                const collateralBefore = BN(await cEUR.methods.balanceOf(user).call());
+                console.log(`CELO: ${print(await CELO.methods.balanceOf(user).call())}`);
+                await lendingPool.methods.liquidationCall(cEUR.options.address, CELO.options.address, riskUser, await CELO.methods.balanceOf(user).call(), false).send({from: user, gas: 2000000});
+                const profit = BN((await cEUR.methods.balanceOf(user).call())).minus(collateralBefore);
+                if (profit.isNegative()) {
+                  throw new Error('Negative profit');
+                }
+                await retry(async () => {
+                  const amountOut = BN((await uniswap.methods.getAmountsOut(profit, [cEUR.options.address, wrappedEth, CELO.options.address]).call())[2]);
+                  await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), [cEUR.options.address, wrappedEth, CELO.options.address], user, nowSeconds() + 300).estimateGas({from: user, gas: 2000000});
+                  const receipt = await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), [cEUR.options.address, wrappedEth, CELO.options.address], user, nowSeconds() + 300).send({from: user, gas: 2000000});
+                  if (!receipt.status) {
+                    throw Error('Swap failed');
+                  }
+                });
+                console.log(`CELO: ${print(await CELO.methods.balanceOf(user).call())}`);
+              } catch (err) {
+                console.log(`[${riskUser}] Cannot send liquidate CELO->cEUR`, err.message);
+              }
+            } catch (err) {
+              console.log(`[${riskUser}] Cannot estimate liquidate CELO->cEUR`, err.message);
+            }
+          }
+        }
+      }
+      await Promise.delay(60000);
+    }
   }
   console.error(`Unknown action: ${action}`);
   printActions();
