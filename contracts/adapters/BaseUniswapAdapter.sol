@@ -134,7 +134,7 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     address assetToSwapTo,
     uint256 amountToSwap,
     uint256 minAmountOut,
-    bool useEthPath
+    bool useCeloPath
   ) internal returns (uint256) {
     uint256 fromAssetDecimals = _getDecimals(assetToSwapFrom);
     uint256 toAssetDecimals = _getDecimals(assetToSwapTo);
@@ -155,7 +155,7 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     IERC20(assetToSwapFrom).safeApprove(address(UNISWAP_ROUTER), amountToSwap);
 
     address[] memory path;
-    if (useEthPath) {
+    if (useCeloPath) {
       path = new address[](3);
       path[0] = assetToSwapFrom;
       path[1] = WETH_ADDRESS;
@@ -193,19 +193,46 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     address assetToSwapTo,
     uint256 maxAmountToSwap,
     uint256 amountToReceive,
-    bool useEthPath
+    bool useCeloPath
   ) internal returns (uint256) {
-    uint256 fromAssetDecimals = _getDecimals(assetToSwapFrom);
-    uint256 toAssetDecimals = _getDecimals(assetToSwapTo);
 
-    uint256 fromAssetPrice = _getPrice(assetToSwapFrom);
-    uint256 toAssetPrice = _getPrice(assetToSwapTo);
+    return _swapTokensForExactTokensBase(
+      assetToSwapFrom,
+      assetToSwapTo,
+      maxAmountToSwap,
+      amountToReceive,
+      assetToSwapFrom,
+      assetToSwapTo,
+      useCeloPath
+    );
+  }
+
+  function _swapTokensForExactTokensBase(
+    address assetToSwapFrom,
+    address assetToSwapTo,
+    uint256 maxAmountToSwap,
+    uint256 amountToReceive,
+    address priceAssetToSwapFrom,
+    address priceAssetToSwapTo,
+    bool useCeloPath
+  ) internal returns (uint256) {
+    uint256 fromAssetDecimals = _getDecimals(priceAssetToSwapFrom);
+    uint256 toAssetDecimals = _getDecimals(priceAssetToSwapTo);
+
+    uint256 fromAssetPrice = _getPrice(priceAssetToSwapFrom);
+    uint256 toAssetPrice = _getPrice(priceAssetToSwapTo);
+
+    
 
     uint256 expectedMaxAmountToSwap =
-      amountToReceive
-        .mul(toAssetPrice.mul(10**fromAssetDecimals))
-        .div(fromAssetPrice.mul(10**toAssetDecimals))
+      amountToReceive // 100e18 CUSD
+        .mul(toAssetPrice.mul(10**fromAssetDecimals)) // 15e16 * 1e18
+        .div(fromAssetPrice.mul(10**toAssetDecimals)) // 1e18 * 1e18
+        // 100e18 CUSD * 15e16 / 1e18 =
+        // = 100 * 15e16 = 
+        // = 15e18
         .percentMul(PercentageMath.PERCENTAGE_FACTOR.add(MAX_SLIPPAGE_PERCENT));
+        // 15e18 * 13000 / 10000 = 19.5e18
 
     require(maxAmountToSwap < expectedMaxAmountToSwap, 'maxAmountToSwap exceed max slippage');
 
@@ -214,7 +241,7 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     IERC20(assetToSwapFrom).safeApprove(address(UNISWAP_ROUTER), maxAmountToSwap);
 
     address[] memory path;
-    if (useEthPath) {
+    if (useCeloPath) {
       path = new address[](3);
       path[0] = assetToSwapFrom;
       path[1] = WETH_ADDRESS;
@@ -537,11 +564,11 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     address reserveIn,
     address reserveOut,
     uint256 amountOut,
-    bool useEthPath
+    bool useCeloPath
   ) internal view returns (uint256[] memory) {
     address[] memory path;
 
-    if (useEthPath) {
+    if (useCeloPath) {
       path = new address[](3);
       path[0] = reserveIn;
       path[1] = WETH_ADDRESS;

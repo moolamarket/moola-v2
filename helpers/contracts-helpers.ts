@@ -330,10 +330,12 @@ export const buildFlashLiquidationAdapterParams = (
   debtAsset: tEthereumAddress,
   user: tEthereumAddress,
   debtToCover: BigNumberish,
-  useEthPath: boolean
+  useEthPath: boolean,
+  isWrappedAssetFrom: boolean,
+  isWrappedAssetTo: boolean
 ) => {
   return ethers.utils.defaultAbiCoder.encode(
-    ['address', 'address', 'address', 'uint256', 'bool'],
-    [collateralAsset, debtAsset, user, debtToCover, useEthPath]
+    ['address', 'address', 'address', 'uint256', 'bool', 'bool', 'bool'],
+    [collateralAsset, debtAsset, user, debtToCover, useEthPath, isWrappedAssetFrom, isWrappedAssetTo]
   );
 };

@@ -275,6 +275,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           dai.address,
           borrower.address,
           amountToLiquidate,
+          false,
+          false,
           false
         );
         const tx = await pool
@@ -416,6 +418,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           weth.address,
           borrower.address,
           amountToLiquidate,
+          false,
+          false,
           false
         );
         const tx = await pool
@@ -521,6 +525,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           dai.address,
           borrower.address,
           amountToLiquidate,
+          false,
+          false,
           false
         );
         const tx = await pool
@@ -677,6 +683,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           dai.address,
           borrower.address,
           MAX_UINT_AMOUNT,
+          false,
+          false,
           false
         );
         const tx = await pool
@@ -739,6 +747,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           weth.address, // intentionally bad
           borrower.address,
           amountToLiquidate,
+          false,
+          false,
           false
         );
         await expect(
@@ -783,6 +793,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           dai.address,
           borrower.address,
           amountToLiquidate.toString(),
+          false,
+          false,
           false
         );
         // Bad flash loan params: requested DAI amount below amountToLiquidate
@@ -828,6 +840,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           dai.address,
           borrower.address,
           amountToLiquidate.toString(),
+          false,
+          false,
           false
         );
         // Bad flash loan params: requested multiple assets
