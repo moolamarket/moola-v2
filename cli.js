@@ -397,10 +397,13 @@ async function execute(network, action, ...params) {
     console.log('Now proceed to moola-v1 migrate-step-3');
     return;
   }
+
   if (action == 'liquidation-bot') {
     if (network == 'test') {
       throw new Error('Liquidation bot only works on the mainnet.');
     }
+    // doing some setup here
+    const tokenNames = Object.keys(tokens)
     const localnode = params[0];
     const user = params[1];
     if (privateKeyRequired) {
@@ -414,17 +417,22 @@ async function execute(network, action, ...params) {
     const sushiSwapRouter = '0x1421bDe4B10e8dd459b3BCb598810B1337D56842';
     const wrappedEth = '0xE919F65739c26a42616b7b8eedC6b5524d1e3aC4';
     const uniswap = new kit.web3.eth.Contract(Uniswap, sushiSwapRouter);
+
+    // is this approving spend of the tokens?
     if ((await cUSD.methods.allowance(user, lendingPool.options.address).call()).length < 30) {
       console.log('Approve', (await cUSD.methods.approve(lendingPool.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
     }
     if ((await cEUR.methods.allowance(user, lendingPool.options.address).call()).length < 30) {
       console.log('Approve', (await cEUR.methods.approve(lendingPool.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
     }
+
+    // why is this from uniswap?
     if ((await CELO.methods.allowance(user, uniswap.options.address).call()).length < 30) {
       console.log('Approve', (await CELO.methods.approve(uniswap.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
     }
+
     const eventsCollector = require('events-collector');
-    let fromBlock = 8955468;
+    let fromBlock = 8955468; // why this specific block?
     let users = {};
     while(true) {
       const [newEvents, parsedToBlock] = await eventsCollector({
@@ -447,10 +455,15 @@ async function execute(network, action, ...params) {
           users[event.args.onBehalfOf] = true;
         }
       }
+
+      // collecting users that have a non zero debt
       const usersData = await Promise.map(Object.keys(users), async (address) => [address, await lendingPool.methods.getUserAccountData(address).call()], {concurrency: 20})
         .filter(([address, data]) => !BN(data.totalDebtETH).isZero());
+      
       console.log(`Users with debts: ${usersData.length}`);
+
       users = usersData.reduce((total, [address, data]) => { total[address] = true; return total; }, {});
+
       const riskiest = usersData.sort(([a1, data1], [a2, data2]) => BN(data1.healthFactor).comparedTo(BN(data2.healthFactor)));
       console.log(`Riskiest users:`);
       for (let riskiestUser of riskiest.slice(0, 3)) {
@@ -464,10 +477,14 @@ async function execute(network, action, ...params) {
           ceur: BN((await uniswap.methods.getAmountsOut(ether, [CELO.options.address, wrappedEth, cEUR.options.address]).call())[2]),
           celo: BN(ether),
         };
+
+        // building user positions
+        
         const positions = [];
-        positions.push(['celo', await dataProvider.methods.getUserReserveData(CELO.options.address, riskUser).call()]);
-        positions.push(['cusd', await dataProvider.methods.getUserReserveData(cUSD.options.address, riskUser).call()]);
-        positions.push(['ceur', await dataProvider.methods.getUserReserveData(cEUR.options.address, riskUser).call()]);
+        tokenNames.forEach((token) => {
+          positions.push([token.toLocaleLowerCase(), await dataProvider.methods.getUserReserveData(tokens[token].options.address, riskUser).call()]);
+        })
+
         const parsedData = {
           Address: riskUser,
           TotalCollateral: print(riskData.totalCollateralETH),
@@ -476,9 +493,57 @@ async function execute(network, action, ...params) {
         };
         console.table(parsedData);
 
+        // building collateral vs borrow and finding the largest ones
         const biggestBorrow = positions.sort(([res1, data1], [res2, data2]) => BN(data2.currentStableDebt).plus(data2.currentVariableDebt).multipliedBy(rates[res2]).dividedBy(ether).comparedTo(BN(data1.currentStableDebt).plus(data1.currentVariableDebt).multipliedBy(rates[res1]).dividedBy(ether)))[0];
         const biggestCollateral = positions.filter(([_, data]) => data.usageAsCollateralEnabled).sort(([res1, data1], [res2, data2]) => BN(data2.currentATokenBalance).multipliedBy(rates[res2]).dividedBy(ether).comparedTo(BN(data1.currentATokenBalance).multipliedBy(rates[res1]).dividedBy(ether)))[0];
 
+        const collateralToken = biggestCollateral[0].toLowerCase()
+        const borrowToken = biggestBorrow[0].toLowerCase()
+
+        if (collateralToken === borrowToken) {
+          // no swap required
+          try {
+            await lendingPool.methods.liquidationCall(tokens[collateralToken].options.address, tokens[borrowToken].options.address, riskUser, await tokens[borrowToken].methods.balanceOf(user).call(), false).estimateGas({from: user, gas: 2000000});
+            try {
+              console.log(`${borrowToken}: ${print(await tokens[borrowToken].methods.balanceOf(user).call())}`);
+              await lendingPool.methods.liquidationCall(tokens[collateralToken].options.address, tokens[borrowToken].options.address, riskUser, await tokens[borrowToken].methods.balanceOf(user).call(), false).send({from: user, gas: 2000000});
+              console.log(`${borrowToken}: ${print(await tokens[borrowToken].methods.balanceOf(user).call())}`);
+            } catch (err) {
+              console.log(`[${riskUser}] Cannot send liquidate ${collateralToken}->${borrowToken}`, err.message);
+            }
+          } catch (err) {
+            console.log(`[${riskUser}] Cannot estimate liquidate ${collateralToken}->${borrowToken}`, err.message);
+          }
+        } else {
+          try {
+              await lendingPool.methods.liquidationCall(tokens[collateralToken].options.address, cUSD.options.address, riskUser, await cUSD.methods.balanceOf(user).call(), false).estimateGas({from: user, gas: 2000000});
+              try {
+                const collateralBefore = BN(await tokens[collateralToken].methods.balanceOf(user).call());
+                console.log(`${collateralToken}: ${print(await cUSD.methods.balanceOf(user).call())}`);
+                await lendingPool.methods.liquidationCall(tokens[collateralToken].options.address, cUSD.options.address, riskUser, await cUSD.methods.balanceOf(user).call(), false).send({from: user, gas: 2000000});
+                const profit = BN((await tokens[collateralToken].methods.balanceOf(user).call())).minus(collateralBefore);
+                if (profit.isNegative()) {
+                  throw new Error('Negative profit');
+                }
+                await retry(async () => {
+                  const amountOut = BN((await uniswap.methods.getAmountsOut(profit, [tokens[collateralToken].options.address, wrappedEth, cUSD.options.address]).call())[2]);
+                  await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), [tokens[collateralToken].options.address, wrappedEth, cUSD.options.address], user, nowSeconds() + 300).estimateGas({from: user, gas: 2000000});
+                  const receipt = await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), [tokens[collateralToken].options.address, wrappedEth, cUSD.options.address], user, nowSeconds() + 300).send({from: user, gas: 2000000});
+                  if (!receipt.status) {
+                    throw Error('Swap failed');
+                  }
+                });
+                console.log(`${collateralToken}: ${print(await cUSD.methods.balanceOf(user).call())}`);
+              } catch (err) {
+                console.log(`[${riskUser}] Cannot send liquidate ${collateralToken}->${borrowToken}`, err.message);
+              }
+            } catch (err) {
+              console.log(`[${riskUser}] Cannot estimate liquidate ${collateralToken}->${borrowToken}`, err.message);
+            }
+        }
+
+
+        /*
         if (biggestCollateral[0] == 'celo') {
           if (biggestBorrow[0] == 'cusd') {
             try {
@@ -689,6 +754,7 @@ async function execute(network, action, ...params) {
             }
           }
         }
+        */
       }
       await Promise.delay(60000);
     }
