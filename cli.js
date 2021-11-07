@@ -465,26 +465,37 @@ async function execute(network, action, ...params) {
       users = usersData.reduce((total, [address, data]) => { total[address] = true; return total; }, {});
 
       const riskiest = usersData.sort(([a1, data1], [a2, data2]) => BN(data1.healthFactor).comparedTo(BN(data2.healthFactor)));
+
+      // showing top 3 riskiest users
       console.log(`Riskiest users:`);
       for (let riskiestUser of riskiest.slice(0, 3)) {
         console.log(`${riskiestUser[0]} ${BN(print(riskiestUser[1].healthFactor)).toFixed(3)} ${BN(print(riskiestUser[1].totalCollateralETH)).toFixed(3)}`);
       }
+
+      // should probably limit the amount of users we run on here (could be a LONG list)
       const risky = usersData.filter(([address, data]) => BN(data.healthFactor).dividedBy(ether).lt(BN(1))).map(el => el[0]);
+
+      // should consider doing this async to run several at the same time?
+      // what is the avg run time for each user?
+      // when there will be a lot of them this might take a while to do all these actions
       for (let riskUser of risky) {
         const riskData = await lendingPool.methods.getUserAccountData(riskUser).call();
+
+        // do we need to do this for every user?
+        // i need to understand this more ... why is Celo equal to Ether?
         const rates = {
           cusd: BN((await uniswap.methods.getAmountsOut(ether, [CELO.options.address, wrappedEth, cUSD.options.address]).call())[2]),
           ceur: BN((await uniswap.methods.getAmountsOut(ether, [CELO.options.address, wrappedEth, cEUR.options.address]).call())[2]),
           celo: BN(ether),
         };
 
-        // building user positions
-        
+        // building user positions for all tokens (perhpas get the list of user balances instead of getting the reserve data for all of them)
         const positions = [];
-        tokenNames.forEach((token) => {
-          positions.push([token.toLocaleLowerCase(), await dataProvider.methods.getUserReserveData(tokens[token].options.address, riskUser).call()]);
+        tokenNames.forEach((tokenName) => {
+          positions.push([tokenName, await dataProvider.methods.getUserReserveData(tokens[tokenName].options.address, riskUser).call()]);
         })
 
+        // is this for display only?
         const parsedData = {
           Address: riskUser,
           TotalCollateral: print(riskData.totalCollateralETH),
@@ -497,51 +508,57 @@ async function execute(network, action, ...params) {
         const biggestBorrow = positions.sort(([res1, data1], [res2, data2]) => BN(data2.currentStableDebt).plus(data2.currentVariableDebt).multipliedBy(rates[res2]).dividedBy(ether).comparedTo(BN(data1.currentStableDebt).plus(data1.currentVariableDebt).multipliedBy(rates[res1]).dividedBy(ether)))[0];
         const biggestCollateral = positions.filter(([_, data]) => data.usageAsCollateralEnabled).sort(([res1, data1], [res2, data2]) => BN(data2.currentATokenBalance).multipliedBy(rates[res2]).dividedBy(ether).comparedTo(BN(data1.currentATokenBalance).multipliedBy(rates[res1]).dividedBy(ether)))[0];
 
+        // perhaps we should fnd the biggest disparity between collateral and borrow, what happens when there is more than one asset on each side?
+
         const collateralToken = biggestCollateral[0].toLowerCase()
         const borrowToken = biggestBorrow[0].toLowerCase()
 
-        if (collateralToken === borrowToken) {
-          // no swap required
+        try {
           try {
+            // estimating gas cost for liquidation
             await lendingPool.methods.liquidationCall(tokens[collateralToken].options.address, tokens[borrowToken].options.address, riskUser, await tokens[borrowToken].methods.balanceOf(user).call(), false).estimateGas({from: user, gas: 2000000});
-            try {
-              console.log(`${borrowToken}: ${print(await tokens[borrowToken].methods.balanceOf(user).call())}`);
-              await lendingPool.methods.liquidationCall(tokens[collateralToken].options.address, tokens[borrowToken].options.address, riskUser, await tokens[borrowToken].methods.balanceOf(user).call(), false).send({from: user, gas: 2000000});
-              console.log(`${borrowToken}: ${print(await tokens[borrowToken].methods.balanceOf(user).call())}`);
-            } catch (err) {
-              console.log(`[${riskUser}] Cannot send liquidate ${collateralToken}->${borrowToken}`, err.message);
-            }
+            // shouldnt we save this for the next call?
           } catch (err) {
             console.log(`[${riskUser}] Cannot estimate liquidate ${collateralToken}->${borrowToken}`, err.message);
           }
-        } else {
-          try {
-              await lendingPool.methods.liquidationCall(tokens[collateralToken].options.address, cUSD.options.address, riskUser, await cUSD.methods.balanceOf(user).call(), false).estimateGas({from: user, gas: 2000000});
-              try {
-                const collateralBefore = BN(await tokens[collateralToken].methods.balanceOf(user).call());
-                console.log(`${collateralToken}: ${print(await cUSD.methods.balanceOf(user).call())}`);
-                await lendingPool.methods.liquidationCall(tokens[collateralToken].options.address, cUSD.options.address, riskUser, await cUSD.methods.balanceOf(user).call(), false).send({from: user, gas: 2000000});
-                const profit = BN((await tokens[collateralToken].methods.balanceOf(user).call())).minus(collateralBefore);
-                if (profit.isNegative()) {
-                  throw new Error('Negative profit');
-                }
-                await retry(async () => {
-                  const amountOut = BN((await uniswap.methods.getAmountsOut(profit, [tokens[collateralToken].options.address, wrappedEth, cUSD.options.address]).call())[2]);
-                  await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), [tokens[collateralToken].options.address, wrappedEth, cUSD.options.address], user, nowSeconds() + 300).estimateGas({from: user, gas: 2000000});
-                  const receipt = await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), [tokens[collateralToken].options.address, wrappedEth, cUSD.options.address], user, nowSeconds() + 300).send({from: user, gas: 2000000});
-                  if (!receipt.status) {
-                    throw Error('Swap failed');
-                  }
-                });
-                console.log(`${collateralToken}: ${print(await cUSD.methods.balanceOf(user).call())}`);
-              } catch (err) {
-                console.log(`[${riskUser}] Cannot send liquidate ${collateralToken}->${borrowToken}`, err.message);
-              }
-            } catch (err) {
-              console.log(`[${riskUser}] Cannot estimate liquidate ${collateralToken}->${borrowToken}`, err.message);
-            }
-        }
 
+          // balance before liquidation
+          console.log(`${collateralToken}: ${print(await tokens[borrowToken].methods.balanceOf(user).call())}`);
+
+          // liquidating
+          await lendingPool.methods.liquidationCall(tokens[collateralToken].options.address, tokens[borrowToken].options.address, riskUser, await tokens[borrowToken].methods.balanceOf(user).call(), false).send({from: user, gas: 2000000});
+
+          // calculating profit
+          const profit = BN((await tokens[collateralToken].methods.balanceOf(user).call())).minus(collateralBefore);
+
+          // make sure we are profiting from this liquidation
+          if (profit.isNegative()) {
+            throw new Error('Negative profit');
+          }
+
+          if (collateralToken !== borrowToken) {
+            // swap the liquidated asset
+            await retry(async () => {
+              // getting swap rate?
+              const amountOut = BN((await uniswap.methods.getAmountsOut(profit, [tokens[collateralToken].options.address, wrappedEth, tokens[borrowToken].options.address]).call())[2]);
+
+              // estimate gas for the swap (why are we doing this if we are not using the estimation for anything? same as above)
+              await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), [tokens[collateralToken].options.address, wrappedEth, tokens[borrowToken].options.address], user, nowSeconds() + 300).estimateGas({from: user, gas: 2000000});
+
+              // swap
+              const receipt = await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), [tokens[collateralToken].options.address, wrappedEth, tokens[borrowToken].options.address], user, nowSeconds() + 300).send({from: user, gas: 2000000});
+              if (!receipt.status) {
+                throw Error('Swap failed');
+              }
+            });
+          }
+
+          // all done! showing balance after liquidation
+          console.log(`${collateralToken}: ${print(await tokens[collateralToken].methods.balanceOf(user).call())}`);
+        } catch (err) {
+          // something went wrong
+          console.log(`[${riskUser}] Cannot send liquidate ${collateralToken}->${borrowToken}`, err.message);
+        }
 
         /*
         if (biggestCollateral[0] == 'celo') {
