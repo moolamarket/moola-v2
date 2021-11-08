@@ -490,7 +490,7 @@ async function execute(network, action, ...params) {
 
         // building user positions for all tokens (perhpas get the list of user balances instead of getting the reserve data for all of them)
         const positions = [];
-        tokenNames.forEach((tokenName) => {
+        tokenNames.forEach(async (tokenName) => {
           positions.push([tokenName, await dataProvider.methods.getUserReserveData(tokens[tokenName].options.address, riskUser).call()]);
         })
 
