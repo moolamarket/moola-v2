@@ -467,7 +467,7 @@ async function execute(network, action, ...params) {
       const riskiest = usersData.sort(([a1, data1], [a2, data2]) => BN(data1.healthFactor).comparedTo(BN(data2.healthFactor)));
 
       // showing top 3 riskiest users
-      console.log(`Riskiest users:`);
+      console.log(`Top 3 Riskiest users of ${riskiest.length}:`);
       for (let riskiestUser of riskiest.slice(0, 3)) {
         console.log(`${riskiestUser[0]} ${BN(print(riskiestUser[1].healthFactor)).toFixed(3)} ${BN(print(riskiestUser[1].totalCollateralETH)).toFixed(3)}`);
       }
@@ -475,9 +475,7 @@ async function execute(network, action, ...params) {
       // should probably limit the amount of users we run on here (could be a LONG list)
       const risky = usersData.filter(([address, data]) => BN(data.healthFactor).dividedBy(ether).lt(BN(1))).map(el => el[0]);
 
-      // should consider doing this async to run several at the same time?
-      // what is the avg run time for each user?
-      // when there will be a lot of them this might take a while to do all these actions
+      // need to check the run time per user here TODO
       for (let riskUser of risky) {
         const riskData = await lendingPool.methods.getUserAccountData(riskUser).call();
 
