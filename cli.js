@@ -475,6 +475,8 @@ async function execute(network, action, ...params) {
       // should probably limit the amount of users we run on here (could be a LONG list)
       const risky = usersData.filter(([address, data]) => BN(data.healthFactor).dividedBy(ether).lt(BN(1))).map(el => el[0]);
 
+      console.log(`found ${risky.length} users to run`)
+
       // need to check the run time per user here TODO
       for (let riskUser of risky) {
         const riskData = await lendingPool.methods.getUserAccountData(riskUser).call();
@@ -518,7 +520,8 @@ async function execute(network, action, ...params) {
           }
 
           // balance before liquidation
-          console.log(`${collateralToken}: ${print(await tokens[collateralToken].methods.balanceOf(user).call())}`);
+          const collateralBefore = await tokens[collateralToken].methods.balanceOf(user).call()
+          console.log(`Balance of ${collateralToken} Before Liquidation: ${print(collateralBefore)}`);
 
           // liquidating
           await lendingPool.methods.liquidationCall(tokens[collateralToken].options.address, tokens[borrowToken].options.address, riskUser, await tokens[borrowToken].methods.balanceOf(user).call(), false).send({from: user, gas: 2000000});
@@ -527,15 +530,18 @@ async function execute(network, action, ...params) {
           const profit = BN((await tokens[collateralToken].methods.balanceOf(user).call())).minus(collateralBefore);
 
           // make sure we are profiting from this liquidation
-          if (profit.isNegative()) {
-            throw new Error('Negative Profit');
+          console.log(`Profit: ${print(profit)}`)
+          if (!profit.isPositive()) {
+            console.log(`NO Profit!`)
+            throw new Error('No Profit');
           }
 
+          // setting up the swap
           if (collateralToken !== borrowToken) {
             // set swap path
             let swapPath = [tokens[collateralToken].options.address, tokens[borrowToken].options.address]
 
-            // celo requires we go through wrapped ETH
+            // for swapping celo we need to go through wrapped ETH
             if (borrowToken === 'celo' || collateralToken === 'celo') {
               swapPath = [tokens[collateralToken].options.address, wrappedEth, tokens[borrowToken].options.address]
             }
