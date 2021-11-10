@@ -463,8 +463,7 @@ async function execute(network, action, ...params) {
       
       console.log(`Users with debts: ${usersData.length}`);
 
-      users = usersData.reduce((total, [address, data]) => { total[address] = true; return total; }, {});
-
+      // sorting to get riskiest on top
       const riskiest = usersData.sort(([a1, data1], [a2, data2]) => BN(data1.healthFactor).comparedTo(BN(data2.healthFactor)));
 
       // showing top 3 riskiest users
