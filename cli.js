@@ -420,15 +420,16 @@ async function execute(network, action, ...params) {
     const uniswap = new kit.web3.eth.Contract(Uniswap, sushiSwapRouter);
 
     // approving spend of the tokens
-    if ((await cUSD.methods.allowance(user, lendingPool.options.address).call()).length < 30) {
-      console.log('Approve', (await cUSD.methods.approve(lendingPool.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
-    }
-    if ((await cEUR.methods.allowance(user, lendingPool.options.address).call()).length < 30) {
-      console.log('Approve', (await cEUR.methods.approve(lendingPool.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
-    }
+    for (let token of tokenNames) {
+      let pool = lendingPool;
 
-    if ((await CELO.methods.allowance(user, uniswap.options.address).call()).length < 30) {
-      console.log('Approve', (await CELO.methods.approve(uniswap.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
+      if (token === 'celo') {
+        pool = uniswap;
+      }
+
+      if ((await tokens[token].methods.allowance(user, pool.options.address).call()).length < 30) {
+        console.log('Approve', (await tokens[token].methods.approve(pool.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
+      }
     }
 
     const eventsCollector = require('events-collector');
@@ -475,24 +476,28 @@ async function execute(network, action, ...params) {
       // should probably limit the amount of users we run on here (could be a LONG list)
       const risky = usersData.filter(([address, data]) => BN(data.healthFactor).dividedBy(ether).lt(BN(1))).map(el => el[0]);
 
-      console.log(`found ${risky.length} users to run`)
+      console.log(`found ${risky.length} users to run`);
 
       // need to check the run time per user here TODO
       for (let riskUser of risky) {
+        console.log(`!!!!! liquidating user ${riskUser} !!!!!`)
         const riskData = await lendingPool.methods.getUserAccountData(riskUser).call();
 
         // doing this for every liquidation attempt as rates will change after every successful liquidation (by this bot or others)
-        const rates = {
-          cusd: BN((await uniswap.methods.getAmountsOut(ether, [CELO.options.address, wrappedEth, cUSD.options.address]).call())[2]),
-          ceur: BN((await uniswap.methods.getAmountsOut(ether, [CELO.options.address, wrappedEth, cEUR.options.address]).call())[2]),
-          celo: BN(ether),
-        };
+        const rates = {}
+        for (let token of tokenNames) {
+          if (token === 'celo') {
+            rates["celo"] = BN(ether)
+          } else {
+            rates[token] = BN((await uniswap.methods.getAmountsOut(ether, [CELO.options.address, wrappedEth, tokens[token].options.address]).call())[2])
+          }
+        }
 
         // building user positions for all tokens (perhpas get the list of user balances instead of getting the reserve data for all of them)
         const positions = [];
         tokenNames.forEach(async (tokenName) => {
           positions.push([tokenName, await dataProvider.methods.getUserReserveData(tokens[tokenName].options.address, riskUser).call()]);
-        })
+        });
 
         // for display only
         const parsedData = {
@@ -500,15 +505,15 @@ async function execute(network, action, ...params) {
           TotalCollateral: print(riskData.totalCollateralETH),
           TotalDebt: print(riskData.totalDebtETH),
           HealthFactor: print(riskData.healthFactor),
-        };
+        }
         console.table(parsedData);
 
         // building collateral vs borrow and finding the largest ones
         const biggestBorrow = positions.sort(([res1, data1], [res2, data2]) => BN(data2.currentStableDebt).plus(data2.currentVariableDebt).multipliedBy(rates[res2]).dividedBy(ether).comparedTo(BN(data1.currentStableDebt).plus(data1.currentVariableDebt).multipliedBy(rates[res1]).dividedBy(ether)))[0];
         const biggestCollateral = positions.filter(([_, data]) => data.usageAsCollateralEnabled).sort(([res1, data1], [res2, data2]) => BN(data2.currentATokenBalance).multipliedBy(rates[res2]).dividedBy(ether).comparedTo(BN(data1.currentATokenBalance).multipliedBy(rates[res1]).dividedBy(ether)))[0];
 
-        const collateralToken = biggestCollateral[0].toLowerCase()
-        const borrowToken = biggestBorrow[0].toLowerCase()
+        const collateralToken = biggestCollateral[0].toLowerCase();
+        const borrowToken = biggestBorrow[0].toLowerCase();
 
         try {
           try {
@@ -516,11 +521,11 @@ async function execute(network, action, ...params) {
             await lendingPool.methods.liquidationCall(tokens[collateralToken].options.address, tokens[borrowToken].options.address, riskUser, await tokens[borrowToken].methods.balanceOf(user).call(), false).estimateGas({from: user, gas: 2000000});
           } catch (err) {
             console.log(`[${riskUser}] Cannot estimate liquidate ${collateralToken}->${borrowToken}`, err.message);
-            throw err
+            throw err;
           }
 
           // balance before liquidation
-          const collateralBefore = await tokens[collateralToken].methods.balanceOf(user).call()
+          const collateralBefore = await tokens[collateralToken].methods.balanceOf(user).call();
           console.log(`Balance of ${collateralToken} Before Liquidation: ${print(collateralBefore)}`);
 
           // liquidating
@@ -530,16 +535,16 @@ async function execute(network, action, ...params) {
           const profit = BN((await tokens[collateralToken].methods.balanceOf(user).call())).minus(collateralBefore);
 
           // make sure we are profiting from this liquidation
-          console.log(`Profit: ${print(profit)}`)
+          console.log(`Profit: ${print(profit)}`);
           if (!profit.isPositive()) {
-            console.log(`NO Profit!`)
+            console.log(`NO Profit!`);
             throw new Error('No Profit');
           }
 
           // setting up the swap
           if (collateralToken !== borrowToken) {
             // set swap path
-            let swapPath = [tokens[collateralToken].options.address, tokens[borrowToken].options.address]
+            let swapPath = [tokens[collateralToken].options.address, tokens[borrowToken].options.address];
 
             // for swapping celo we need to go through wrapped ETH
             if (borrowToken === 'celo' || collateralToken === 'celo') {
@@ -556,7 +561,7 @@ async function execute(network, action, ...params) {
                 await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), swapPath, user, nowSeconds() + 300).estimateGas({from: user, gas: 2000000});
               } catch (err) {
                 console.log(`[${riskUser}] Cannot estimate swap ${collateralToken}->${borrowToken}`, err.message);
-                throw err
+                throw err;
               }
 
               // swap
