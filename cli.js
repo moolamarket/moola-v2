@@ -405,10 +405,10 @@ async function execute(network, action, ...params) {
     
     // doing some setup here
     const tokenNames = Object.keys(tokens)
-    const localnode = params[0];
-    const user = params[1];
+    const localnode = process.env.CELO_BOT_NODE || params[0];
+    const user = process.env.CELO_BOT_ADDRESS || params[1];
     if (privateKeyRequired) {
-      pk = params[2];
+      pk = process.env.CELO_BOT_PK || params[2];
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -420,17 +420,21 @@ async function execute(network, action, ...params) {
     const uniswap = new kit.web3.eth.Contract(Uniswap, sushiSwapRouter);
 
     // approving spend of the tokens
-    for (let token of tokenNames) {
-      let pool = lendingPool;
+    async function approveTokens() {
+      for (let token of tokenNames) {
+        let pool = lendingPool;
 
-      if (token === 'celo') {
-        pool = uniswap;
-      }
+        if (token === 'celo') {
+          pool = uniswap;
+        }
 
-      if ((await tokens[token].methods.allowance(user, pool.options.address).call()).length < 30) {
-        console.log('Approve', (await tokens[token].methods.approve(pool.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
+        if ((await tokens[token].methods.allowance(user, pool.options.address).call()).length < 30) {
+          console.log('Approve', (await tokens[token].methods.approve(pool.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
+        }
       }
     }
+
+    await approveTokens()
 
     const eventsCollector = require('events-collector');
     let fromBlock = 8955468;
@@ -484,19 +488,19 @@ async function execute(network, action, ...params) {
 
         // doing this for every liquidation attempt as rates will change after every successful liquidation (by this bot or others)
         const rates = {}
-        for (let token of tokenNames) {
+        await Promise.map(tokenNames, async (token) => {
           if (token === 'celo') {
             rates["celo"] = BN(ether)
           } else {
             rates[token] = BN((await uniswap.methods.getAmountsOut(ether, [CELO.options.address, wrappedEth, tokens[token].options.address]).call())[2])
           }
-        }
+        })
 
         // building user positions for all tokens (perhpas get the list of user balances instead of getting the reserve data for all of them)
-        const positions = [];
-        tokenNames.forEach(async (tokenName) => {
-          positions.push([tokenName, await dataProvider.methods.getUserReserveData(tokens[tokenName].options.address, riskUser).call()]);
-        });
+        const positions = await Promise.map(tokenNames, async (token) => {
+          let pos = await dataProvider.methods.getUserReserveData(tokens[token].options.address, riskUser).call()
+          return [token, pos];
+        })
 
         // for display only
         const parsedData = {
