@@ -420,21 +420,18 @@ async function execute(network, action, ...params) {
     const uniswap = new kit.web3.eth.Contract(Uniswap, sushiSwapRouter);
 
     // approving spend of the tokens
-    async function approveTokens() {
-      for (let token of tokenNames) {
-        let pool = lendingPool;
+    await Promise.map(tokenNames, async (token) => {
+      console.log(`Checking ${token} for approval`)
+      let pool = lendingPool;
 
-        if (token === 'celo') {
-          pool = uniswap;
-        }
-
-        if ((await tokens[token].methods.allowance(user, pool.options.address).call()).length < 30) {
-          console.log('Approve', (await tokens[token].methods.approve(pool.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
-        }
+      if (token === 'celo') {
+        pool = uniswap;
       }
-    }
 
-    await approveTokens()
+      if ((await tokens[token].methods.allowance(user, pool.options.address).call()).length < 30) {
+        console.log('Approve', (await tokens[token].methods.approve(pool.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
+      }
+    })
 
     const eventsCollector = require('events-collector');
     let fromBlock = 8955468;
