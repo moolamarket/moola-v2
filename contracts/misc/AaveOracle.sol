@@ -7,6 +7,7 @@ import {IERC20} from '../dependencies/openzeppelin/contracts/IERC20.sol';
 import {IPriceOracleGetter} from '../interfaces/IPriceOracleGetter.sol';
 import {IChainlinkAggregator} from '../interfaces/IChainlinkAggregator.sol';
 import {SafeERC20} from '../dependencies/openzeppelin/contracts/SafeERC20.sol';
+import {SafeMath} from '../dependencies/openzeppelin/contracts/SafeMath.sol';
 
 /// @title AaveOracle
 /// @author Aave
@@ -17,6 +18,7 @@ import {SafeERC20} from '../dependencies/openzeppelin/contracts/SafeERC20.sol';
 ///   and change the fallbackOracle
 contract AaveOracle is IPriceOracleGetter, Ownable {
   using SafeERC20 for IERC20;
+  using SafeMath for uint256;
 
   event WethSet(address indexed weth);
   event AssetSourceUpdated(address indexed asset, address indexed source);
@@ -89,7 +91,8 @@ contract AaveOracle is IPriceOracleGetter, Ownable {
       return _fallbackOracle.getAssetPrice(asset);
     } else {
       int256 price = IChainlinkAggregator(source).latestAnswer();
-      if (price > 0) {
+      uint256 reportTime = IChainlinkAggregator(source).latestTimestamp();
+      if (price > 0 && (block.timestamp.sub(reportTime) < 10 minutes)) {
         return uint256(price);
       } else {
         return _fallbackOracle.getAssetPrice(asset);

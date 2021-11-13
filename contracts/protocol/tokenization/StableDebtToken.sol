@@ -109,8 +109,10 @@ contract StableDebtToken is IStableDebtToken, DebtTokenBase {
     if (accountBalance == 0) {
       return 0;
     }
-    uint256 cumulatedInterest =
-      MathUtils.calculateCompoundedInterest(stableRate, _timestamps[account]);
+    uint256 cumulatedInterest = MathUtils.calculateCompoundedInterest(
+      stableRate,
+      _timestamps[account]
+    );
     return accountBalance.rayMul(cumulatedInterest);
   }
 
@@ -170,6 +172,10 @@ contract StableDebtToken is IStableDebtToken, DebtTokenBase {
       .rayMul(vars.previousSupply.wadToRay())
       .add(rate.rayMul(vars.amountInRay))
       .rayDiv(vars.nextSupply.wadToRay());
+
+    if (balanceIncrease > 0) {
+      emit Transfer(address(0), onBehalfOf, balanceIncrease);
+    }
 
     _mint(onBehalfOf, amount.add(balanceIncrease), vars.previousSupply);
 
@@ -233,6 +239,10 @@ contract StableDebtToken is IStableDebtToken, DebtTokenBase {
     }
     //solium-disable-next-line
     _totalSupplyTimestamp = uint40(block.timestamp);
+
+    if (balanceIncrease > 0) {
+      emit Transfer(address(0), user, balanceIncrease);
+    }
 
     if (balanceIncrease > amount) {
       uint256 amountToMint = balanceIncrease.sub(amount);
@@ -389,8 +399,10 @@ contract StableDebtToken is IStableDebtToken, DebtTokenBase {
       return 0;
     }
 
-    uint256 cumulatedInterest =
-      MathUtils.calculateCompoundedInterest(avgRate, _totalSupplyTimestamp);
+    uint256 cumulatedInterest = MathUtils.calculateCompoundedInterest(
+      avgRate,
+      _totalSupplyTimestamp
+    );
 
     return principalSupply.rayMul(cumulatedInterest);
   }
