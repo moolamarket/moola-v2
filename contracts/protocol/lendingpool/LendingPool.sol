@@ -254,9 +254,8 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
       variableDebt
     );
 
-    uint256 paybackAmount = interestRateMode == DataTypes.InterestRateMode.STABLE
-      ? stableDebt
-      : variableDebt;
+    uint256 paybackAmount =
+      interestRateMode == DataTypes.InterestRateMode.STABLE ? stableDebt : variableDebt;
 
     if (amount < paybackAmount) {
       paybackAmount = amount;
@@ -433,16 +432,17 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
     address collateralManager = _addressesProvider.getLendingPoolCollateralManager();
 
     //solium-disable-next-line
-    (bool success, bytes memory result) = collateralManager.delegatecall(
-      abi.encodeWithSignature(
-        'liquidationCall(address,address,address,uint256,bool)',
-        collateralAsset,
-        debtAsset,
-        user,
-        debtToCover,
-        receiveAToken
-      )
-    );
+    (bool success, bytes memory result) =
+      collateralManager.delegatecall(
+        abi.encodeWithSignature(
+          'liquidationCall(address,address,address,uint256,bool)',
+          collateralAsset,
+          debtAsset,
+          user,
+          debtToCover,
+          receiveAToken
+        )
+      );
 
     require(success, Errors.LP_LIQUIDATION_CALL_FAILED);
 
@@ -858,9 +858,10 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
 
     address oracle = _addressesProvider.getPriceOracle();
 
-    uint256 amountInETH = IPriceOracleGetter(oracle).getAssetPrice(vars.asset).mul(vars.amount).div(
-      10**reserve.configuration.getDecimals()
-    );
+    uint256 amountInETH =
+      IPriceOracleGetter(oracle).getAssetPrice(vars.asset).mul(vars.amount).div(
+        10**reserve.configuration.getDecimals()
+      );
 
     ValidationLogic.validateBorrow(
       vars.asset,

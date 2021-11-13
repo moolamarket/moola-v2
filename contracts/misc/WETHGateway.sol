@@ -85,15 +85,16 @@ contract WETHGateway is IWETHGateway, Ownable {
     uint256 rateMode,
     address onBehalfOf
   ) external payable override {
-    (uint256 stableDebt, uint256 variableDebt) = Helpers.getUserCurrentDebtMemory(
-      onBehalfOf,
-      ILendingPool(lendingPool).getReserveData(address(WETH))
-    );
+    (uint256 stableDebt, uint256 variableDebt) =
+      Helpers.getUserCurrentDebtMemory(
+        onBehalfOf,
+        ILendingPool(lendingPool).getReserveData(address(WETH))
+      );
 
-    uint256 paybackAmount = DataTypes.InterestRateMode(rateMode) ==
-      DataTypes.InterestRateMode.STABLE
-      ? stableDebt
-      : variableDebt;
+    uint256 paybackAmount =
+      DataTypes.InterestRateMode(rateMode) == DataTypes.InterestRateMode.STABLE
+        ? stableDebt
+        : variableDebt;
 
     if (amount < paybackAmount) {
       paybackAmount = amount;
