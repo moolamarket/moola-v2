@@ -69,6 +69,7 @@ const retry = async (fun, tries = 5) => {
   try {
     return await fun();
   } catch(err) {
+    console.log(`RETRY ERROR ${err.message || err}`)
     if (tries == 0) throw err;
     await Promise.delay(1000);
     return retry(fun, tries - 1);
@@ -436,27 +437,33 @@ async function execute(network, action, ...params) {
     const eventsCollector = require('events-collector');
     let fromBlock = 8955468;
     let users = {};
+    let newEvents;
+    let parsedToBlock;
+
     while(true) {
-      const [newEvents, parsedToBlock] = await eventsCollector({
-        rpcUrl: localnode,
-        log: console.log,
-        abi: LendingPool.filter(el => el.name == 'Borrow'),
-        address: lendingPool.options.address,
-        blockStep: 5000,
-        fromBlock,
-        toBlock: 'latest',
-        blocksExclude: 0,
-        timestamps: false,
-      });
-      fromBlock = parsedToBlock;
-      for (let event of newEvents) {
-        if (event.args.user) {
-          users[event.args.user] = true;
+      // this needs to be in a try catch to make sure the rpc call works
+      await retry(async () => {
+        [newEvents, parsedToBlock] = await eventsCollector({
+          rpcUrl: localnode,
+          log: console.log,
+          abi: LendingPool.filter(el => el.name == 'Borrow'),
+          address: lendingPool.options.address,
+          blockStep: 5000,
+          fromBlock,
+          toBlock: 'latest',
+          blocksExclude: 0,
+          timestamps: false,
+        });
+        fromBlock = parsedToBlock;
+        for (let event of newEvents) {
+          if (event.args.user) {
+            users[event.args.user] = true;
+          }
+          if (event.args.onBehalfOf) {
+            users[event.args.onBehalfOf] = true;
+          }
         }
-        if (event.args.onBehalfOf) {
-          users[event.args.onBehalfOf] = true;
-        }
-      }
+      })
 
       // collecting users that have a non zero debt
       const usersData = await Promise.map(Object.keys(users), async (address) => [address, await lendingPool.methods.getUserAccountData(address).call()], {concurrency: 20})
