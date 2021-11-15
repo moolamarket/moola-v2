@@ -63,7 +63,7 @@ function printActions() {
   console.info('borrowFrom celo|cusd|ceur from address amount [privateKey]');
   console.info('repayFor celo|cusd|ceur for address amount stable|variable [privateKey]');
   console.info('migrate-step-2 address [privateKey]');
-  console.info('liquidation-bot celonode address [privateKey]');
+  console.info('liquidation-bot address [privateKey]');
 }
 
 const retry = async (fun, tries = 5) => {
