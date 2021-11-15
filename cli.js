@@ -63,7 +63,7 @@ function printActions() {
   console.info('borrowFrom celo|cusd|ceur from address amount [privateKey]');
   console.info('repayFor celo|cusd|ceur for address amount stable|variable [privateKey]');
   console.info('migrate-step-2 address [privateKey]');
-  console.info('liquidation-bot celonode address [privateKey]');
+  console.info('liquidation-bot address [privateKey] celonode?');
 }
 
 const retry = async (fun, tries = 5) => {
@@ -406,7 +406,7 @@ async function execute(network, action, ...params) {
     
     // doing some setup here
     const tokenNames = Object.keys(tokens)
-    const localnode = process.env.CELO_BOT_NODE || 'https://forno.celo.org';
+    const localnode = process.env.CELO_BOT_NODE || params[2] || 'https://forno.celo.org';
     const user = process.env.CELO_BOT_ADDRESS || params[0];
     if (privateKeyRequired) {
       pk = process.env.CELO_BOT_PK || params[1];
