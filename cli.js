@@ -561,7 +561,7 @@ async function execute(network, action, ...params) {
               // swap the liquidated asset
               await retry(async () => {
                 // getting swap rate
-                const amountOut = BN((await uniswap.methods.getAmountsOut(profit, swapPath).call())[2]);
+                const amountOut = BN((await uniswap.methods.getAmountsOut(profit, swapPath).call())[swapPath.length - 1]);
 
                 // estimate gas for the swap as a precaution
                 try {
