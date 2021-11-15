@@ -150,6 +150,7 @@
   ],
   "license": "AGPLv3",
   "dependencies": {
+    "events-collector": "github:Ambisafe/events-collector",
     "tmp-promise": "^3.0.2"
   },
   "keywords": [
