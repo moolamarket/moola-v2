@@ -406,10 +406,10 @@ async function execute(network, action, ...params) {
     
     // doing some setup here
     const tokenNames = Object.keys(tokens)
-    const localnode = process.env.CELO_BOT_NODE || params[0];
-    const user = process.env.CELO_BOT_ADDRESS || params[1];
+    const localnode = process.env.CELO_BOT_NODE || 'https://forno.celo.org';
+    const user = process.env.CELO_BOT_ADDRESS || params[0];
     if (privateKeyRequired) {
-      pk = process.env.CELO_BOT_PK || params[2];
+      pk = process.env.CELO_BOT_PK || params[1];
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -420,21 +420,14 @@ async function execute(network, action, ...params) {
     const wrappedEth = '0xE919F65739c26a42616b7b8eedC6b5524d1e3aC4';
     const uniswap = new kit.web3.eth.Contract(Uniswap, sushiSwapRouter);
 
-    // approving spend of the tokens
+    // approving spend of the tokens (both moola and uniswap)
     await Promise.map(tokenNames, async (token) => {
       console.log(`Checking ${token} for approval`)
-      let pool = lendingPool;
-
-      if (token === 'celo') {
-        pool = uniswap;
+      if ((await tokens[token].methods.allowance(user, lendingPool.options.address).call()).length < 30) {
+        console.log('Approve Moola', (await tokens[token].methods.approve(lendingPool.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
       }
-
-      try {
-        if ((await tokens[token].methods.allowance(user, pool.options.address).call()).length < 30) {
-          console.log('Approve', (await tokens[token].methods.approve(pool.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
-        }
-      } catch (err) {
-        throw err;
+      if ((await tokens[token].methods.allowance(user, uniswap.options.address).call()).length < 30) {
+        console.log('Approve Uniswap', (await tokens[token].methods.approve(uniswap.options.address, maxUint256).send({from: user, gas: 2000000})).transactionHash);
       }
     })
 
@@ -564,7 +557,7 @@ async function execute(network, action, ...params) {
               // swap the liquidated asset
               await retry(async () => {
                 // getting swap rate
-                const amountOut = BN((await uniswap.methods.getAmountsOut(profit, swapPath).call())[2]);
+                const amountOut = BN((await uniswap.methods.getAmountsOut(profit, swapPath).call())[swapPath.length - 1]);
 
                 // estimate gas for the swap as a precaution
                 try {
@@ -589,11 +582,11 @@ async function execute(network, action, ...params) {
             console.error(`[${riskUser}] Cannot send liquidate ${collateralToken}->${borrowToken}`, err.message);
           }
         }
-        await Promise.delay(60000);
       } catch (err) {
         console.error(`!!!! error ${err} !!!!`)
         await Promise.delay(60000);
       }
+      await Promise.delay(60000);
     }
   }
   console.error(`Unknown action: ${action}`);
