@@ -442,7 +442,10 @@ async function execute(network, action, ...params) {
     let fromBlock = 8955468;
     let users = {};
     while(true) {
-      try {
+      // wrapping th ewhole loop into a try catch.
+      // this is important if working against the public RPC
+      // any call could fail and we dont want the bot to stop
+      try { 
         // get new blocks and search
         const [newEvents, parsedToBlock] = await eventsCollector({
           rpcUrl: localnode,
@@ -527,7 +530,7 @@ async function execute(network, action, ...params) {
               // estimating gas cost for liquidation just as a precaution
               await lendingPool.methods.liquidationCall(tokens[collateralToken].options.address, tokens[borrowToken].options.address, riskUser, await tokens[borrowToken].methods.balanceOf(user).call(), false).estimateGas({from: user, gas: 2000000});
             } catch (err) {
-              console.log(`[${riskUser}] Cannot estimate liquidate ${collateralToken}->${borrowToken}`, err.message);
+              console.error(`[${riskUser}] Cannot estimate liquidate ${collateralToken}->${borrowToken}`, err.message);
               throw err;
             }
 
@@ -544,7 +547,7 @@ async function execute(network, action, ...params) {
             // make sure we are profiting from this liquidation
             console.log(`Profit: ${print(profit)}`);
             if (!profit.isPositive()) {
-              console.log(`NO Profit!`);
+              console.error(`NO Profit!`);
               throw new Error('No Profit');
             }
 
@@ -567,7 +570,7 @@ async function execute(network, action, ...params) {
                 try {
                   await uniswap.methods.swapExactTokensForTokens(profit, amountOut.multipliedBy(BN(999)).dividedBy(BN(1000)).toFixed(0), swapPath, user, nowSeconds() + 300).estimateGas({from: user, gas: 2000000});
                 } catch (err) {
-                  console.log(`[${riskUser}] Cannot estimate swap ${collateralToken}->${borrowToken}`, err.message);
+                  console.error(`[${riskUser}] Cannot estimate swap ${collateralToken}->${borrowToken}`, err.message);
                   throw err;
                 }
 
@@ -583,12 +586,12 @@ async function execute(network, action, ...params) {
             console.log(`${collateralToken}: ${print(await tokens[collateralToken].methods.balanceOf(user).call())}`);
           } catch (err) {
             // something went wrong
-            console.log(`[${riskUser}] Cannot send liquidate ${collateralToken}->${borrowToken}`, err.message);
+            console.error(`[${riskUser}] Cannot send liquidate ${collateralToken}->${borrowToken}`, err.message);
           }
         }
         await Promise.delay(60000);
       } catch (err) {
-        console.log(`!!!!error ${err} !!!!`)
+        console.error(`!!!! error ${err} !!!!`)
         await Promise.delay(60000);
       }
     }
