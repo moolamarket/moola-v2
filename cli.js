@@ -406,7 +406,7 @@ async function execute(network, action, ...params) {
     
     // doing some setup here
     const tokenNames = Object.keys(tokens)
-    const localnode = process.env.CELO_BOT_NODE || 'https://forno.celo.org';
+    const localnode = process.env.CELO_BOT_NODE || kit.connection.web3.currentProvider.existingProvider.host;
     const user = process.env.CELO_BOT_ADDRESS || params[0];
     if (privateKeyRequired) {
       pk = process.env.CELO_BOT_PK || params[1];
