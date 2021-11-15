@@ -435,7 +435,7 @@ async function execute(network, action, ...params) {
     let fromBlock = 8955468;
     let users = {};
     while(true) {
-      // wrapping th ewhole loop into a try catch.
+      // wrapping the whole loop into a try catch.
       // this is important if working against the public RPC
       // any call could fail and we dont want the bot to stop
       try { 
