@@ -37,7 +37,7 @@ describe("CeloProxyPriceProvider", function () {
         token3 = await Token.deploy("", "", 0);
         await token3.deployed();
 
-        const PriceFeed = await ethers.getContractFactory("PriceFeed");
+        const PriceFeed = await ethers.getContractFactory("MockPriceFeed");
         const emptyAddress = ethers.utils.getAddress("0x0000000000000000000000000000000000000000");
         priceFeed1 = await PriceFeed.deploy(emptyAddress, token1.address, token2.address);
         await priceFeed1.deployed();
@@ -98,6 +98,6 @@ describe("CeloProxyPriceProvider", function () {
     it("should not allow return unknown assets price", async () => {
         await expect(
             celoProxyPriceProvider.getAssetPrice(token3.address)
-          ).to.be.revertedWith("asset not exist");
+          ).to.be.revertedWith("Transaction reverted: function call to a non-contract account");
     });
 });

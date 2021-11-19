@@ -16,24 +16,22 @@ import "../interfaces/IPriceFeed.sol";
 contract CeloProxyPriceProvider is IPriceOracleGetter, Ownable {
     using SafeMath for uint256;
 
-    mapping(uint256 => address) internal priceFeeds;
-    mapping(uint256 => address) internal assets;
-    uint256 internal priceFeedsLength;
+    mapping(address => address) internal priceFeeds;
 
     constructor(address[] memory _assets, address[] memory _priceFeeds) public {
         updateAssets(_assets, _priceFeeds);
     }
 
     function updateAssets(address[] memory _assets, address[] memory _priceFeeds) public onlyOwner {
+
         require(
             _assets.length == _priceFeeds.length,
             "the quantity does not match"
         );
+
         for (uint256 i = 0; i < _assets.length; i++) {
-            priceFeeds[i] = _priceFeeds[i];
-            assets[i] = _assets[i];
+            priceFeeds[_assets[i]] = _priceFeeds[i];
         }
-        priceFeedsLength = _assets.length;
     }
 
     /// @notice Gets an asset price by address
@@ -43,21 +41,7 @@ contract CeloProxyPriceProvider is IPriceOracleGetter, Ownable {
             return 1 ether;
         }
 
-        uint256 assetId;
-        bool isExist;
-
-        for (uint256 i = 0; i < priceFeedsLength; i++) {
-            if (assets[i] == _asset) {
-                assetId = i;
-                isExist = true;
-            }
-        }
-
-        if (isExist) {
-            return (IPriceFeed(priceFeeds[assetId]).consult());
-        } else {
-            revert("asset not exist");
-        }
+        return (IPriceFeed(priceFeeds[_asset]).consult());
     }
 
     /// @notice Gets a list of prices from a list of assets addresses
@@ -78,20 +62,6 @@ contract CeloProxyPriceProvider is IPriceOracleGetter, Ownable {
     /// @notice Gets the address of the fallback oracle
     /// @return address The addres of the fallback oracle
     function getPriceFeed(address _asset) public view returns (address) {
-        uint256 assetId;
-        bool isExist;
-
-        for (uint256 i = 0; i < priceFeedsLength; i++) {
-            if (assets[i] == _asset) {
-                assetId = i;
-                isExist = true;
-            }
-        }
-
-        if (isExist) {
-            return (priceFeeds[assetId]);
-        } else {
-            revert("asset not exist");
-        }
+        return (priceFeeds[_asset]);
     }
 }
