@@ -9,14 +9,11 @@ contract PriceFeed {
   using SafeMath for uint256;
 
   IPriceOracleGetter private fallbackOracle;
-  address private asset;
-  IRegistry public registry;
+  address private immutable asset;
+  IRegistry public immutable registry;
   bytes32 constant SORTED_ORACLES_REGISTRY_ID = keccak256(abi.encodePacked('SortedOracles'));
 
-  event FallbackOracleUpdated(address indexed fallbackOracle);
-
-  constructor(address _asset, address _fallbackOracle, address _registry) public {
-    internalSetFallbackOracle(_fallbackOracle);
+  constructor(address _asset, address _registry) public {
     asset = _asset;
     registry = IRegistry(_registry);
   }
@@ -33,11 +30,6 @@ contract PriceFeed {
       'Reported price is older than 10 minutes'
     );
     return _divisor.mul(1 ether).div(_price);
-  }
-
-  function internalSetFallbackOracle(address _fallbackOracle) internal {
-    fallbackOracle = IPriceOracleGetter(_fallbackOracle);
-    emit FallbackOracleUpdated(_fallbackOracle);
   }
 
   function getSortedOracles() internal view returns (ISortedOracles) {

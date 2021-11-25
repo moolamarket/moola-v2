@@ -28,7 +28,7 @@ describe("PriceFeed", function () {
         const registry = await Registry.deploy(sortedOracles.address);
         await registry.deployed();
 
-        priceFeed = await PriceFeed.deploy(emptyAddress, emptyAddress, registry.address);
+        priceFeed = await PriceFeed.deploy(emptyAddress, registry.address);
         await priceFeed.deployed();
 
         await ganache.snapshot();

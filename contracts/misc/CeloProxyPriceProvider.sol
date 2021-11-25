@@ -19,7 +19,7 @@ contract CeloProxyPriceProvider is IPriceOracleGetter, Ownable {
     using SafeMath for uint256;
 
     mapping(address => address) internal priceFeeds;
-    IRegistry public registry;
+    IRegistry public immutable registry;
 
     constructor(address[] memory _assets, address[] memory _priceFeeds, address _registry) public {
         updateAssets(_assets, _priceFeeds);
