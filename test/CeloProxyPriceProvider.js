@@ -47,8 +47,13 @@ describe("CeloProxyPriceProvider", function () {
         await priceFeed2.deployed();
         await priceFeed2.setPrice(ethers.constants.WeiPerEther.div(2));
 
+        const Registry = await ethers.getContractFactory("MockRegistry");
+        const goldTockenAddress = ethers.utils.getAddress("0x34d6a0f5c2f5d0082141fe73d93b9dd00ca7ce11");
+        const registry = await Registry.deploy(goldTockenAddress);
+        await registry.deployed();
+
         const CeloProxyPriceProvider = await ethers.getContractFactory("CeloProxyPriceProvider");
-        celoProxyPriceProvider = await CeloProxyPriceProvider.deploy([token1.address, token2.address], [priceFeed1.address, priceFeed2.address]);
+        celoProxyPriceProvider = await CeloProxyPriceProvider.deploy([token1.address, token2.address], [priceFeed1.address, priceFeed2.address], registry.address);
         await celoProxyPriceProvider.deployed();
 
         await ganache.snapshot();

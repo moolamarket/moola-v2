@@ -5,6 +5,7 @@ import "../dependencies/openzeppelin/contracts/Ownable.sol";
 
 import "../interfaces/IPriceOracleGetter.sol";
 import "../interfaces/IPriceFeed.sol";
+import "../interfaces/IRegistry.sol";
 
 /// @title CeloProxyPriceProvider
 /// @author Moola
@@ -13,13 +14,16 @@ import "../interfaces/IPriceFeed.sol";
 /// - If the returned price by a SortedOracles is <= 0, the call is forwarded to a fallbackOracle
 /// - Owned by the Aave governance system, allowed to add sources for assets, replace them
 ///   and change the fallbackOracle
+
 contract CeloProxyPriceProvider is IPriceOracleGetter, Ownable {
     using SafeMath for uint256;
 
     mapping(address => address) internal priceFeeds;
+    IRegistry public registry;
 
-    constructor(address[] memory _assets, address[] memory _priceFeeds) public {
+    constructor(address[] memory _assets, address[] memory _priceFeeds, address _registry) public {
         updateAssets(_assets, _priceFeeds);
+        registry = IRegistry(_registry);
     }
 
     function updateAssets(address[] memory _assets, address[] memory _priceFeeds) public onlyOwner {
@@ -37,7 +41,7 @@ contract CeloProxyPriceProvider is IPriceOracleGetter, Ownable {
     /// @notice Gets an asset price by address
     /// @param _asset The asset address
     function getAssetPrice(address _asset) public view override returns (uint256) {
-        if (_asset == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+        if (_asset == registry.getAddressForOrDie(keccak256(abi.encodePacked("GoldToken")))) {
             return 1 ether;
         }
 
