@@ -8,7 +8,6 @@ import "../interfaces/ISortedOracles.sol";
 contract PriceFeed {
   using SafeMath for uint256;
 
-  IPriceOracleGetter private fallbackOracle;
   address private immutable asset;
   IRegistry public immutable registry;
   bytes32 constant SORTED_ORACLES_REGISTRY_ID = keccak256(abi.encodePacked('SortedOracles'));
