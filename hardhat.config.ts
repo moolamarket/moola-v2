@@ -70,6 +70,27 @@ const buidlerConfig: HardhatUserConfig = {
     settings: {
       optimizer: { enabled: true, runs: 200 },
       evmVersion: 'istanbul',
+      metadata: {
+        useLiteralContent: true,
+      },
+      outputSelection:
+      {
+        '*':
+        {
+          '*':
+          [
+            'abi',
+            'evm.bytecode',
+            'evm.deployedBytecode',
+            'evm.methodIdentifiers',
+            'metadata'
+          ],
+          '':
+          [
+            'ast'
+          ]
+        }
+      }
     },
   },
   typechain: {
