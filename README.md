@@ -221,3 +221,29 @@ await DAI.connect(signer).approve(lendingPool.address, ethers.utils.parseUnits('
 // Deposit 100 DAI
 await lendingPool.connect(signer).deposit(DAI.address, ethers.utils.parseUnits('100'), await signer.getAddress(), '0');
 ```
+
+## Transparency
+
+Currently Moola smart contract ecosystem is controlled by the following multisig wallet: `0xd7f77169d5E6a32C5044052F9a49eb94697b25ED`. It requiers 6 signatures out of 9 cosigners to perform any action.
+
+In order to allow batched operations though a multisig, OwnedWallet contract is deployed at `0x313bc86D3D6e86ba164B2B451cB0D9CfA7943e5c` and controlled by the multisig. This contract also acts as a treasury at the moment.
+
+Actions controlled by the multisig:
+
+```
+Adding new assets to the protocol.
+Enabling/disabling borrowing for an reserve.
+Activate/deactivate reserve enabling/disabling all actions.
+Unfreezing/freezing reserve, frozen reserve doesn't allow any new deposit, borrow or rate swap. But allows repayments, liquidations, rate rebalances and withdrawals.
+Modifying reserves configuration parameters: loan to value, liquidation threshold, liquidation bonus, reserve factor, possiblity of stable borrow, default stable borrow rate, interest rate strategy.
+Modifying Lending Pool implementation, changing any protocol logic.
+Modifying Lending Pool Collateral Manager address, changing the logic of liquidation calls.
+Modifying Price Oracle address, changing the logic of reserves price discovery.
+Modifying Lending Rate Oracle address, changing the logic of lending rates discovery.
+Modifying MToken and Stable/Variable Debt tokens implementation for an reserve, changing the logic protocol tokens.
+Changing the Emergency Admin.
+```
+
+Additionaly Moola protocol has an appointed Emergency Admin set to the following externally owned account (simple wallet): `0x643C574128c7C56A1835e021Ad0EcC2592E72624`.
+
+The only action Emergency Admin can perform is pausing/unpausing the whole Moola protocol.
