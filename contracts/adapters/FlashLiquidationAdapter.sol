@@ -19,14 +19,15 @@ import {ReserveConfiguration} from '../protocol/libraries/configuration/ReserveC
  **/
 contract FlashLiquidationAdapter is BaseUniswapAdapter {
   using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
-  uint256 internal constant LIQUIDATION_CLOSE_FACTOR_PERCENT = 5000;
 
   struct LiquidationParams {
     address collateralAsset;
     address borrowedAsset;
     address user;
     uint256 debtToCover;
-    bool useEthPath;
+    bool useCeloPath;
+    bool isWrappedAssetFrom;
+    bool isWrappedAssetTo;
   }
 
   struct LiquidationCallLocalVars {
@@ -38,6 +39,8 @@ contract FlashLiquidationAdapter is BaseUniswapAdapter {
     uint256 soldAmount;
     uint256 remainingTokens;
     uint256 borrowedAssetLeftovers;
+    address priceAssetToSwapFrom;
+    address priceAssetToSwapTo;
   }
 
   constructor(
@@ -59,7 +62,7 @@ contract FlashLiquidationAdapter is BaseUniswapAdapter {
    *   address borrowedAsset The asset that must be covered
    *   address user The user address with a Health Factor below 1
    *   uint256 debtToCover The amount of debt to cover
-   *   bool useEthPath Use WETH as connector path between the collateralAsset and borrowedAsset at Uniswap
+   *   bool useCeloPath Use WETH as connector path between the collateralAsset and borrowedAsset at Uniswap
    */
   function executeOperation(
     address[] calldata assets,
@@ -79,10 +82,12 @@ contract FlashLiquidationAdapter is BaseUniswapAdapter {
       decodedParams.borrowedAsset,
       decodedParams.user,
       decodedParams.debtToCover,
-      decodedParams.useEthPath,
+      decodedParams.useCeloPath,
       amounts[0],
       premiums[0],
-      initiator
+      initiator,
+      decodedParams.isWrappedAssetFrom,
+      decodedParams.isWrappedAssetTo
     );
 
     return true;
@@ -94,20 +99,22 @@ contract FlashLiquidationAdapter is BaseUniswapAdapter {
    * @param borrowedAsset The asset that must be covered
    * @param user The user address with a Health Factor below 1
    * @param debtToCover The amount of debt to coverage, can be max(-1) to liquidate all possible debt
-   * @param useEthPath true if the swap needs to occur using ETH in the routing, false otherwise
+   * @param useCeloPath true if the swap needs to occur using ETH in the routing, false otherwise
    * @param flashBorrowedAmount Amount of asset requested at the flash loan to liquidate the user position
    * @param premium Fee of the requested flash loan
    * @param initiator Address of the caller
    */
   function _liquidateAndSwap(
-    address collateralAsset,
-    address borrowedAsset,
-    address user,
-    uint256 debtToCover,
-    bool useEthPath,
+    address collateralAsset, // celo or ceur etc - like deposit
+    address borrowedAsset, // done in bot
+    address user, // repay/liquidate loan from
+    uint256 debtToCover, // up to 50%
+    bool useCeloPath,
     uint256 flashBorrowedAmount,
-    uint256 premium,
-    address initiator
+    uint256 premium, // done in bot
+    address initiator, // user address
+    bool isWrappedAssetFrom,
+    bool isWrappedAssetTo
   ) internal {
     LiquidationCallLocalVars memory vars;
     vars.initCollateralBalance = IERC20(collateralAsset).balanceOf(address(this));
@@ -123,7 +130,7 @@ contract FlashLiquidationAdapter is BaseUniswapAdapter {
     IERC20(borrowedAsset).approve(address(LENDING_POOL), debtToCover);
 
     // Liquidate the user position and release the underlying collateral
-    LENDING_POOL.liquidationCall(collateralAsset, borrowedAsset, user, debtToCover, false);
+    LENDING_POOL.liquidationCall(collateralAsset, borrowedAsset, user, debtToCover, isWrappedAssetFrom);
 
     // Discover the liquidated tokens
     uint256 collateralBalanceAfter = IERC20(collateralAsset).balanceOf(address(this));
@@ -138,13 +145,18 @@ contract FlashLiquidationAdapter is BaseUniswapAdapter {
       // Use only flash loan borrowed assets, not current asset balance of the contract
       vars.diffFlashBorrowedBalance = flashBorrowedAssetAfter.sub(vars.borrowedAssetLeftovers);
 
+    vars.priceAssetToSwapFrom = isWrappedAssetFrom ? LENDING_POOL.getReserveData(collateralAsset).aTokenAddress : collateralAsset;
+    vars.priceAssetToSwapTo = isWrappedAssetTo ? LENDING_POOL.getReserveData(borrowedAsset).aTokenAddress : borrowedAsset;
+
       // Swap released collateral into the debt asset, to repay the flash loan
-      vars.soldAmount = _swapTokensForExactTokens(
+      vars.soldAmount = _swapTokensForExactTokensBase(
         collateralAsset,
         borrowedAsset,
         vars.diffCollateralBalance,
         vars.flashLoanDebt.sub(vars.diffFlashBorrowedBalance),
-        useEthPath
+        vars.priceAssetToSwapFrom,
+        vars.priceAssetToSwapTo,
+        useCeloPath
       );
       vars.remainingTokens = vars.diffCollateralBalance.sub(vars.soldAmount);
     } else {
@@ -156,7 +168,11 @@ contract FlashLiquidationAdapter is BaseUniswapAdapter {
 
     // Transfer remaining tokens to initiator
     if (vars.remainingTokens > 0) {
-      IERC20(collateralAsset).transfer(initiator, vars.remainingTokens);
+      if (isWrappedAssetTo) {
+        LENDING_POOL.withdraw(collateralAsset, vars.remainingTokens, initiator);
+      } else {
+        IERC20(collateralAsset).transfer(initiator, vars.remainingTokens);
+      }
     }
   }
 
@@ -167,7 +183,7 @@ contract FlashLiquidationAdapter is BaseUniswapAdapter {
    *   address borrowedAsset The asset that must be covered and will be exchanged to pay the flash loan premium
    *   address user The user address with a Health Factor below 1
    *   uint256 debtToCover The amount of debt to cover
-   *   bool useEthPath Use WETH as connector path between the collateralAsset and borrowedAsset at Uniswap
+   *   bool useCeloPath Use WETH as connector path between the collateralAsset and borrowedAsset at Uniswap
    * @return LiquidationParams struct containing decoded params
    */
   function _decodeParams(bytes memory params) internal pure returns (LiquidationParams memory) {
@@ -176,9 +192,11 @@ contract FlashLiquidationAdapter is BaseUniswapAdapter {
       address borrowedAsset,
       address user,
       uint256 debtToCover,
-      bool useEthPath
-    ) = abi.decode(params, (address, address, address, uint256, bool));
+      bool useCeloPath,
+      bool isWrappedAssetFrom,
+      bool isWrappedAssetTo
+    ) = abi.decode(params, (address, address, address, uint256, bool, bool, bool));
 
-    return LiquidationParams(collateralAsset, borrowedAsset, user, debtToCover, useEthPath);
+    return LiquidationParams(collateralAsset, borrowedAsset, user, debtToCover, useCeloPath, isWrappedAssetFrom, isWrappedAssetTo);
   }
 }
