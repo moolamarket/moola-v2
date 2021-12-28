@@ -226,25 +226,23 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
       : amount;
 
     if (!beforeNormal) {
-      IERC20(assetTo).safeApprove(address(LENDING_POOL), 0);
-      IERC20(assetTo).safeApprove(address(LENDING_POOL), vars.receivedAmount);
-      LENDING_POOL.deposit(assetTo, vars.receivedAmount, address(this), 0);
+      IERC20(assetFrom).safeApprove(address(LENDING_POOL), 0);
+      IERC20(assetFrom).safeApprove(address(LENDING_POOL), vars.amountToSwap);
+      LENDING_POOL.deposit(assetFrom, vars.amountToSwap, address(this), 0);
     }
 
     vars.receivedAmount = _swapExactTokensForTokens(
-      assetFrom,
-      assetTo,
+      beforeNormal ? assetFrom : vars.aToken,
+      afterNormal ? assetTo : _getReserveData(assetTo).aTokenAddress,
       vars.amountToSwap,
       minAmountToReceive,
       useEthPath
     );
 
-    if (beforeNormal && !afterNormal) {
+    if (afterNormal) {
       IERC20(assetTo).safeApprove(address(LENDING_POOL), 0);
       IERC20(assetTo).safeApprove(address(LENDING_POOL), vars.receivedAmount);
       LENDING_POOL.deposit(assetTo, vars.receivedAmount, initiator, 0);
-    } else if (!beforeNormal && afterNormal) {
-      LENDING_POOL.withdraw(assetTo, vars.receivedAmount, initiator);
     }
 
     vars.flashLoanDebt = amount.add(premium);

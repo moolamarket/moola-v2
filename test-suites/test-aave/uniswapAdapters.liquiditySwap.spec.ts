@@ -124,7 +124,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
           [true],
-          [false],
+          [true],
         );
 
         await expect(
@@ -242,7 +242,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ],
           [false, false],
           [true, true],
-          [false, false],
+          [true, true],
         );
 
         await pool
@@ -391,7 +391,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           [aWETHs, aUsdcs],
           [false, false],
           [true, true],
-          [false, false],
+          [true, true],
         );
 
         await pool
@@ -490,7 +490,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           [s],
           [false],
           [true],
-          [false],
+          [true],
         );
 
         await expect(
@@ -559,7 +559,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
           [true],
-          [false],
+          [true],
         );
 
         await expect(
@@ -587,7 +587,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
           [true],
-          [false],
+          [true],
         );
 
         await expect(
@@ -615,7 +615,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
           [true],
-          [false],
+          [true],
         );
 
         await expect(
@@ -646,7 +646,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
           [true],
-          [false],
+          [true],
         );
 
         await expect(
@@ -677,7 +677,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ],
           [false],
           [true],
-          [false],
+          [true],
         );
 
         await expect(
@@ -705,7 +705,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
           [true],
-          [false],
+          [true],
         );
 
         await expect(
@@ -733,7 +733,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
           [true],
-          [false],
+          [true],
         );
 
         await expect(
@@ -761,7 +761,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
           [true],
-          [false],
+          [true],
         );
 
         await expect(
@@ -789,7 +789,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false, false],
           [true, true],
-          [false, false],
+          [true, true],
         );
 
         await expect(
@@ -840,7 +840,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
           [true],
-          [false],
+          [true],
         );
 
         await expect(
@@ -922,7 +922,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
           [true],
-          [false],
+          [true],
         );
 
         await expect(
@@ -989,7 +989,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
           [true],
-          [false],
+          [true],
         );
 
         await expect(
@@ -1051,7 +1051,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
           [true],
-          [false],
+          [true],
         );
 
         // Flashloan + premium > aToken balance. Then it will only swap the balance - premium
@@ -1156,7 +1156,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           [s],
           [false],
           [true],
-          [false]
+          [true]
         );
 
         // Flashloan + premium > aToken balance. Then it will only swap the balance - premium
