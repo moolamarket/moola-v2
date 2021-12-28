@@ -79,7 +79,7 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
     );
 
     for (uint256 i = 0; i < assets.length; i++) {
-      _swapLiquidity(
+      _swapMLiquidity(
         assets[i],
         decodedParams.assetToSwapToList[i],
         amounts[i],
@@ -229,6 +229,49 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
     IERC20(assetTo).safeApprove(address(LENDING_POOL), 0);
     IERC20(assetTo).safeApprove(address(LENDING_POOL), vars.receivedAmount);
     LENDING_POOL.deposit(assetTo, vars.receivedAmount, initiator, 0);
+
+    vars.flashLoanDebt = amount.add(premium);
+    vars.amountToPull = vars.amountToSwap.add(premium);
+
+    _pullAToken(assetFrom, vars.aToken, initiator, vars.amountToPull, permitSignature);
+
+    // Repay flash loan
+    IERC20(assetFrom).safeApprove(address(LENDING_POOL), 0);
+    IERC20(assetFrom).safeApprove(address(LENDING_POOL), vars.flashLoanDebt);
+  }
+
+  function _swapMLiquidity(
+    address assetFrom,
+    address assetTo,
+    uint256 amount,
+    uint256 premium,
+    address initiator,
+    uint256 minAmountToReceive,
+    bool swapAllBalance,
+    PermitSignature memory permitSignature,
+    bool useEthPath
+  ) internal {
+    SwapLiquidityLocalVars memory vars;
+
+    vars.aToken = _getReserveData(assetFrom).aTokenAddress;
+
+    vars.aTokenInitiatorBalance = IERC20(vars.aToken).balanceOf(initiator);
+    vars.amountToSwap = swapAllBalance && vars.aTokenInitiatorBalance.sub(premium) <= amount
+      ? vars.aTokenInitiatorBalance.sub(premium)
+      : amount;
+
+    // Deposit flashloan amount
+    IERC20(assetTo).safeApprove(address(LENDING_POOL), 0);
+    IERC20(assetTo).safeApprove(address(LENDING_POOL), vars.amountToSwap);
+    LENDING_POOL.deposit(assetTo, vars.amountToSwap, initiator, 0);
+
+    vars.receivedAmount = _swapExactTokensForTokens(
+      assetFrom,
+      assetTo,
+      vars.amountToSwap,
+      minAmountToReceive,
+      useEthPath
+    );
 
     vars.flashLoanDebt = amount.add(premium);
     vars.amountToPull = vars.amountToSwap.add(premium);
