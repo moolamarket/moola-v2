@@ -27,6 +27,8 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
     bool[] swapAllBalance;
     PermitParams permitParams;
     bool[] useEthPath;
+    bool[] fromNormal;
+    bool[] toNormal;
   }
 
   constructor(
@@ -74,12 +76,14 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
         assets.length == decodedParams.permitParams.v.length &&
         assets.length == decodedParams.permitParams.r.length &&
         assets.length == decodedParams.permitParams.s.length &&
-        assets.length == decodedParams.useEthPath.length,
+        assets.length == decodedParams.useEthPath.length &&
+        assets.length == decodedParams.fromNormal.length &&
+        assets.length == decodedParams.toNormal.length,
       'INCONSISTENT_PARAMS'
     );
 
     for (uint256 i = 0; i < assets.length; i++) {
-      _swapMLiquidity(
+      _swapLiquidity(
         assets[i],
         decodedParams.assetToSwapToList[i],
         amounts[i],
@@ -94,7 +98,9 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
           decodedParams.permitParams.r[i],
           decodedParams.permitParams.s[i]
         ),
-        decodedParams.useEthPath[i]
+        decodedParams.useEthPath[i],
+        decodedParams.fromNormal[i],
+        decodedParams.toNormal[i]
       );
     }
 
@@ -206,7 +212,9 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
     uint256 minAmountToReceive,
     bool swapAllBalance,
     PermitSignature memory permitSignature,
-    bool useEthPath
+    bool useEthPath,
+    bool fromNormal,
+    bool toNormal
   ) internal {
     SwapLiquidityLocalVars memory vars;
 
@@ -217,53 +225,11 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
       ? vars.aTokenInitiatorBalance.sub(premium)
       : amount;
 
-    vars.receivedAmount = _swapExactTokensForTokens(
-      assetFrom,
-      assetTo,
-      vars.amountToSwap,
-      minAmountToReceive,
-      useEthPath
-    );
-
-    // Deposit new reserve
-    IERC20(assetTo).safeApprove(address(LENDING_POOL), 0);
-    IERC20(assetTo).safeApprove(address(LENDING_POOL), vars.receivedAmount);
-    LENDING_POOL.deposit(assetTo, vars.receivedAmount, initiator, 0);
-
-    vars.flashLoanDebt = amount.add(premium);
-    vars.amountToPull = vars.amountToSwap.add(premium);
-
-    _pullAToken(assetFrom, vars.aToken, initiator, vars.amountToPull, permitSignature);
-
-    // Repay flash loan
-    IERC20(assetFrom).safeApprove(address(LENDING_POOL), 0);
-    IERC20(assetFrom).safeApprove(address(LENDING_POOL), vars.flashLoanDebt);
-  }
-
-  function _swapMLiquidity(
-    address assetFrom,
-    address assetTo,
-    uint256 amount,
-    uint256 premium,
-    address initiator,
-    uint256 minAmountToReceive,
-    bool swapAllBalance,
-    PermitSignature memory permitSignature,
-    bool useEthPath
-  ) internal {
-    SwapLiquidityLocalVars memory vars;
-
-    vars.aToken = _getReserveData(assetFrom).aTokenAddress;
-
-    vars.aTokenInitiatorBalance = IERC20(vars.aToken).balanceOf(initiator);
-    vars.amountToSwap = swapAllBalance && vars.aTokenInitiatorBalance.sub(premium) <= amount
-      ? vars.aTokenInitiatorBalance.sub(premium)
-      : amount;
-
-    // Deposit flashloan amount
-    IERC20(assetTo).safeApprove(address(LENDING_POOL), 0);
-    IERC20(assetTo).safeApprove(address(LENDING_POOL), vars.amountToSwap);
-    LENDING_POOL.deposit(assetTo, vars.amountToSwap, initiator, 0);
+    if (!fromNormal) {
+      IERC20(assetTo).safeApprove(address(LENDING_POOL), 0);
+      IERC20(assetTo).safeApprove(address(LENDING_POOL), vars.receivedAmount);
+      LENDING_POOL.deposit(assetTo, vars.receivedAmount, initiator, 0);
+    }
 
     vars.receivedAmount = _swapExactTokensForTokens(
       assetFrom,
@@ -272,6 +238,15 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
       minAmountToReceive,
       useEthPath
     );
+
+    // 
+    if (fromNormal && !toNormal) {
+      IERC20(assetTo).safeApprove(address(LENDING_POOL), 0);
+      IERC20(assetTo).safeApprove(address(LENDING_POOL), vars.receivedAmount);
+      LENDING_POOL.deposit(assetTo, vars.receivedAmount, initiator, 0);
+    } else if (!fromNormal && toNormal) {
+      LENDING_POOL.withdraw(assetTo, vars.receivedAmount, initiator);
+    }
 
     vars.flashLoanDebt = amount.add(premium);
     vars.amountToPull = vars.amountToSwap.add(premium);
@@ -307,11 +282,13 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
       uint8[] memory v,
       bytes32[] memory r,
       bytes32[] memory s,
-      bool[] memory useEthPath
+      bool[] memory useEthPath,
+      bool[] memory fromNormal,
+      bool[] memory toNormal
     ) =
       abi.decode(
         params,
-        (address[], uint256[], bool[], uint256[], uint256[], uint8[], bytes32[], bytes32[], bool[])
+        (address[], uint256[], bool[], uint256[], uint256[], uint8[], bytes32[], bytes32[], bool[], bool[], bool[])
       );
 
     return
@@ -320,7 +297,9 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
         minAmountsToReceive,
         swapAllBalance,
         PermitParams(permitAmount, deadline, v, r, s),
-        useEthPath
+        useEthPath,
+        fromNormal,
+        toNormal
       );
   }
 }
