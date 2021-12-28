@@ -280,7 +280,9 @@ export const buildLiquiditySwapParams = (
   v: BigNumberish[],
   r: (string | Buffer)[],
   s: (string | Buffer)[],
-  useEthPath: boolean[]
+  useEthPath: boolean[],
+  beforeNormal: boolean[],
+  afterNormal: boolean[]
 ) => {
   return ethers.utils.defaultAbiCoder.encode(
     [
@@ -293,6 +295,8 @@ export const buildLiquiditySwapParams = (
       'bytes32[]',
       'bytes32[]',
       'bool[]',
+      'bool[]',
+      'bool[]',
     ],
     [
       assetToSwapToList,
@@ -304,6 +308,8 @@ export const buildLiquiditySwapParams = (
       r,
       s,
       useEthPath,
+      beforeNormal,
+      afterNormal,
     ]
   );
 };

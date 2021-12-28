@@ -27,8 +27,8 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
     bool[] swapAllBalance;
     PermitParams permitParams;
     bool[] useEthPath;
-    bool[] fromNormal;
-    bool[] toNormal;
+    bool[] beforeNormal;
+    bool[] afterNormal;
   }
 
   constructor(
@@ -77,8 +77,8 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
         assets.length == decodedParams.permitParams.r.length &&
         assets.length == decodedParams.permitParams.s.length &&
         assets.length == decodedParams.useEthPath.length &&
-        assets.length == decodedParams.fromNormal.length &&
-        assets.length == decodedParams.toNormal.length,
+        assets.length == decodedParams.beforeNormal.length &&
+        assets.length == decodedParams.afterNormal.length,
       'INCONSISTENT_PARAMS'
     );
 
@@ -99,8 +99,8 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
           decodedParams.permitParams.s[i]
         ),
         decodedParams.useEthPath[i],
-        decodedParams.fromNormal[i],
-        decodedParams.toNormal[i]
+        decodedParams.beforeNormal[i],
+        decodedParams.afterNormal[i]
       );
     }
 
@@ -213,8 +213,8 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
     bool swapAllBalance,
     PermitSignature memory permitSignature,
     bool useEthPath,
-    bool fromNormal,
-    bool toNormal
+    bool beforeNormal,
+    bool afterNormal
   ) internal {
     SwapLiquidityLocalVars memory vars;
 
@@ -225,10 +225,10 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
       ? vars.aTokenInitiatorBalance.sub(premium)
       : amount;
 
-    if (!fromNormal) {
+    if (!beforeNormal) {
       IERC20(assetTo).safeApprove(address(LENDING_POOL), 0);
       IERC20(assetTo).safeApprove(address(LENDING_POOL), vars.receivedAmount);
-      LENDING_POOL.deposit(assetTo, vars.receivedAmount, initiator, 0);
+      LENDING_POOL.deposit(assetTo, vars.receivedAmount, address(this), 0);
     }
 
     vars.receivedAmount = _swapExactTokensForTokens(
@@ -239,12 +239,11 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
       useEthPath
     );
 
-    // 
-    if (fromNormal && !toNormal) {
+    if (beforeNormal && !afterNormal) {
       IERC20(assetTo).safeApprove(address(LENDING_POOL), 0);
       IERC20(assetTo).safeApprove(address(LENDING_POOL), vars.receivedAmount);
       LENDING_POOL.deposit(assetTo, vars.receivedAmount, initiator, 0);
-    } else if (!fromNormal && toNormal) {
+    } else if (!beforeNormal && afterNormal) {
       LENDING_POOL.withdraw(assetTo, vars.receivedAmount, initiator);
     }
 
@@ -283,8 +282,8 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
       bytes32[] memory r,
       bytes32[] memory s,
       bool[] memory useEthPath,
-      bool[] memory fromNormal,
-      bool[] memory toNormal
+      bool[] memory beforeNormal,
+      bool[] memory afterNormal
     ) =
       abi.decode(
         params,
@@ -298,8 +297,8 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
         swapAllBalance,
         PermitParams(permitAmount, deadline, v, r, s),
         useEthPath,
-        fromNormal,
-        toNormal
+        beforeNormal,
+        afterNormal
       );
   }
 }
