@@ -170,6 +170,8 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
       vars.receivedAmount = _swapExactTokensForTokens(
         assetToSwapFromList[vars.i],
         assetToSwapToList[vars.i],
+        assetToSwapFromList[vars.i],
+        assetToSwapToList[vars.i],
         vars.amountToSwap,
         minAmountsToReceive[vars.i],
         useEthPath[vars.i]
@@ -232,6 +234,8 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
     }
 
     vars.receivedAmount = _swapExactTokensForTokens(
+      assetFrom,
+      assetTo,
       beforeNormal ? assetFrom : vars.aToken,
       afterNormal ? assetTo : _getReserveData(assetTo).aTokenAddress,
       vars.amountToSwap,

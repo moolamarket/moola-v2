@@ -123,6 +123,8 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
 
   /**
    * @dev Swaps an exact `amountToSwap` of an asset to another
+   * @param assetToSwapFromPrice Origin asset to get price
+   * @param assetToSwapToPrice Destination asset to get pricce
    * @param assetToSwapFrom Origin asset
    * @param assetToSwapTo Destination asset
    * @param amountToSwap Exact amount of `assetToSwapFrom` to be swapped
@@ -130,17 +132,19 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
    * @return the amount received from the swap
    */
   function _swapExactTokensForTokens(
+    address assetToSwapFromPrice,
+    address assetToSwapToPrice,
     address assetToSwapFrom,
     address assetToSwapTo,
     uint256 amountToSwap,
     uint256 minAmountOut,
     bool useEthPath
   ) internal returns (uint256) {
-    uint256 fromAssetDecimals = _getDecimals(assetToSwapFrom);
-    uint256 toAssetDecimals = _getDecimals(assetToSwapTo);
+    uint256 fromAssetDecimals = _getDecimals(assetToSwapFromPrice);
+    uint256 toAssetDecimals = _getDecimals(assetToSwapToPrice);
 
-    uint256 fromAssetPrice = _getPrice(assetToSwapFrom);
-    uint256 toAssetPrice = _getPrice(assetToSwapTo);
+    uint256 fromAssetPrice = _getPrice(assetToSwapFromPrice);
+    uint256 toAssetPrice = _getPrice(assetToSwapToPrice);
 
     uint256 expectedMinAmountOut =
       amountToSwap
