@@ -33,6 +33,7 @@ export const MOCK_CHAINLINK_AGGREGATORS_PRICES = {
   CELO: oneEther.toFixed(),
   CUSD: oneEther.multipliedBy('0.223359').toFixed(),
   CEUR: oneEther.multipliedBy('0.262277').toFixed(),
+  CREAL: oneEther.multipliedBy('0.040204').toFixed(),
   MOO: oneEther.multipliedBy('0.312155').toFixed(),
   UBE: oneEther.multipliedBy('0.161059').toFixed(),
   AAVE: oneEther.multipliedBy('0.003620948469').toFixed(),
