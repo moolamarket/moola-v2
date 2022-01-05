@@ -247,6 +247,8 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
       IERC20(assetTo).safeApprove(address(LENDING_POOL), 0);
       IERC20(assetTo).safeApprove(address(LENDING_POOL), vars.receivedAmount);
       LENDING_POOL.deposit(assetTo, vars.receivedAmount, initiator, 0);
+    } else {
+      IERC20(assetTo).transfer(initiator, vars.receivedAmount);
     }
 
     vars.flashLoanDebt = amount.add(premium);
