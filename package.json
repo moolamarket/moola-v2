@@ -82,6 +82,7 @@
     "external:deploy-assets-kovan": "npm run compile && hardhat --network kovan external:deploy-new-asset --symbol ${SYMBOL} --verify",
     "external:deploy-assets-main": "npm run compile && hardhat --network main external:deploy-new-asset --symbol ${SYMBOL} --verify",
     "external:deploy-assets-moola-alfajores": "npm run compile && hardhat --network alfajores external:deploy-new-asset-moola --symbol ${SYMBOL} --verify",
+    "external:deploy-assets-moola-main": "npm run compile && hardhat --network main external:deploy-new-asset-moola --symbol ${SYMBOL} --verify",
     "prepublishOnly": "npm run compile",
     "moola:alfajores:full:migration": "npm run compile && npm run hardhat:alfajores -- moola:alfajores",
     "moola:celo:full:migration": "npm run compile && npm run hardhat:celo -- moola:celo"
