@@ -25,8 +25,7 @@ const isSymbolValid = (symbol: string, network: eCeloNetwork) =>
 
 task('external:deploy-new-asset-moola', 'Deploy A token, Debt Tokens, Risk Parameters')
   .addParam('symbol', `Asset symbol, needs to have configuration ready`)
-  .addFlag('verify', 'Verify contracts at Etherscan')
-  .setAction(async ({ verify, symbol }, localBRE) => {
+  .setAction(async ({ symbol }, localBRE) => {
     const network = localBRE.network.name;
     if (!isSymbolValid(symbol, network as eCeloNetwork)) {
       throw new Error(
@@ -48,6 +47,7 @@ WRONG RESERVE ASSET SETUP:
     );
     const poolAddress = await addressProvider.getLendingPool();
     const treasuryAddress = await getTreasuryAddress(marketConfigs.MoolaConfig);
+
     const aToken = await deployCustomAToken(
       [
         poolAddress,
@@ -57,7 +57,7 @@ WRONG RESERVE ASSET SETUP:
         `Moola interest bearing ${symbol}`,
         `m${symbol}`,
       ],
-      verify
+      false
     );
     const stableDebt = await deployStableDebtToken(
       [
@@ -67,7 +67,7 @@ WRONG RESERVE ASSET SETUP:
         `Moola stable debt bearing ${symbol}`,
         `stableDebt${symbol}`,
       ],
-      verify
+      false
     );
     const variableDebt = await deployVariableDebtToken(
       [
@@ -77,19 +77,20 @@ WRONG RESERVE ASSET SETUP:
         `Moola variable debt bearing ${symbol}`,
         `variableDebt${symbol}`,
       ],
-      verify
+      false
     );
+    const { rateStrategy } = strategyParams;
     const rates = await deployDefaultReserveInterestRateStrategy(
       [
         addressProvider.address,
-        strategyParams.optimalUtilizationRate,
-        strategyParams.baseVariableBorrowRate,
-        strategyParams.variableRateSlope1,
-        strategyParams.variableRateSlope2,
-        strategyParams.stableRateSlope1,
-        strategyParams.stableRateSlope2,
+        rateStrategy.optimalUtilizationRate,
+        rateStrategy.baseVariableBorrowRate,
+        rateStrategy.variableRateSlope1,
+        rateStrategy.variableRateSlope2,
+        rateStrategy.stableRateSlope1,
+        rateStrategy.stableRateSlope2,
       ],
-      verify
+      false
     );
     console.log(`
     New interest bearing asset deployed on ${network}:

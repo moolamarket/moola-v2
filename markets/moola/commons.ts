@@ -42,6 +42,9 @@ export const CommonsConfig: ICommonConfiguration = {
     CEUR: {
       borrowRate: oneRay.multipliedBy(0.039).toFixed(),
     },
+    CREAL: {
+      borrowRate: oneRay.multipliedBy(0.039).toFixed(),
+    },
     MOO: {
       borrowRate: oneRay.multipliedBy(0.03).toFixed(),
     },
