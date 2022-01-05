@@ -41,7 +41,6 @@ export const strategyCREAL: IReserveParams = {
   reserveFactor: '1000',
 };
 
-
 export const strategyCELO: IReserveParams = {
   strategy: rateStrategyCELO,
   baseLTVAsCollateral: '8000',

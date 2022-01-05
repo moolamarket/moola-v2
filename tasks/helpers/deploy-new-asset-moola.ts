@@ -79,7 +79,7 @@ WRONG RESERVE ASSET SETUP:
       ],
       false
     );
-    const { rateStrategy } = strategyParams;
+    const { strategy: rateStrategy } = strategyParams;
     const rates = await deployDefaultReserveInterestRateStrategy(
       [
         addressProvider.address,
