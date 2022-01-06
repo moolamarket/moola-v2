@@ -223,7 +223,6 @@ async function execute(network, action, ...params) {
   }
   if (action == 'getreservedata') {
     const reserve = reserves[params[0]];
-    console.log('reserve :>> ', reserve);
     const data = await dataProvider.methods.getReserveData(reserve).call();
     const reserveTokens = await dataProvider.methods.getReserveTokensAddresses(reserve).call();
     const parsedData = {
