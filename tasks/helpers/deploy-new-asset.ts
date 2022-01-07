@@ -9,6 +9,7 @@ import {
   deployDefaultReserveInterestRateStrategy,
   deployStableDebtToken,
   deployVariableDebtToken,
+  deployTTConfiguratorFactory,
 } from './../../helpers/contracts-deployments';
 import { setDRE } from '../../helpers/misc-utils';
 import { ZERO_ADDRESS } from './../../helpers/constants';
@@ -22,6 +23,15 @@ const isSymbolValid = (symbol: string, network: eEthereumNetwork) =>
   Object.keys(reserveConfigs).includes('strategy' + symbol) &&
   marketConfigs.AaveConfig.ReserveAssets[network][symbol] &&
   marketConfigs.AaveConfig.ReservesConfig[symbol] === reserveConfigs['strategy' + symbol];
+
+task('external:deploy-TT-configurator', 'Deploy TT configurator').setAction(
+  async (params, localBRE) => {
+    const network = localBRE.network.name;
+    setDRE(localBRE);
+    console.log('network :>> ', network);
+    await deployTTConfiguratorFactory();
+  }
+);
 
 task('external:deploy-new-asset', 'Deploy A token, Debt Tokens, Risk Parameters')
   .addParam('symbol', `Asset symbol, needs to have configuration ready`)

@@ -49,6 +49,7 @@ import {
   WETH9MockedFactory,
   WETHGatewayFactory,
   FlashLiquidationAdapterFactory,
+  TTConfiguratorFactory,
 } from '../types';
 import {
   withSaveAndVerify,
@@ -68,6 +69,14 @@ const readArtifact = async (id: string) => {
   }
   return (DRE as HardhatRuntimeEnvironment).artifacts.readArtifact(id);
 };
+
+export const deployTTConfiguratorFactory = async () =>
+  withSaveAndVerify(
+    await new TTConfiguratorFactory(await getFirstSigner()).deploy(),
+    eContractid.TTConfigurator,
+    [],
+    false
+  );
 
 export const deployLendingPoolAddressesProvider = async (marketId: string, verify?: boolean) =>
   withSaveAndVerify(
@@ -546,7 +555,15 @@ export const deployMockVariableDebtToken = async (
 };
 
 export const deployMockAToken = async (
-  args: [tEthereumAddress, tEthereumAddress, tEthereumAddress, tEthereumAddress, string, string, string],
+  args: [
+    tEthereumAddress,
+    tEthereumAddress,
+    tEthereumAddress,
+    tEthereumAddress,
+    string,
+    string,
+    string
+  ],
   verify?: boolean
 ) => {
   const instance = await withSaveAndVerify(

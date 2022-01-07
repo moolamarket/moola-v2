@@ -81,6 +81,7 @@
     "kovan:initialize-tokens": "npm run compile && hardhat --network kovan full:initialize-tokens --pool Aave",
     "external:deploy-assets-kovan": "npm run compile && hardhat --network kovan external:deploy-new-asset --symbol ${SYMBOL} --verify",
     "external:deploy-assets-main": "npm run compile && hardhat --network main external:deploy-new-asset --symbol ${SYMBOL} --verify",
+    "external:deploy-TT-configurator-alfajores": "npm run compile && hardhat --network alfajores external:deploy-TT-configurator",
     "prepublishOnly": "npm run compile",
     "moola:alfajores:full:migration": "npm run compile && npm run hardhat:alfajores -- moola:alfajores",
     "moola:celo:full:migration": "npm run compile && npm run hardhat:celo -- moola:celo"

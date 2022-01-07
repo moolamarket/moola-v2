@@ -95,6 +95,7 @@ export enum eContractid {
   UniswapLiquiditySwapAdapter = 'UniswapLiquiditySwapAdapter',
   UniswapRepayAdapter = 'UniswapRepayAdapter',
   FlashLiquidationAdapter = 'FlashLiquidationAdapter',
+  TTConfigurator = 'TTConfigurator',
 }
 
 /*
@@ -318,10 +319,7 @@ export type iXDAIPoolAssets<T> = Pick<
   'DAI' | 'USDC' | 'USDT' | 'WBTC' | 'WETH' | 'STAKE'
 >;
 
-export type iMoolaPoolAssets<T> = Pick<
-  iAssetsWithoutUSD<T>,
-  'CELO' | 'CUSD' | 'CEUR'
->;
+export type iMoolaPoolAssets<T> = Pick<iAssetsWithoutUSD<T>, 'CELO' | 'CUSD' | 'CEUR'>;
 
 export type iMultiPoolsAssets<T> = iAssetCommon<T> | iAavePoolAssets<T>;
 
@@ -374,7 +372,7 @@ export enum TokenContractId {
   BptBALWETH = 'BptBALWETH',
   WMATIC = 'WMATIC',
   STAKE = 'STAKE',
-  xSUSHI = 'xSUSHI'
+  xSUSHI = 'xSUSHI',
 }
 
 export interface IReserveParams extends IReserveBorrowParams, IReserveCollateralParams {
