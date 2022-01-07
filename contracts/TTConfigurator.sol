@@ -38,7 +38,7 @@ contract TTConfigurator is Ownable {
   uint256 constant liquidationBonus = 10500;
   uint256 constant reserveFactor = 1000;
 
-  constructor() {
+  constructor() public {
     testToken = new TestToken();
   }
 
