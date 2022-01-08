@@ -13,7 +13,10 @@ contract TestToken is ERC20 {
 }
 
 contract TTConfigurator is Ownable {
-  address constant lendingPoolConfiguratorAddress = 0x928F63a83217e427A84504950206834CBDa4Aa65;
+  address constant lendingPoolConfiguratorAddress = 0x39fe2A4a4174bB5cAC5568ce0715a0b320bcB231;
+
+  LendingPoolConfigurator public lendingPoolConfigurator =
+    LendingPoolConfigurator(lendingPoolConfiguratorAddress);
   TestToken public testToken;
   address public assetAddress;
 
@@ -42,9 +45,6 @@ contract TTConfigurator is Ownable {
     testToken = new TestToken();
     assetAddress = address(testToken);
   }
-
-  LendingPoolConfigurator lendingPoolConfigurator =
-    LendingPoolConfigurator(lendingPoolConfiguratorAddress);
 
   function execute() external onlyOwner {
     createReserve();
