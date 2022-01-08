@@ -15,7 +15,7 @@ contract TestToken is ERC20 {
 contract TTConfigurator is Ownable {
   address constant lendingPoolConfiguratorAddress = 0x928F63a83217e427A84504950206834CBDa4Aa65;
   TestToken public testToken;
-  address assetAddress = address(testToken);
+  address public assetAddress;
 
   bytes constant params = '0x10';
   bool constant stableBorrowRateEnabled = true;
@@ -40,6 +40,7 @@ contract TTConfigurator is Ownable {
 
   constructor() public {
     testToken = new TestToken();
+    assetAddress = address(testToken);
   }
 
   LendingPoolConfigurator lendingPoolConfigurator =
