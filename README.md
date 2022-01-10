@@ -224,7 +224,7 @@ await lendingPool.connect(signer).deposit(DAI.address, ethers.utils.parseUnits('
 
 ## Transparency
 
-Currently Moola smart contract ecosystem is controlled by the following multisig wallet: `0xd7f77169d5E6a32C5044052F9a49eb94697b25ED`. It requiers 6 signatures out of 9 cosigners to perform any action.
+Currently Moola smart contract ecosystem is controlled by the following multisig wallet: `0xd7f77169d5E6a32C5044052F9a49eb94697b25ED`. It requiers 6 signatures out of 10 cosigners to perform any action.
 
 In order to allow batched operations though a multisig, OwnedWallet contract is deployed at `0x313bc86D3D6e86ba164B2B451cB0D9CfA7943e5c` and controlled by the multisig. This contract also acts as a treasury at the moment.
 
