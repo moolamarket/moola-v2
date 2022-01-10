@@ -2,6 +2,7 @@
 pragma solidity 0.6.12;
 
 interface IUniswapV2Router02 {
+  function factory() external pure returns (address);
   function swapExactTokensForTokens(
     uint256 amountIn,
     uint256 amountOutMin,

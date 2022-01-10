@@ -174,7 +174,8 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
         assetToSwapToList[vars.i],
         vars.amountToSwap,
         minAmountsToReceive[vars.i],
-        useEthPath[vars.i]
+        useEthPath[vars.i],
+        false
       );
 
       // Deposit new reserve
@@ -240,7 +241,8 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
       afterNormal ? assetTo : _getReserveData(assetTo).aTokenAddress,
       vars.amountToSwap,
       minAmountToReceive,
-      useEthPath
+      useEthPath,
+      !beforeNormal || !afterNormal
     );
 
     if (afterNormal) {

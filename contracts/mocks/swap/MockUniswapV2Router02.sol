@@ -103,4 +103,10 @@ contract MockUniswapV2Router02 is IUniswapV2Router02 {
     amounts[1] = amountOut;
     return amounts;
   }
+
+
+  function factory() external pure override returns (address) {
+    return address(0);
+  }
+
 }
