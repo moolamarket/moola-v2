@@ -4,7 +4,6 @@ const LendingPool = require('./abi/LendingPool.json');
 const Uniswap = require('./abi/Uniswap.json');
 const DataProvider = require('./abi/MoolaProtocolDataProvider.json');
 const MToken = require('./abi/MToken.json');
-const TestToken = require('./abi/TestToken.json');
 const MoolaMigratorV1V2 = require('./abi/MoolaMigratorV1V2.json');
 const DebtToken = require('./abi/DebtToken.json');
 const BigNumber = require('bignumber.js');
@@ -52,17 +51,17 @@ function nowSeconds() {
 
 function printActions() {
   console.info('Available actions:');
-  console.info('balanceOf celo|cusd|ceur|tt address');
-  console.info('getUserReserveData celo|cusd|ceur|tt address');
-  console.info('getReserveData celo|cusd|ceur|tt');
+  console.info('balanceOf celo|cusd|ceur|creal address');
+  console.info('getUserReserveData celo|cusd|ceur|creal address');
+  console.info('getReserveData celo|cusd|ceur|creal');
   console.info('getUserAccountData address');
-  console.info('deposit celo|cusd|ceur|tt address amount [privateKey]');
-  console.info('borrow celo|cusd|ceur|tt address amount stable|variable [privateKey]');
-  console.info('repay celo|cusd|ceur|tt address amount|all stable|variable [privateKey]');
-  console.info('redeem celo|cusd|ceur|tt address amount|all [privateKey]');
-  console.info('delegate celo|cusd|ceur|tt to address amount|all stable|variable [privateKey]');
-  console.info('borrowFrom celo|cusd|ceur|tt from address amount [privateKey]');
-  console.info('repayFor celo|cusd|ceur|tt for address amount stable|variable [privateKey]');
+  console.info('deposit celo|cusd|ceur|creal address amount [privateKey]');
+  console.info('borrow celo|cusd|ceur|creal address amount stable|variable [privateKey]');
+  console.info('repay celo|cusd|ceur|creal address amount|all stable|variable [privateKey]');
+  console.info('redeem celo|cusd|ceur|creal address amount|all [privateKey]');
+  console.info('delegate celo|cusd|ceur|creal to address amount|all stable|variable [privateKey]');
+  console.info('borrowFrom celo|cusd|ceur|creal from address amount [privateKey]');
+  console.info('repayFor celo|cusd|ceur|creal for address amount stable|variable [privateKey]');
   console.info('migrate-step-2 address [privateKey]');
   console.info('liquidation-bot address [privateKey]');
 }
@@ -97,7 +96,7 @@ async function execute(network, action, ...params) {
       addressProvider = new kit.web3.eth.Contract(LendingPoolAddressesProvider, '0xb3072f5F0d5e8B9036aEC29F37baB70E86EA0018');
       cEUR = new kit.web3.eth.Contract(MToken, '0x10c892a6ec43a53e45d0b916b4b7d383b1b78c0f');
       cUSD = new kit.web3.eth.Contract(MToken, '0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1');
-      tt = new kit.web3.eth.Contract(TestToken, '0x170bAa3B9F84E2b519ccF7bD3788e6E98c4857fF');
+      cREAL = new kit.web3.eth.Contract(MToken, '0xE4D517785D091D3c54818832dB6094bcc2744545');
       CELO = new kit.web3.eth.Contract(MToken, '0xF194afDf50B03e69Bd7D057c1Aa9e10c9954E4C9');
       dataProvider = new kit.web3.eth.Contract(DataProvider, '0x31ccB9dC068058672D96E92BAf96B1607855822E');
       migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0x78660A4bbe5108c8258c39696209329B3bC214ba');
@@ -122,7 +121,7 @@ async function execute(network, action, ...params) {
       addressProvider = new kit.web3.eth.Contract(LendingPoolAddressesProvider, '0xD1088091A174d33412a968Fa34Cb67131188B332');
       cEUR = new kit.web3.eth.Contract(MToken, '0xD8763CBa276a3738E6DE85b4b3bF5FDed6D6cA73');
       cUSD = new kit.web3.eth.Contract(MToken, '0x765DE816845861e75A25fCA122bb6898B8B1282a');
-      tt = new kit.web3.eth.Contract(TestToken, '0x170bAa3B9F84E2b519ccF7bD3788e6E98c4857fF');
+      cREAL = new kit.web3.eth.Contract(MToken, '0xE4D517785D091D3c54818832dB6094bcc2744545');
       CELO = new kit.web3.eth.Contract(MToken, '0x471EcE3750Da237f93B8E339c536989b8978a438');
       dataProvider = new kit.web3.eth.Contract(DataProvider, '0x43d067ed784D9DD2ffEda73775e2CC4c560103A1');
       migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0xB87ebF9CD90003B66CF77c937eb5628124fA0662');
@@ -136,14 +135,14 @@ async function execute(network, action, ...params) {
     celo: CELO,
     cusd: cUSD,
     ceur: cEUR,
-    tt,
+    creal: cREAL,
   };
 
   const reserves = {
     celo: CELO.options.address,
     cusd: cUSD.options.address,
     ceur: cEUR.options.address,
-    tt: tt.options.address,
+    creal: cREAL.options.address,
   };
   if (action === 'balanceof') {
     const token = tokens[params[0]];

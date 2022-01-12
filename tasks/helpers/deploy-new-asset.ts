@@ -9,7 +9,7 @@ import {
   deployDefaultReserveInterestRateStrategy,
   deployStableDebtToken,
   deployVariableDebtToken,
-  deployTTConfiguratorFactory,
+  deployCREALConfigurator,
 } from './../../helpers/contracts-deployments';
 import { setDRE } from '../../helpers/misc-utils';
 import { ZERO_ADDRESS } from './../../helpers/constants';
@@ -24,12 +24,12 @@ const isSymbolValid = (symbol: string, network: eEthereumNetwork) =>
   marketConfigs.AaveConfig.ReserveAssets[network][symbol] &&
   marketConfigs.AaveConfig.ReservesConfig[symbol] === reserveConfigs['strategy' + symbol];
 
-task('external:deploy-TT-configurator', 'Deploy TT configurator').setAction(
+task('external:deploy-crealconfigurator', 'Deploy cREAL configurator').setAction(
   async (params, localBRE) => {
     const network = localBRE.network.name;
     setDRE(localBRE);
     console.log('network :>> ', network);
-    await deployTTConfiguratorFactory();
+    await deployCREALConfigurator();
   }
 );
 

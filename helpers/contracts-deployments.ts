@@ -49,7 +49,7 @@ import {
   WETH9MockedFactory,
   WETHGatewayFactory,
   FlashLiquidationAdapterFactory,
-  TTConfiguratorFactory,
+  CREALConfiguratorFactory,
 } from '../types';
 import {
   withSaveAndVerify,
@@ -70,12 +70,12 @@ const readArtifact = async (id: string) => {
   return (DRE as HardhatRuntimeEnvironment).artifacts.readArtifact(id);
 };
 
-export const deployTTConfiguratorFactory = async () =>
+export const deployCREALConfigurator = async (verify?: boolean) =>
   withSaveAndVerify(
-    await new TTConfiguratorFactory(await getFirstSigner()).deploy(),
-    eContractid.TTConfigurator,
+    await new CREALConfiguratorFactory(await getFirstSigner()).deploy(),
+    eContractid.CREALConfigurator,
     [],
-    false
+    verify
   );
 
 export const deployLendingPoolAddressesProvider = async (marketId: string, verify?: boolean) =>
