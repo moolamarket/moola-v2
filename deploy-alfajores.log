@@ -227,6 +227,16 @@ gas used: 627116
 
 ******
 
+Strategy address for asset CREAL: 0x5B41b0c78659636c6664f08F7cCb620ceA3F1206
+- Reserves initialization in 1 txs
+  - Reserve ready for: CREAL
+tx: 0x4aeedcb85f1b12fef37334c4adfc8ea1f97025b867ab435b325921229760d3af
+- Configure reserves in 3 txs
+tx: 0xf137bd451e60a43a55af9d6934118fc891d268fd554d54f79fbb0665053edb10
+tx: 0x1bfd2ef8c2425addb2826870c146621e67e4daa2262b565450c01527d3f88b3f
+tx: 0x31e965c80e64fb52fb88dad386e699c649d78f38d56daf20ce68dba45cd18a13
+
+******
 
 Finished migrations
 Contracts deployed at alfajores

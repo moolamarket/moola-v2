@@ -130,7 +130,7 @@ async function execute(network, action, ...params) {
   }
   const web3 = kit.web3;
   const eth = web3.eth;
-  
+
   const lendingPool = new eth.Contract(LendingPool, await addressProvider.methods.getLendingPool().call());
   const tokens = {
     celo: CELO,
