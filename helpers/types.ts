@@ -333,6 +333,7 @@ export enum TokenContractId {
   CELO = 'CELO',
   CUSD = 'CUSD',
   CEUR = 'CEUR',
+  CREAL = 'CREAL',
   MOO = 'MOO',
   UBE = 'UBE',
   DAI = 'DAI',
