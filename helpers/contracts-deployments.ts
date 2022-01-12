@@ -49,7 +49,8 @@ import {
   WETH9MockedFactory,
   WETHGatewayFactory,
   FlashLiquidationAdapterFactory,
-  CREALConfiguratorFactory,
+  CREALConfiguratorAlfajoresFactory,
+  CREALConfiguratorCeloFactory,
 } from '../types';
 import {
   withSaveAndVerify,
@@ -69,14 +70,6 @@ const readArtifact = async (id: string) => {
   }
   return (DRE as HardhatRuntimeEnvironment).artifacts.readArtifact(id);
 };
-
-export const deployCREALConfigurator = async (verify?: boolean) =>
-  withSaveAndVerify(
-    await new CREALConfiguratorFactory(await getFirstSigner()).deploy(),
-    eContractid.CREALConfigurator,
-    [],
-    verify
-  );
 
 export const deployLendingPoolAddressesProvider = async (marketId: string, verify?: boolean) =>
   withSaveAndVerify(
@@ -624,5 +617,21 @@ export const deployFlashLiquidationAdapter = async (
     await new FlashLiquidationAdapterFactory(await getFirstSigner()).deploy(...args),
     eContractid.FlashLiquidationAdapter,
     args,
+    verify
+  );
+
+export const deployCREALConfiguratorAlfajores = async (verify?: boolean) =>
+  withSaveAndVerify(
+    await new CREALConfiguratorAlfajoresFactory(await getFirstSigner()).deploy(),
+    eContractid.CREALConfiguratorAlfajores,
+    [],
+    verify
+  );
+
+export const deployCREALConfiguratorCelo = async (verify?: boolean) =>
+  withSaveAndVerify(
+    await new CREALConfiguratorCeloFactory(await getFirstSigner()).deploy(),
+    eContractid.CREALConfiguratorCelo,
+    [],
     verify
   );

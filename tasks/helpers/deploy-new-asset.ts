@@ -9,7 +9,8 @@ import {
   deployDefaultReserveInterestRateStrategy,
   deployStableDebtToken,
   deployVariableDebtToken,
-  deployCREALConfigurator,
+  deployCREALConfiguratorAlfajores,
+  deployCREALConfiguratorCelo,
 } from './../../helpers/contracts-deployments';
 import { setDRE } from '../../helpers/misc-utils';
 import { ZERO_ADDRESS } from './../../helpers/constants';
@@ -23,14 +24,6 @@ const isSymbolValid = (symbol: string, network: eEthereumNetwork) =>
   Object.keys(reserveConfigs).includes('strategy' + symbol) &&
   marketConfigs.AaveConfig.ReserveAssets[network][symbol] &&
   marketConfigs.AaveConfig.ReservesConfig[symbol] === reserveConfigs['strategy' + symbol];
-
-task('external:deploy-crealconfigurator', 'Deploy cREAL configurator').setAction(
-  async (params, localBRE) => {
-    const network = localBRE.network.name;
-    setDRE(localBRE);
-    await deployCREALConfigurator();
-  }
-);
 
 task('external:deploy-new-asset', 'Deploy A token, Debt Tokens, Risk Parameters')
   .addParam('symbol', `Asset symbol, needs to have configuration ready`)
@@ -108,3 +101,17 @@ WRONG RESERVE ASSET SETUP:
     Strategy Implementation for ${symbol} address: ${rates.address}
     `);
   });
+
+task('external:deploy-crealconfigurator-alfajores', 'Deploy cREAL configurator').setAction(
+  async (params, localBRE) => {
+    setDRE(localBRE);
+    await deployCREALConfiguratorAlfajores();
+  }
+);
+
+task('external:deploy-crealconfigurator-celo', 'Deploy cREAL configurator').setAction(
+  async (params, localBRE) => {
+    setDRE(localBRE);
+    await deployCREALConfiguratorCelo();
+  }
+);
