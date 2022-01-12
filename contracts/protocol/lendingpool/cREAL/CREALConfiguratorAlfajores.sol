@@ -9,7 +9,7 @@ import './interfaces/ILendingPoolConfigurator.sol';
 contract CREALConfigurator is Ownable {
   address constant lendingPoolConfiguratorAddress = 0x39fe2A4a4174bB5cAC5568ce0715a0b320bcB231;
 
-  LendingPoolConfigurator constant lendingPoolConfigurator =
+  LendingPoolConfigurator public lendingPoolConfigurator =
     LendingPoolConfigurator(lendingPoolConfiguratorAddress);
   address constant assetAddress = 0xE4D517785D091D3c54818832dB6094bcc2744545;
 
