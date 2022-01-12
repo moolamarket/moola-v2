@@ -211,6 +211,7 @@ export interface iAssetCommon<T> {
 export interface iAssetBase<T> {
   CUSD: T;
   CEUR: T;
+  CREAL: T;
   CELO: T;
   MOO: T;
   UBE: T;
@@ -320,7 +321,7 @@ export type iXDAIPoolAssets<T> = Pick<
   'DAI' | 'USDC' | 'USDT' | 'WBTC' | 'WETH' | 'STAKE'
 >;
 
-export type iMoolaPoolAssets<T> = Pick<iAssetsWithoutUSD<T>, 'CELO' | 'CUSD' | 'CEUR'>;
+export type iMoolaPoolAssets<T> = Pick<iAssetsWithoutUSD<T>, 'CELO' | 'CUSD' | 'CEUR' | 'CREAL'>;
 
 export type iMultiPoolsAssets<T> = iAssetCommon<T> | iAavePoolAssets<T>;
 

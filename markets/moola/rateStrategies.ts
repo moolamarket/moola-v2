@@ -2,7 +2,7 @@ import BigNumber from 'bignumber.js';
 import { oneRay } from '../../helpers/constants';
 import { IInterestRateStrategyParams } from '../../helpers/types';
 
-// CUSD CEUR
+// CUSD CEUR CREAL
 export const rateStrategyStableTwo: IInterestRateStrategyParams = {
   name: "rateStrategyStableTwo",
   optimalUtilizationRate: new BigNumber(0.8).multipliedBy(oneRay).toFixed(),
