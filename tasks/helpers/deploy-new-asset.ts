@@ -28,7 +28,6 @@ task('external:deploy-crealconfigurator', 'Deploy cREAL configurator').setAction
   async (params, localBRE) => {
     const network = localBRE.network.name;
     setDRE(localBRE);
-    console.log('network :>> ', network);
     await deployCREALConfigurator();
   }
 );
