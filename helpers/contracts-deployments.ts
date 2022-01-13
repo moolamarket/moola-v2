@@ -49,6 +49,8 @@ import {
   WETH9MockedFactory,
   WETHGatewayFactory,
   FlashLiquidationAdapterFactory,
+  CREALConfiguratorAlfajoresFactory,
+  CREALConfiguratorCeloFactory,
 } from '../types';
 import {
   withSaveAndVerify,
@@ -546,7 +548,15 @@ export const deployMockVariableDebtToken = async (
 };
 
 export const deployMockAToken = async (
-  args: [tEthereumAddress, tEthereumAddress, tEthereumAddress, tEthereumAddress, string, string, string],
+  args: [
+    tEthereumAddress,
+    tEthereumAddress,
+    tEthereumAddress,
+    tEthereumAddress,
+    string,
+    string,
+    string
+  ],
   verify?: boolean
 ) => {
   const instance = await withSaveAndVerify(
@@ -607,5 +617,21 @@ export const deployFlashLiquidationAdapter = async (
     await new FlashLiquidationAdapterFactory(await getFirstSigner()).deploy(...args),
     eContractid.FlashLiquidationAdapter,
     args,
+    verify
+  );
+
+export const deployCREALConfiguratorAlfajores = async (verify?: boolean) =>
+  withSaveAndVerify(
+    await new CREALConfiguratorAlfajoresFactory(await getFirstSigner()).deploy(),
+    eContractid.CREALConfiguratorAlfajores,
+    [],
+    verify
+  );
+
+export const deployCREALConfiguratorCelo = async (verify?: boolean) =>
+  withSaveAndVerify(
+    await new CREALConfiguratorCeloFactory(await getFirstSigner()).deploy(),
+    eContractid.CREALConfiguratorCelo,
+    [],
     verify
   );

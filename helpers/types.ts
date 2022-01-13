@@ -95,6 +95,8 @@ export enum eContractid {
   UniswapLiquiditySwapAdapter = 'UniswapLiquiditySwapAdapter',
   UniswapRepayAdapter = 'UniswapRepayAdapter',
   FlashLiquidationAdapter = 'FlashLiquidationAdapter',
+  CREALConfiguratorAlfajores = 'CREALConfiguratorAlfajores',
+  CREALConfiguratorMainnet = 'CREALConfiguratorMainnet',
 }
 
 /*
@@ -209,6 +211,7 @@ export interface iAssetCommon<T> {
 export interface iAssetBase<T> {
   CUSD: T;
   CEUR: T;
+  CREAL: T;
   CELO: T;
   MOO: T;
   UBE: T;
@@ -318,10 +321,7 @@ export type iXDAIPoolAssets<T> = Pick<
   'DAI' | 'USDC' | 'USDT' | 'WBTC' | 'WETH' | 'STAKE'
 >;
 
-export type iMoolaPoolAssets<T> = Pick<
-  iAssetsWithoutUSD<T>,
-  'CELO' | 'CUSD' | 'CEUR'
->;
+export type iMoolaPoolAssets<T> = Pick<iAssetsWithoutUSD<T>, 'CELO' | 'CUSD' | 'CEUR' | 'CREAL'>;
 
 export type iMultiPoolsAssets<T> = iAssetCommon<T> | iAavePoolAssets<T>;
 
@@ -333,6 +333,7 @@ export enum TokenContractId {
   CELO = 'CELO',
   CUSD = 'CUSD',
   CEUR = 'CEUR',
+  CREAL = 'CREAL',
   MOO = 'MOO',
   UBE = 'UBE',
   DAI = 'DAI',
@@ -374,7 +375,7 @@ export enum TokenContractId {
   BptBALWETH = 'BptBALWETH',
   WMATIC = 'WMATIC',
   STAKE = 'STAKE',
-  xSUSHI = 'xSUSHI'
+  xSUSHI = 'xSUSHI',
 }
 
 export interface IReserveParams extends IReserveBorrowParams, IReserveCollateralParams {
