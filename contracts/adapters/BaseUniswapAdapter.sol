@@ -15,8 +15,6 @@ import {IPriceOracleGetter} from '../interfaces/IPriceOracleGetter.sol';
 import {IERC20WithPermit} from '../interfaces/IERC20WithPermit.sol';
 import {FlashLoanReceiverBase} from '../flashloan/base/FlashLoanReceiverBase.sol';
 import {IBaseUniswapAdapter} from './interfaces/IBaseUniswapAdapter.sol';
-import {IUniswapV2Pair} from '../interfaces/IUniswapV2Pair.sol';
-import {IUniswapV2Factory} from '../interfaces/IUniswapV2Factory.sol';
 
 /**
  * @title BaseUniswapAdapter
@@ -38,7 +36,6 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
   address public immutable override WETH_ADDRESS;
   IPriceOracleGetter public immutable override ORACLE;
   IUniswapV2Router02 public immutable override UNISWAP_ROUTER;
-  IUniswapV2Factory public immutable UNISWAP_FACTORY;
 
   constructor(
     ILendingPoolAddressesProvider addressesProvider,
@@ -48,7 +45,6 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     ORACLE = IPriceOracleGetter(addressesProvider.getPriceOracle());
     UNISWAP_ROUTER = uniswapRouter;
     WETH_ADDRESS = wethAddress;
-    UNISWAP_FACTORY = IUniswapV2Factory(uniswapRouter.factory());
   }
 
   /**
@@ -133,7 +129,7 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
    * @param assetToSwapTo Destination asset
    * @param amountToSwap Exact amount of `assetToSwapFrom` to be swapped
    * @param minAmountOut the min amount of `assetToSwapTo` to be received from the swap
-   * @param needToSync need to make sync reserves on pair if path has rebase asset
+   * @param aTokenExist is a token exist in path
    * @return the amount received from the swap
    */
   function _swapExactTokensForTokens(
@@ -144,7 +140,7 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     uint256 amountToSwap,
     uint256 minAmountOut,
     bool useEthPath,
-    bool needToSync
+    bool aTokenExist
   ) internal returns (uint256) {
     uint256 fromAssetDecimals = _getDecimals(assetToSwapFromPrice);
     uint256 toAssetDecimals = _getDecimals(assetToSwapToPrice);
@@ -164,11 +160,6 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     IERC20(assetToSwapFrom).safeApprove(address(UNISWAP_ROUTER), 0);
     IERC20(assetToSwapFrom).safeApprove(address(UNISWAP_ROUTER), amountToSwap);
 
-    if (needToSync) {
-      IUniswapV2Pair pair = IUniswapV2Pair(UNISWAP_FACTORY.getPair(assetToSwapFrom, assetToSwapTo));
-      pair.sync();
-    }
-
     address[] memory path;
     if (useEthPath) {
       path = new address[](3);
@@ -180,7 +171,25 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
       path[0] = assetToSwapFrom;
       path[1] = assetToSwapTo;
     }
-    uint256[] memory amounts =
+
+    if (aTokenExist) {
+      uint256 balanceBefore = IERC20(path[path.length - 1]).balanceOf(address(this));
+
+      UNISWAP_ROUTER.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        amountToSwap,
+        minAmountOut,
+        path,
+        address(this),
+        block.timestamp
+      );
+
+      uint256 swappedAmount = IERC20(path[path.length - 1]).balanceOf(address(this)) - balanceBefore;
+
+      emit Swapped(assetToSwapFrom, assetToSwapTo, amountToSwap, swappedAmount);
+
+      return swappedAmount;
+    } else {
+      uint256[] memory amounts =
       UNISWAP_ROUTER.swapExactTokensForTokens(
         amountToSwap,
         minAmountOut,
@@ -189,9 +198,10 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
         block.timestamp
       );
 
-    emit Swapped(assetToSwapFrom, assetToSwapTo, amounts[0], amounts[amounts.length - 1]);
+      emit Swapped(assetToSwapFrom, assetToSwapTo, amounts[0], amounts[amounts.length - 1]);
 
-    return amounts[amounts.length - 1];
+      return amounts[amounts.length - 1];
+    }
   }
 
   /**
