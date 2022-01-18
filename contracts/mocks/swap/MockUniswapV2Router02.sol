@@ -54,6 +54,19 @@ contract MockUniswapV2Router02 is IUniswapV2Router02 {
     amounts[1] = amountOut;
   }
 
+  function swapExactTokensForTokensSupportingFeeOnTransferTokens(
+    uint256 amountOut,
+    uint256, /* amountInMax */
+    address[] calldata path,
+    address to,
+    uint256 /* deadline */
+  ) external override {
+    IERC20(path[0]).transferFrom(msg.sender, address(this), _amountToSwap[path[0]]);
+
+    MintableERC20(path[1]).mint(amountOut);
+    IERC20(path[1]).transfer(to, amountOut);
+  }
+
   function setAmountOut(
     uint256 amountIn,
     address reserveIn,
@@ -103,4 +116,5 @@ contract MockUniswapV2Router02 is IUniswapV2Router02 {
     amounts[1] = amountOut;
     return amounts;
   }
+
 }
