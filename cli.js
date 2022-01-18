@@ -654,12 +654,14 @@ async function execute(network, action, ...params) {
     const tokenTo = tokens[params[3]];
     const user = params[1];
     const amount = web3.utils.toWei(params[4]);
+    const beforeNormal = params[2] == 'celo' ? true : false;
+    const afterNormal = params[3] == 'celo' ? true : false;
 
     const reserveTokens = await dataProvider.methods.getReserveTokensAddresses(tokenFrom.options.address).call();
     const mToken = new eth.Contract(MToken, reserveTokens.aTokenAddress);
 
     const [tokenFromPrice, tokenToPrice] = await priceOracle.methods.getAssetsPrices([tokenFrom.options.address, tokenTo.options.address]).call();
-    const tokenToSwapPrice = BN(amount).multipliedBy(BN(tokenFromPrice)).dividedBy(BN(tokenToPrice)).toFixed(0)
+    const tokenToSwapPrice = BN(amount).multipliedBy(BN(tokenFromPrice)).dividedBy(BN(tokenToPrice)).toFixed(0);
 
     console.log(`Checking mToken ${mToken.options.address} for approval`)
     if ((await mToken.methods.allowance(user, ubeswapAdapterAddress).call()).length < 30) {
@@ -676,8 +678,8 @@ async function execute(network, action, ...params) {
       ['0x0000000000000000000000000000000000000000000000000000000000000000'],
       ['0x0000000000000000000000000000000000000000000000000000000000000000'],
       [false],
-      [false],
-      [false],
+      [beforeNormal],
+      [afterNormal],
     );
 
     try {
