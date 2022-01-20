@@ -20,6 +20,8 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
     uint256 rateMode;
     PermitSignature permitSignature;
     bool useEthPath;
+    bool useATokenAsFrom;
+    bool useATokenAsTo;
   }
 
   constructor(
@@ -68,7 +70,9 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
       initiator,
       premiums[0],
       decodedParams.permitSignature,
-      decodedParams.useEthPath
+      decodedParams.useEthPath,
+      decodedParams.useATokenAsFrom,
+      decodedParams.useATokenAsTo
     );
 
     return true;
@@ -85,8 +89,6 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
    * @param debtRepayAmount Amount of the debt to be repaid
    * @param debtRateMode Rate mode of the debt to be repaid
    * @param permitSignature struct containing the permit signature
-   * @param useEthPath struct containing the permit signature
-
    */
   function swapAndRepay(
     address collateralAsset,
@@ -100,13 +102,16 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
     DataTypes.ReserveData memory collateralReserveData = _getReserveData(collateralAsset);
     DataTypes.ReserveData memory debtReserveData = _getReserveData(debtAsset);
 
-    address debtToken =
-      DataTypes.InterestRateMode(debtRateMode) == DataTypes.InterestRateMode.STABLE
-        ? debtReserveData.stableDebtTokenAddress
-        : debtReserveData.variableDebtTokenAddress;
+    address debtToken = DataTypes.InterestRateMode(debtRateMode) ==
+      DataTypes.InterestRateMode.STABLE
+      ? debtReserveData.stableDebtTokenAddress
+      : debtReserveData.variableDebtTokenAddress;
 
-    uint256 currentDebt = IERC20(debtToken).balanceOf(msg.sender);
-    uint256 amountToRepay = debtRepayAmount <= currentDebt ? debtRepayAmount : currentDebt;
+    uint256 amountToRepay;
+    {
+      uint256 currentDebt = IERC20(debtToken).balanceOf(msg.sender);
+      amountToRepay = debtRepayAmount <= currentDebt ? debtRepayAmount : currentDebt;
+    }
 
     if (collateralAsset != debtAsset) {
       uint256 maxCollateralToSwap = collateralAmount;
@@ -115,8 +120,12 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
       }
 
       // Get exact collateral needed for the swap to avoid leftovers
-      uint256[] memory amounts =
-        _getAmountsIn(collateralAsset, debtAsset, amountToRepay, useEthPath);
+      uint256[] memory amounts = _getAmountsIn(
+        collateralAsset,
+        debtAsset,
+        amountToRepay,
+        useEthPath
+      );
       require(amounts[0] <= maxCollateralToSwap, 'slippage too high');
 
       // Pull aTokens from user
@@ -129,7 +138,15 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
       );
 
       // Swap collateral for debt asset
-      _swapTokensForExactTokens(collateralAsset, debtAsset, amounts[0], amountToRepay, useEthPath);
+      _swapTokensForExactTokens(
+        collateralAsset,
+        debtAsset,
+        collateralAsset,
+        debtAsset,
+        amounts[0],
+        amountToRepay,
+        useEthPath
+      );
     } else {
       // Pull aTokens from user
       _pullAToken(
@@ -148,6 +165,95 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
   }
 
   /**
+   * @dev Pulls the initiator collateral and swaps to repay the flash loan(if needed)
+   *
+   * @param collateralAsset Address of token to be swapped
+   * @param debtAsset Address of debt token to be received from the swap
+   * @param initiator Address of the user
+   * @param premium Fee of the flash loan
+   * @param permitSignature struct containing the permit signature
+   * @param useEthPath use WETH address in path
+   * @param useATokenAsFrom use corresponding aToken instead of collateralAsset in swap
+   * @param useATokenAsTo use corresponding aToken instead of debtAsset in swap
+   * @param repaidAmount amount that transferred in repay
+   * @param maxCollateralToSwap maximum amount of collateral to swap
+   */
+  function _doSwapAndPull(
+    address collateralAsset,
+    address debtAsset,
+    address initiator,
+    uint256 premium,
+    PermitSignature memory permitSignature,
+    bool useEthPath,
+    bool useATokenAsFrom,
+    bool useATokenAsTo,
+    uint256 repaidAmount,
+    uint256 maxCollateralToSwap
+  ) internal {
+    address collateralATokenAddress = _getReserveData(collateralAsset).aTokenAddress;
+    if (collateralAsset != debtAsset) {
+      // NOTE: commented for fixing stack too deep error
+      // address debtATokenAddress = _getReserveData(debtAsset).aTokenAddress;
+      // uint256 neededForFlashLoanDebt = repaidAmount.add(premium);
+      uint256[] memory amounts = _getAmountsIn(
+        collateralAsset,
+        debtAsset,
+        repaidAmount.add(premium),
+        useEthPath
+      );
+      require(amounts[0] <= maxCollateralToSwap, 'slippage too high');
+
+      if (useATokenAsFrom) {
+        // Transfer aTokens from user to contract address
+        _transferATokenToContractAddress(
+          collateralATokenAddress,
+          initiator,
+          amounts[0],
+          permitSignature
+        );
+      } else {
+        // Pull aTokens from user
+        _pullAToken(
+          collateralAsset,
+          collateralATokenAddress,
+          initiator,
+          amounts[0],
+          permitSignature
+        );
+      }
+
+      // Swap collateral asset to the debt asset
+      _swapTokensForExactTokens(
+        collateralAsset,
+        debtAsset,
+        useATokenAsFrom ? collateralATokenAddress : collateralAsset,
+        useATokenAsTo ? _getReserveData(debtAsset).aTokenAddress : debtAsset,
+        amounts[0],
+        repaidAmount.add(premium),
+        useEthPath
+      );
+
+      if (useATokenAsTo) {
+        // withdraw debt AToken
+        LENDING_POOL.withdraw(
+          debtAsset,
+          IERC20(_getReserveData(debtAsset).aTokenAddress).balanceOf(address(this)),
+          address(this)
+        );
+      }
+    } else {
+      // Pull aTokens from user
+      _pullAToken(
+        collateralAsset,
+        collateralATokenAddress,
+        initiator,
+        repaidAmount.add(premium),
+        permitSignature
+      );
+    }
+  }
+
+  /**
    * @dev Perform the repay of the debt, pulls the initiator collateral and swaps to repay the flash loan
    *
    * @param collateralAsset Address of token to be swapped
@@ -158,6 +264,9 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
    * @param initiator Address of the user
    * @param premium Fee of the flash loan
    * @param permitSignature struct containing the permit signature
+   * @param useEthPath use WETH address in path
+   * @param useATokenAsFrom use corresponding aToken instead of collateralAsset in swap
+   * @param useATokenAsTo use corresponding aToken instead of debtAsset in swap
    */
   function _swapAndRepay(
     address collateralAsset,
@@ -168,10 +277,10 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
     address initiator,
     uint256 premium,
     PermitSignature memory permitSignature,
-    bool useEthPath
+    bool useEthPath,
+    bool useATokenAsFrom,
+    bool useATokenAsTo
   ) internal {
-    DataTypes.ReserveData memory collateralReserveData = _getReserveData(collateralAsset);
-
     // Repay debt. Approves for 0 first to comply with tokens that implement the anti frontrunning approval fix.
     IERC20(debtAsset).safeApprove(address(LENDING_POOL), 0);
     IERC20(debtAsset).safeApprove(address(LENDING_POOL), amount);
@@ -179,44 +288,23 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
     LENDING_POOL.repay(debtAsset, amount, rateMode, initiator);
     repaidAmount = repaidAmount.sub(IERC20(debtAsset).balanceOf(address(this)));
 
-    if (collateralAsset != debtAsset) {
-      uint256 maxCollateralToSwap = collateralAmount;
-      if (repaidAmount < amount) {
-        maxCollateralToSwap = maxCollateralToSwap.mul(repaidAmount).div(amount);
-      }
-
-      uint256 neededForFlashLoanDebt = repaidAmount.add(premium);
-      uint256[] memory amounts =
-        _getAmountsIn(collateralAsset, debtAsset, neededForFlashLoanDebt, useEthPath);
-      require(amounts[0] <= maxCollateralToSwap, 'slippage too high');
-
-      // Pull aTokens from user
-      _pullAToken(
-        collateralAsset,
-        collateralReserveData.aTokenAddress,
-        initiator,
-        amounts[0],
-        permitSignature
-      );
-
-      // Swap collateral asset to the debt asset
-      _swapTokensForExactTokens(
-        collateralAsset,
-        debtAsset,
-        amounts[0],
-        neededForFlashLoanDebt,
-        useEthPath
-      );
-    } else {
-      // Pull aTokens from user
-      _pullAToken(
-        collateralAsset,
-        collateralReserveData.aTokenAddress,
-        initiator,
-        repaidAmount.add(premium),
-        permitSignature
-      );
+    uint256 maxCollateralToSwap = collateralAmount;
+    if (repaidAmount < amount) {
+      maxCollateralToSwap = maxCollateralToSwap.mul(repaidAmount).div(amount);
     }
+
+    _doSwapAndPull(
+      collateralAsset,
+      debtAsset,
+      initiator,
+      premium,
+      permitSignature,
+      useEthPath,
+      useATokenAsFrom,
+      useATokenAsTo,
+      repaidAmount,
+      maxCollateralToSwap
+    );
 
     // Repay flashloan. Approves for 0 first to comply with tokens that implement the anti frontrunning approval fix.
     IERC20(debtAsset).safeApprove(address(LENDING_POOL), 0);
@@ -247,11 +335,12 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
       uint8 v,
       bytes32 r,
       bytes32 s,
-      bool useEthPath
-    ) =
-      abi.decode(
+      bool useEthPath,
+      bool useATokenAsFrom,
+      bool useATokenAsTo
+    ) = abi.decode(
         params,
-        (address, uint256, uint256, uint256, uint256, uint8, bytes32, bytes32, bool)
+        (address, uint256, uint256, uint256, uint256, uint8, bytes32, bytes32, bool, bool, bool)
       );
 
     return
@@ -260,7 +349,9 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
         collateralAmount,
         rateMode,
         PermitSignature(permitAmount, deadline, v, r, s),
-        useEthPath
+        useEthPath,
+        useATokenAsFrom,
+        useATokenAsTo
       );
   }
 }
