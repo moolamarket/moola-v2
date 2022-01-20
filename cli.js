@@ -122,7 +122,10 @@ async function execute(network, action, ...params) {
         console.info(`Available networks: test, main, or custom node URL.`);
         return;
       }
-      addressProvider = new kit.web3.eth.Contract(LendingPoolAddressesProvider, '0xD1088091A174d33412a968Fa34Cb67131188B332');
+      addressProvider = new kit.web3.eth.Contract(
+        LendingPoolAddressesProvider,
+        '0xD1088091A174d33412a968Fa34Cb67131188B332'
+      );
       cEUR = new kit.web3.eth.Contract(MToken, '0xD8763CBa276a3738E6DE85b4b3bF5FDed6D6cA73');
       cUSD = new kit.web3.eth.Contract(MToken, '0x765DE816845861e75A25fCA122bb6898B8B1282a');
       cREAL = new kit.web3.eth.Contract(MToken, '0xe8537a3d056DA446677B9E9d6c5dB704EaAb4787');
