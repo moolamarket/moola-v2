@@ -84,9 +84,9 @@ export const deployContract = async <ContractType extends Contract>(
   contractName: string,
   args: any[]
 ): Promise<ContractType> => {
-  const contract = (await (await DRE.ethers.getContractFactory(contractName)).deploy(
-    ...args
-  )) as ContractType;
+  const contract = (await (
+    await DRE.ethers.getContractFactory(contractName)
+  ).deploy(...args)) as ContractType;
   await waitForTx(contract.deployTransaction);
   await registerContractInJsonDb(<eContractid>contractName, contract);
   return contract;
@@ -145,14 +145,8 @@ export const linkBytecode = (artifact: BuidlerArtifact | Artifact, libraries: an
 };
 
 export const getParamPerNetwork = <T>(param: iParamsPerNetwork<T>, network: eNetwork) => {
-  const {
-    main,
-    ropsten,
-    kovan,
-    coverage,
-    buidlerevm,
-    tenderlyMain,
-  } = param as iEthereumParamsPerNetwork<T>;
+  const { main, ropsten, kovan, coverage, buidlerevm, tenderlyMain } =
+    param as iEthereumParamsPerNetwork<T>;
   const { matic, mumbai } = param as iPolygonParamsPerNetwork<T>;
   const { xdai } = param as iXDaiParamsPerNetwork<T>;
   const { celo, alfajores } = param as iCeloParamsPerNetwork<T>;
@@ -189,7 +183,10 @@ export const getParamPerNetwork = <T>(param: iParamsPerNetwork<T>, network: eNet
   }
 };
 
-export const getParamPerPool = <T>({ proto, amm, matic, moola }: iParamsPerPool<T>, pool: AavePools) => {
+export const getParamPerPool = <T>(
+  { proto, amm, matic, moola }: iParamsPerPool<T>,
+  pool: AavePools
+) => {
   switch (pool) {
     case AavePools.proto:
       return proto;
@@ -280,7 +277,9 @@ export const buildLiquiditySwapParams = (
   v: BigNumberish[],
   r: (string | Buffer)[],
   s: (string | Buffer)[],
-  useEthPath: boolean[]
+  useEthPath: boolean[],
+  beforeNormal: boolean[],
+  afterNormal: boolean[]
 ) => {
   return ethers.utils.defaultAbiCoder.encode(
     [
@@ -293,6 +292,8 @@ export const buildLiquiditySwapParams = (
       'bytes32[]',
       'bytes32[]',
       'bool[]',
+      'bool[]',
+      'bool[]',
     ],
     [
       assetToSwapToList,
@@ -304,6 +305,8 @@ export const buildLiquiditySwapParams = (
       r,
       s,
       useEthPath,
+      beforeNormal,
+      afterNormal,
     ]
   );
 };

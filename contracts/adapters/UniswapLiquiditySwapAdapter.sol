@@ -27,6 +27,8 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
     bool[] swapAllBalance;
     PermitParams permitParams;
     bool[] useEthPath;
+    bool[] beforeNormal;
+    bool[] afterNormal;
   }
 
   constructor(
@@ -74,7 +76,9 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
         assets.length == decodedParams.permitParams.v.length &&
         assets.length == decodedParams.permitParams.r.length &&
         assets.length == decodedParams.permitParams.s.length &&
-        assets.length == decodedParams.useEthPath.length,
+        assets.length == decodedParams.useEthPath.length &&
+        assets.length == decodedParams.beforeNormal.length &&
+        assets.length == decodedParams.afterNormal.length,
       'INCONSISTENT_PARAMS'
     );
 
@@ -94,7 +98,9 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
           decodedParams.permitParams.r[i],
           decodedParams.permitParams.s[i]
         ),
-        decodedParams.useEthPath[i]
+        decodedParams.useEthPath[i],
+        decodedParams.beforeNormal[i],
+        decodedParams.afterNormal[i]
       );
     }
 
@@ -164,9 +170,12 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
       vars.receivedAmount = _swapExactTokensForTokens(
         assetToSwapFromList[vars.i],
         assetToSwapToList[vars.i],
+        assetToSwapFromList[vars.i],
+        assetToSwapToList[vars.i],
         vars.amountToSwap,
         minAmountsToReceive[vars.i],
-        useEthPath[vars.i]
+        useEthPath[vars.i],
+        false
       );
 
       // Deposit new reserve
@@ -206,7 +215,9 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
     uint256 minAmountToReceive,
     bool swapAllBalance,
     PermitSignature memory permitSignature,
-    bool useEthPath
+    bool useEthPath,
+    bool beforeNormal,
+    bool afterNormal
   ) internal {
     SwapLiquidityLocalVars memory vars;
 
@@ -217,18 +228,30 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
       ? vars.aTokenInitiatorBalance.sub(premium)
       : amount;
 
+    if (!beforeNormal) {
+      IERC20(assetFrom).safeApprove(address(LENDING_POOL), 0);
+      IERC20(assetFrom).safeApprove(address(LENDING_POOL), vars.amountToSwap);
+      LENDING_POOL.deposit(assetFrom, vars.amountToSwap, address(this), 0);
+    }
+
     vars.receivedAmount = _swapExactTokensForTokens(
       assetFrom,
       assetTo,
+      beforeNormal ? assetFrom : vars.aToken,
+      afterNormal ? assetTo : _getReserveData(assetTo).aTokenAddress,
       vars.amountToSwap,
       minAmountToReceive,
-      useEthPath
+      useEthPath,
+      !beforeNormal || !afterNormal
     );
 
-    // Deposit new reserve
-    IERC20(assetTo).safeApprove(address(LENDING_POOL), 0);
-    IERC20(assetTo).safeApprove(address(LENDING_POOL), vars.receivedAmount);
-    LENDING_POOL.deposit(assetTo, vars.receivedAmount, initiator, 0);
+    if (afterNormal) {
+      IERC20(assetTo).safeApprove(address(LENDING_POOL), 0);
+      IERC20(assetTo).safeApprove(address(LENDING_POOL), vars.receivedAmount);
+      LENDING_POOL.deposit(assetTo, vars.receivedAmount, initiator, 0);
+    } else {
+      IERC20(_getReserveData(assetTo).aTokenAddress).transfer(initiator, vars.receivedAmount);
+    }
 
     vars.flashLoanDebt = amount.add(premium);
     vars.amountToPull = vars.amountToSwap.add(premium);
@@ -264,11 +287,24 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
       uint8[] memory v,
       bytes32[] memory r,
       bytes32[] memory s,
-      bool[] memory useEthPath
-    ) =
-      abi.decode(
+      bool[] memory useEthPath,
+      bool[] memory beforeNormal,
+      bool[] memory afterNormal
+    ) = abi.decode(
         params,
-        (address[], uint256[], bool[], uint256[], uint256[], uint8[], bytes32[], bytes32[], bool[])
+        (
+          address[],
+          uint256[],
+          bool[],
+          uint256[],
+          uint256[],
+          uint8[],
+          bytes32[],
+          bytes32[],
+          bool[],
+          bool[],
+          bool[]
+        )
       );
 
     return
@@ -277,7 +313,9 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
         minAmountsToReceive,
         swapAllBalance,
         PermitParams(permitAmount, deadline, v, r, s),
-        useEthPath
+        useEthPath,
+        beforeNormal,
+        afterNormal
       );
   }
 }

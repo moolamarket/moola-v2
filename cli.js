@@ -1,6 +1,7 @@
 const { newKit } = require('@celo/contractkit');
 const LendingPoolAddressesProvider = require('./abi/LendingPoolAddressProvider.json');
 const LendingPool = require('./abi/LendingPool.json');
+const PriceOracle = require('./abi/PriceOracle.json');
 const Uniswap = require('./abi/Uniswap.json');
 const DataProvider = require('./abi/MoolaProtocolDataProvider.json');
 const MToken = require('./abi/MToken.json');
@@ -8,7 +9,7 @@ const MoolaMigratorV1V2 = require('./abi/MoolaMigratorV1V2.json');
 const DebtToken = require('./abi/DebtToken.json');
 const BigNumber = require('bignumber.js');
 const Promise = require('bluebird');
-const { consoleTestResultHandler } = require('tslint/lib/test');
+const ethers = require('ethers');
 let pk;
 
 const INTEREST_RATE = {
@@ -49,6 +50,49 @@ function nowSeconds() {
   return Math.floor(Date.now() / 1000);
 }
 
+function buildLiquiditySwapParams(
+  assetToSwapToList,
+  minAmountsToReceive,
+  swapAllBalances,
+  permitAmounts,
+  deadlines,
+  v,
+  r,
+  s,
+  useEthPath,
+  beforeNormal,
+  afterNormal
+) {
+  return ethers.utils.defaultAbiCoder.encode(
+    [
+      'address[]',
+      'uint256[]',
+      'bool[]',
+      'uint256[]',
+      'uint256[]',
+      'uint8[]',
+      'bytes32[]',
+      'bytes32[]',
+      'bool[]',
+      'bool[]',
+      'bool[]',
+    ],
+    [
+      assetToSwapToList,
+      minAmountsToReceive,
+      swapAllBalances,
+      permitAmounts,
+      deadlines,
+      v,
+      r,
+      s,
+      useEthPath,
+      beforeNormal,
+      afterNormal,
+    ]
+  );
+};
+
 function printActions() {
   console.info('Available actions:');
   console.info('balanceOf celo|cusd|ceur|creal address');
@@ -64,6 +108,7 @@ function printActions() {
   console.info('repayFor celo|cusd|ceur|creal for address amount stable|variable [privateKey]');
   console.info('migrate-step-2 address [privateKey]');
   console.info('liquidation-bot address [privateKey]');
+  console.info('liquidity-swap [privateKey] address celo|cusd|ceur to celo|cusd|ceur amount');
   console.info(
     'liquidation-call collateralAsset(celo|cusd|ceur|creal) debtAsset(celo|cusd|ceur|creal) userToLiquidate debtToCover receiveAToken(true|false) address [privateKey]'
   );
@@ -93,6 +138,7 @@ async function execute(network, action, ...params) {
   let cEUR;
   let migrator;
   let privateKeyRequired = true;
+  let liquiditySwapAdapter;
   switch (network) {
     case 'test':
       kit = newKit('https://alfajores-forno.celo-testnet.org');
@@ -103,6 +149,7 @@ async function execute(network, action, ...params) {
       CELO = new kit.web3.eth.Contract(MToken, '0xF194afDf50B03e69Bd7D057c1Aa9e10c9954E4C9');
       dataProvider = new kit.web3.eth.Contract(DataProvider, '0x31ccB9dC068058672D96E92BAf96B1607855822E');
       migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0x78660A4bbe5108c8258c39696209329B3bC214ba');
+      liquiditySwapAdapter = '0xe469484419AD6730BeD187c22a47ca38B054B09f';
       break;
     case 'main':
       kit = newKit('https://forno.celo.org');
@@ -113,6 +160,7 @@ async function execute(network, action, ...params) {
       CELO = new kit.web3.eth.Contract(MToken, '0x471EcE3750Da237f93B8E339c536989b8978a438');
       dataProvider = new kit.web3.eth.Contract(DataProvider, '0x43d067ed784D9DD2ffEda73775e2CC4c560103A1');
       migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0xB87ebF9CD90003B66CF77c937eb5628124fA0662');
+      liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
       break;
     default:
       try {
@@ -133,11 +181,13 @@ async function execute(network, action, ...params) {
       dataProvider = new kit.web3.eth.Contract(DataProvider, '0x43d067ed784D9DD2ffEda73775e2CC4c560103A1');
       migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0xB87ebF9CD90003B66CF77c937eb5628124fA0662');
       privateKeyRequired = false;
+      liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
   }
   const web3 = kit.web3;
   const eth = web3.eth;
 
   const lendingPool = new eth.Contract(LendingPool, await addressProvider.methods.getLendingPool().call());
+  const priceOracle = new eth.Contract(PriceOracle, await addressProvider.methods.getPriceOracle().call());
   const tokens = {
     celo: CELO,
     cusd: cUSD,
@@ -598,6 +648,104 @@ async function execute(network, action, ...params) {
       await Promise.delay(60000);
     }
   }
+
+  if (action == 'liquidity-swap') {
+    if (network == 'test') {
+      throw new Error('Liquidity swap only works on the mainnet due to low liquidity in pools');
+    }
+
+    if (privateKeyRequired) {
+      pk = params[0];
+      if (!pk) {
+        console.error('Missing private key');
+        return;
+      }
+      kit.addAccount(pk);
+    }
+
+    const tokenFrom = tokens[params[2]];
+    const tokenTo = tokens[params[3]];
+    const user = params[1];
+    const amount = web3.utils.toWei(params[4]);
+    const beforeNormal = params[2] == 'celo';
+    const afterNormal = params[3] == 'celo';
+
+    const reserveTokens = await dataProvider.methods
+      .getReserveTokensAddresses(tokenFrom.options.address)
+      .call();
+    const mToken = new eth.Contract(MToken, reserveTokens.aTokenAddress);
+
+    const [tokenFromPrice, tokenToPrice] = await priceOracle.methods
+      .getAssetsPrices([tokenFrom.options.address, tokenTo.options.address])
+      .call();
+    const tokenToSwapPrice = BN(amount)
+      .multipliedBy(BN(tokenFromPrice))
+      .dividedBy(BN(tokenToPrice))
+      .toFixed(0);
+
+    console.log(`Checking mToken ${mToken.options.address} for approval`);
+    if ((await mToken.methods.allowance(user, liquiditySwapAdapter).call()).length < 30) {
+      console.log(
+        'Approve UniswapAdapter',
+        (
+          await mToken.methods
+            .approve(liquiditySwapAdapter, maxUint256)
+            .send({ from: user, gas: 2000000 })
+        ).transactionHash
+      );
+    }
+
+    const callParams = buildLiquiditySwapParams(
+      [tokenTo.options.address],
+      [tokenToSwapPrice],
+      [0],
+      [0],
+      [0],
+      [0],
+      ['0x0000000000000000000000000000000000000000000000000000000000000000'],
+      ['0x0000000000000000000000000000000000000000000000000000000000000000'],
+      [false],
+      [beforeNormal],
+      [afterNormal]
+    );
+
+    try {
+      await retry(() =>
+        lendingPool.methods
+          .flashLoan(
+            liquiditySwapAdapter,
+            [tokenFrom.options.address],
+            [amount],
+            [0],
+            user,
+            callParams,
+            0
+          )
+          .estimateGas({ from: user, gas: 2000000 })
+      );
+    } catch (err) {
+      console.log('Cannot swap liquidity', err.message);
+      return;
+    }
+    console.log(
+      'Liquidity swap',
+      (
+        await lendingPool.methods
+          .flashLoan(
+            liquiditySwapAdapter,
+            [tokenFrom.options.address],
+            [amount],
+            [0],
+            user,
+            callParams,
+            0
+          )
+          .send({ from: user, gas: 2000000 })
+      ).transactionHash
+    );
+    return;
+  }
+
   if (action === 'liquidation-call') {
     const collateralAsset = tokens[params[0]].options.address;
     const debtAsset = tokens[params[1]].options.address;
