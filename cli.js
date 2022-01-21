@@ -135,7 +135,7 @@ async function execute(network, action, ...params) {
   let cEUR;
   let migrator;
   let privateKeyRequired = true;
-  let ubeswapAdapterAddress;
+  let liquiditySwapAdapter;
   switch (network) {
     case 'test':
       kit = newKit('https://alfajores-forno.celo-testnet.org');
@@ -145,7 +145,7 @@ async function execute(network, action, ...params) {
       CELO = new kit.web3.eth.Contract(MToken, '0xF194afDf50B03e69Bd7D057c1Aa9e10c9954E4C9');
       dataProvider = new kit.web3.eth.Contract(DataProvider, '0x31ccB9dC068058672D96E92BAf96B1607855822E');
       migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0x78660A4bbe5108c8258c39696209329B3bC214ba');
-      ubeswapAdapterAddress = '0xe469484419AD6730BeD187c22a47ca38B054B09f';
+      liquiditySwapAdapter = '0xe469484419AD6730BeD187c22a47ca38B054B09f';
       break;
     case 'main':
       kit = newKit('https://forno.celo.org');
@@ -155,7 +155,7 @@ async function execute(network, action, ...params) {
       CELO = new kit.web3.eth.Contract(MToken, '0x471EcE3750Da237f93B8E339c536989b8978a438');
       dataProvider = new kit.web3.eth.Contract(DataProvider, '0x43d067ed784D9DD2ffEda73775e2CC4c560103A1');
       migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0xB87ebF9CD90003B66CF77c937eb5628124fA0662');
-      ubeswapAdapterAddress = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
+      liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
       break;
     default:
       try {
@@ -172,7 +172,7 @@ async function execute(network, action, ...params) {
       dataProvider = new kit.web3.eth.Contract(DataProvider, '0x43d067ed784D9DD2ffEda73775e2CC4c560103A1');
       migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0xB87ebF9CD90003B66CF77c937eb5628124fA0662');
       privateKeyRequired = false;
-      ubeswapAdapterAddress = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
+      liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
   }
   const web3 = kit.web3;
   const eth = web3.eth;
@@ -654,16 +654,18 @@ async function execute(network, action, ...params) {
     const tokenTo = tokens[params[3]];
     const user = params[1];
     const amount = web3.utils.toWei(params[4]);
+    const beforeNormal = params[2] == 'celo';
+    const afterNormal = params[3] == 'celo';
 
     const reserveTokens = await dataProvider.methods.getReserveTokensAddresses(tokenFrom.options.address).call();
     const mToken = new eth.Contract(MToken, reserveTokens.aTokenAddress);
 
     const [tokenFromPrice, tokenToPrice] = await priceOracle.methods.getAssetsPrices([tokenFrom.options.address, tokenTo.options.address]).call();
-    const tokenToSwapPrice = BN(amount).multipliedBy(BN(tokenFromPrice)).dividedBy(BN(tokenToPrice)).toFixed(0)
+    const tokenToSwapPrice = BN(amount).multipliedBy(BN(tokenFromPrice)).dividedBy(BN(tokenToPrice)).toFixed(0);
 
     console.log(`Checking mToken ${mToken.options.address} for approval`)
-    if ((await mToken.methods.allowance(user, ubeswapAdapterAddress).call()).length < 30) {
-      console.log('Approve UniswapAdapter', (await mToken.methods.approve(ubeswapAdapterAddress, maxUint256).send({from: user, gas: 2000000})).transactionHash);
+    if ((await mToken.methods.allowance(user, liquiditySwapAdapter).call()).length < 30) {
+      console.log('Approve UniswapAdapter', (await mToken.methods.approve(liquiditySwapAdapter, maxUint256).send({from: user, gas: 2000000})).transactionHash);
     }
 
     const callParams =  buildLiquiditySwapParams(
@@ -676,19 +678,19 @@ async function execute(network, action, ...params) {
       ['0x0000000000000000000000000000000000000000000000000000000000000000'],
       ['0x0000000000000000000000000000000000000000000000000000000000000000'],
       [false],
-      [false],
-      [false],
+      [beforeNormal],
+      [afterNormal],
     );
 
     try {
       await retry(() => lendingPool.methods.flashLoan(
-        ubeswapAdapterAddress, [tokenFrom.options.address], [amount], [0], user, callParams, 0).estimateGas({from: user, gas: 2000000}));
+        liquiditySwapAdapter, [tokenFrom.options.address], [amount], [0], user, callParams, 0).estimateGas({from: user, gas: 2000000}));
     } catch (err) {
       console.log('Cannot swap liquidity', err.message);
       return;
     }
     console.log('Liquidity swap', (await lendingPool.methods.flashLoan(
-      ubeswapAdapterAddress, [tokenFrom.options.address], [amount], [0], user, callParams, 0).send({from: user, gas: 2000000})).transactionHash);
+      liquiditySwapAdapter, [tokenFrom.options.address], [amount], [0], user, callParams, 0).send({from: user, gas: 2000000})).transactionHash);
     return;
   }
   console.error(`Unknown action: ${action}`);
