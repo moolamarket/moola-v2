@@ -290,21 +290,10 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
       bool[] memory useEthPath,
       bool[] memory beforeNormal,
       bool[] memory afterNormal
-    ) = abi.decode(
+    ) =
+      abi.decode(
         params,
-        (
-          address[],
-          uint256[],
-          bool[],
-          uint256[],
-          uint256[],
-          uint8[],
-          bytes32[],
-          bytes32[],
-          bool[],
-          bool[],
-          bool[]
-        )
+        (address[], uint256[], bool[], uint256[], uint256[], uint8[], bytes32[], bytes32[], bool[], bool[], bool[])
       );
 
     return
