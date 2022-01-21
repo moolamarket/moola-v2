@@ -223,23 +223,18 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     uint256 amountToReceive,
     bool useEthPath
   ) internal returns (uint256) {
-    // NOTE: this requirement(maxAmountToSwap < expectedMaxAmountToSwap) breacks swaps with aTokens
-    // uint256 fromAssetDecimals = _getDecimals(assetToSwapFromPrice);
-    // uint256 toAssetDecimals = _getDecimals(assetToSwapToPrice);
+    uint256 fromAssetDecimals = _getDecimals(assetToSwapFromPrice);
+    uint256 toAssetDecimals = _getDecimals(assetToSwapToPrice);
 
-    // uint256 fromAssetPrice = _getPrice(assetToSwapFromPrice);
-    // uint256 toAssetPrice = _getPrice(assetToSwapToPrice);
+    uint256 fromAssetPrice = _getPrice(assetToSwapFromPrice);
+    uint256 toAssetPrice = _getPrice(assetToSwapToPrice);
 
-    // uint256 expectedMaxAmountToSwap = amountToReceive
-    //   .mul(toAssetPrice.mul(10**fromAssetDecimals))
-    //   .div(fromAssetPrice.mul(10**toAssetDecimals))
-    //   .percentMul(PercentageMath.PERCENTAGE_FACTOR.add(MAX_SLIPPAGE_PERCENT));
+    uint256 expectedMaxAmountToSwap = amountToReceive
+      .mul(toAssetPrice.mul(10**fromAssetDecimals))
+      .div(fromAssetPrice.mul(10**toAssetDecimals))
+      .percentMul(PercentageMath.PERCENTAGE_FACTOR.add(MAX_SLIPPAGE_PERCENT));
 
-    // require(
-    //   maxAmountToSwap < expectedMaxAmountToSwap,
-    //   'maxAmountToSwap exceed max slippage'
-    // );
-    // NOTE: end of note
+    require(maxAmountToSwap < expectedMaxAmountToSwap, 'maxAmountToSwap exceed max slippage');
 
     // Approves the transfer for the swap. Approves for 0 first to comply with tokens that implement the anti frontrunning approval fix.
     IERC20(assetToSwapFrom).safeApprove(address(UNISWAP_ROUTER), 0);
