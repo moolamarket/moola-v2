@@ -242,7 +242,7 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
       vars.amountToSwap,
       minAmountToReceive,
       useEthPath,
-      !useATokenAsFrom || !useATokenAsTo
+      useATokenAsFrom || useATokenAsTo
     );
 
     if (useATokenAsTo) {
