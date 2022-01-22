@@ -153,8 +153,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           '0x0000000000000000000000000000000000000000000000000000000000000000',
           '0x0000000000000000000000000000000000000000000000000000000000000000',
           false,
-          true,
-          true
+          false,
+          false
         );
 
         await expect(
@@ -262,8 +262,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           r,
           s,
           false,
-          true,
-          true
+          false,
+          false
         );
 
         await expect(
@@ -326,8 +326,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           '0x0000000000000000000000000000000000000000000000000000000000000000',
           '0x0000000000000000000000000000000000000000000000000000000000000000',
           false,
-          true,
-          true
+          false,
+          false
         );
 
         await expect(
@@ -377,8 +377,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           '0x0000000000000000000000000000000000000000000000000000000000000000',
           '0x0000000000000000000000000000000000000000000000000000000000000000',
           false,
-          true,
-          true
+          false,
+          false
         );
 
         await expect(
@@ -427,8 +427,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           '0x0000000000000000000000000000000000000000000000000000000000000000',
           '0x0000000000000000000000000000000000000000000000000000000000000000',
           false,
-          true,
-          true
+          false,
+          false
         );
 
         await expect(
@@ -488,8 +488,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           '0x0000000000000000000000000000000000000000000000000000000000000000',
           '0x0000000000000000000000000000000000000000000000000000000000000000',
           false,
-          true,
-          true
+          false,
+          false
         );
 
         await expect(
@@ -567,8 +567,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           '0x0000000000000000000000000000000000000000000000000000000000000000',
           '0x0000000000000000000000000000000000000000000000000000000000000000',
           false,
-          true,
-          true
+          false,
+          false
         );
 
         await expect(
@@ -658,8 +658,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           '0x0000000000000000000000000000000000000000000000000000000000000000',
           '0x0000000000000000000000000000000000000000000000000000000000000000',
           false,
-          true,
-          true
+          false,
+          false
         );
 
         await pool
@@ -745,8 +745,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           '0x0000000000000000000000000000000000000000000000000000000000000000',
           '0x0000000000000000000000000000000000000000000000000000000000000000',
           false,
-          true,
-          true
+          false,
+          false
         );
 
         await pool
@@ -823,8 +823,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           '0x0000000000000000000000000000000000000000000000000000000000000000',
           '0x0000000000000000000000000000000000000000000000000000000000000000',
           false,
-          true,
-          true
+          false,
+          false
         );
 
         await pool
@@ -918,8 +918,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             s: '0x0000000000000000000000000000000000000000000000000000000000000000',
           },
           false,
-          true,
-          true
+          false,
+          false
         );
 
         const adapterWethBalance = await weth.balanceOf(uniswapRepayAdapter.address);
@@ -1006,8 +1006,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             s,
           },
           false,
-          true,
-          true
+          false,
+          false
         );
 
         const adapterWethBalance = await weth.balanceOf(uniswapRepayAdapter.address);
@@ -1057,8 +1057,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               s: '0x0000000000000000000000000000000000000000000000000000000000000000',
             },
             false,
-            true,
-            true
+            false,
+            false
           )
         ).to.be.reverted;
       });
@@ -1101,8 +1101,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               s: '0x0000000000000000000000000000000000000000000000000000000000000000',
             },
             false,
-            true,
-            true
+            false,
+            false
           )
         ).to.be.revertedWith('maxAmountToSwap exceed max slippage');
       });
@@ -1162,8 +1162,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             s: '0x0000000000000000000000000000000000000000000000000000000000000000',
           },
           false,
-          true,
-          true
+          false,
+          false
         );
 
         const adapterWethBalance = await weth.balanceOf(uniswapRepayAdapter.address);
@@ -1241,8 +1241,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             s: '0x0000000000000000000000000000000000000000000000000000000000000000',
           },
           false,
-          true,
-          true
+          false,
+          false
         );
 
         const adapterWethBalance = await weth.balanceOf(uniswapRepayAdapter.address);
@@ -1320,8 +1320,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             s: '0x0000000000000000000000000000000000000000000000000000000000000000',
           },
           false,
-          true,
-          true
+          false,
+          false
         );
 
         const adapterWethBalance = await weth.balanceOf(uniswapRepayAdapter.address);
@@ -1387,8 +1387,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             s: '0x0000000000000000000000000000000000000000000000000000000000000000',
           },
           false,
-          true,
-          true
+          false,
+          false
         );
 
         const adapterDaiBalance = await dai.balanceOf(uniswapRepayAdapter.address);
