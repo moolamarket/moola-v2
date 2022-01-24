@@ -193,7 +193,7 @@ async function execute(network, action, ...params) {
       dataProvider = new kit.web3.eth.Contract(DataProvider, '0x31ccB9dC068058672D96E92BAf96B1607855822E');
       migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0x78660A4bbe5108c8258c39696209329B3bC214ba');
       liquiditySwapAdapter = '0xe469484419AD6730BeD187c22a47ca38B054B09f';
-      repayAdapter = new kit.web3.eth.Contract(UniswapRepayAdapter, '0x0e09Dc376CAcCbE83307115E454695C2BfDA1a82');
+      repayAdapter = new kit.web3.eth.Contract(UniswapRepayAdapter, '0x55a48631e4ED42D2b12FBA0edc7ad8F66c28375C');
       break;
     case 'main':
       kit = newKit('https://forno.celo.org');
