@@ -803,7 +803,7 @@ async function execute(network, action, ...params) {
     let method;
 
     if (useFlashLoan) {
-      const callParams = buildLiquiditySwapParams(
+      const callParams = buildSwapAndRepayParams(
         collateralAsset.options.address,
         maxCollateralAmount,
         rateMode,
