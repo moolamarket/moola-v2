@@ -763,7 +763,7 @@ async function execute(network, action, ...params) {
     const collateralAsset = tokens[params[1]];
     const debtAsset = tokens[params[2]];
     const rateMode = params[3];
-    const repayAmount = web3.utils.toWei(params[4]);
+    const repayAmount = BN(web3.utils.toWei(params[4]));
     const useFlashLoan = params[5] == 'true' ? true : false;
     const useATokenAsFrom = params[1] != 'celo';
     const useATokenAsTo = params[2] != 'celo';
@@ -776,10 +776,10 @@ async function execute(network, action, ...params) {
     const mToken = new eth.Contract(MToken, reserveTokens.aTokenAddress);
 
     console.log(`Checking mToken ${mToken.options.address} for approval`);
-    if ((await mToken.methods.allowance(user, repayAdapter).call()).length < 30) {
+    if ((await mToken.methods.allowance(user, repayAdapter.options.address).call()).length < 30) {
       console.log(
         'Approve UniswapAdapter',
-        (await mToken.methods.approve(repayAdapter, maxUint256).send({ from: user, gas: 2000000 }))
+        (await mToken.methods.approve(repayAdapter.options.address, maxUint256).send({ from: user, gas: 2000000 }))
           .transactionHash
       );
     }
@@ -791,13 +791,13 @@ async function execute(network, action, ...params) {
         '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121'
       );
       const amountOut = useFlashLoan
-        ? repayAmount.add(repayAmount.muln(9).divn(10000))
+        ? repayAmount.plus(repayAmount.multipliedBy(9).dividedBy(10000))
         : repayAmount;
       const amounts = await uniswap.methods.getAmountsIn(amountOut, [
         collateralAsset.options.address,
         debtAsset.options.address,
-      ]);
-      maxCollateralAmount = amounts[0].add(amounts[0].divn(10)); // 10% slippage
+      ]).call();
+      maxCollateralAmount = BN(amounts[0]).plus(BN(amounts[0]).dividedBy(10)).toFixed(0); // 10% slippage
     }
 
     let method;
