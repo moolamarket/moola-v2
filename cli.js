@@ -2,6 +2,7 @@ const { newKit } = require('@celo/contractkit');
 const LendingPoolAddressesProvider = require('./abi/LendingPoolAddressProvider.json');
 const LendingPool = require('./abi/LendingPool.json');
 const PriceOracle = require('./abi/PriceOracle.json');
+const UniswapRepayAdapter = require('./abi/UniswapRepayAdapter.json');
 const Uniswap = require('./abi/Uniswap.json');
 const DataProvider = require('./abi/MoolaProtocolDataProvider.json');
 const MToken = require('./abi/MToken.json');
@@ -91,7 +92,50 @@ function buildLiquiditySwapParams(
       useATokenAsTo,
     ]
   );
-};
+}
+
+function buildSwapAndRepayParams(
+  collateralAsset,
+  collateralAmount,
+  rateMode,
+  permitAmount,
+  deadline,
+  v,
+  r,
+  s,
+  useEthPath,
+  useATokenAsFrom,
+  useATokenAsTo
+) {
+  return ethers.utils.defaultAbiCoder.encode(
+    [
+      'address',
+      'uint256',
+      'uint256',
+      'uint256',
+      'uint256',
+      'uint8',
+      'bytes32',
+      'bytes32',
+      'bool',
+      'bool',
+      'bool'
+    ],
+    [
+      collateralAsset,
+      collateralAmount,
+      rateMode,
+      permitAmount,
+      deadline,
+      v,
+      r,
+      s,
+      useEthPath,
+      useATokenAsFrom,
+      useATokenAsTo
+    ]
+  );  
+}
 
 function printActions() {
   console.info('Available actions:');
@@ -108,7 +152,8 @@ function printActions() {
   console.info('repayFor celo|cusd|ceur for address amount stable|variable [privateKey]');
   console.info('migrate-step-2 address [privateKey]');
   console.info('liquidation-bot address [privateKey]');
-  console.info('liquidity-swap [privateKey] address celo|cusd|ceur to celo|cusd|ceur amount');
+  console.info('liquidity-swap address celo|cusd|ceur to celo|cusd|ceur amount [privateKey]');
+  console.info('repay-from-collateral address collateralAsset(celo|cusd|ceur) debtAsset(celo|cusd|ceur) debtRateMode(1|2) debtRepayAmount useFlashloan(true|false) [privateKey]');
 }
 
 const retry = async (fun, tries = 5) => {
@@ -136,6 +181,7 @@ async function execute(network, action, ...params) {
   let migrator;
   let privateKeyRequired = true;
   let liquiditySwapAdapter;
+  let repayAdapter;
   switch (network) {
     case 'test':
       kit = newKit('https://alfajores-forno.celo-testnet.org');
@@ -146,6 +192,7 @@ async function execute(network, action, ...params) {
       dataProvider = new kit.web3.eth.Contract(DataProvider, '0x31ccB9dC068058672D96E92BAf96B1607855822E');
       migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0x78660A4bbe5108c8258c39696209329B3bC214ba');
       liquiditySwapAdapter = '0xe469484419AD6730BeD187c22a47ca38B054B09f';
+      repayAdapter = new kit.web3.eth.Contract(UniswapRepayAdapter, '0x0e09Dc376CAcCbE83307115E454695C2BfDA1a82');
       break;
     case 'main':
       kit = newKit('https://forno.celo.org');
@@ -156,6 +203,7 @@ async function execute(network, action, ...params) {
       dataProvider = new kit.web3.eth.Contract(DataProvider, '0x43d067ed784D9DD2ffEda73775e2CC4c560103A1');
       migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0xB87ebF9CD90003B66CF77c937eb5628124fA0662');
       liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
+      repayAdapter = new kit.web3.eth.Contract(UniswapRepayAdapter, '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c');
       break;
     default:
       try {
@@ -173,6 +221,7 @@ async function execute(network, action, ...params) {
       migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0xB87ebF9CD90003B66CF77c937eb5628124fA0662');
       privateKeyRequired = false;
       liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
+      repayAdapter = new kit.web3.eth.Contract(UniswapRepayAdapter, '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c');
   }
   const web3 = kit.web3;
   const eth = web3.eth;
@@ -642,7 +691,7 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
-      pk = params[0];
+      pk = params[4];
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -650,12 +699,12 @@ async function execute(network, action, ...params) {
       kit.addAccount(pk);
     }
 
-    const tokenFrom = tokens[params[2]];
-    const tokenTo = tokens[params[3]];
-    const user = params[1];
-    const amount = web3.utils.toWei(params[4]);
-    const useATokenAsFrom = params[2] != 'celo';
-    const useATokenAsTo = params[3] != 'celo';
+    const tokenFrom = tokens[params[1]];
+    const tokenTo = tokens[params[2]];
+    const user = params[0];
+    const amount = web3.utils.toWei(params[3]);
+    const useATokenAsFrom = params[1] != 'celo';
+    const useATokenAsTo = params[2] != 'celo';
 
     const reserveTokens = await dataProvider.methods.getReserveTokensAddresses(tokenFrom.options.address).call();
     const mToken = new eth.Contract(MToken, reserveTokens.aTokenAddress);
@@ -693,6 +742,116 @@ async function execute(network, action, ...params) {
       liquiditySwapAdapter, [tokenFrom.options.address], [amount], [0], user, callParams, 0).send({from: user, gas: 2000000})).transactionHash);
     return;
   }
+
+  if (action == 'repay-from-collateral') {
+    if (network == 'test') {
+      throw new Error(
+        'repay from collateral only works on the mainnet due to low liquidity in pools'
+      );
+    }
+
+    if (privateKeyRequired) {
+      pk = params[6];
+      if (!pk) {
+        console.error('Missing private key');
+        return;
+      }
+      kit.addAccount(pk);
+    }
+
+    const user = params[0];
+    const collateralAsset = tokens[params[1]];
+    const debtAsset = tokens[params[2]];
+    const rateMode = params[3];
+    const repayAmount = web3.utils.toWei(params[4]);
+    const useFlashLoan = params[5] == 'true' ? true : false;
+    const useATokenAsFrom = params[1] != 'celo';
+    const useATokenAsTo = params[2] != 'celo';
+
+    const zeroHash = '0x0000000000000000000000000000000000000000000000000000000000000000';
+
+    const reserveTokens = await dataProvider.methods
+      .getReserveTokensAddresses(collateralAsset.options.address)
+      .call();
+    const mToken = new eth.Contract(MToken, reserveTokens.aTokenAddress);
+
+    console.log(`Checking mToken ${mToken.options.address} for approval`);
+    if ((await mToken.methods.allowance(user, repayAdapter).call()).length < 30) {
+      console.log(
+        'Approve UniswapAdapter',
+        (await mToken.methods.approve(repayAdapter, maxUint256).send({ from: user, gas: 2000000 }))
+          .transactionHash
+      );
+    }
+
+    let maxCollateralAmount = 0;
+    if (collateralAsset != debtAsset) {
+      const uniswap = new kit.web3.eth.Contract(
+        Uniswap,
+        '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121'
+      );
+      const amountOut = useFlashLoan
+        ? repayAmount.add(repayAmount.muln(9).divn(10000))
+        : repayAmount;
+      const amounts = await uniswap.methods.getAmountsIn(amountOut, [
+        collateralAsset.options.address,
+        debtAsset.options.address,
+      ]);
+      maxCollateralAmount = amounts[0].add(amounts[0].divn(10)); // 10% slippage
+    }
+
+    let method;
+
+    if (useFlashLoan) {
+      const callParams = buildLiquiditySwapParams(
+        collateralAsset.options.address,
+        maxCollateralAmount,
+        rateMode,
+        0,
+        0,
+        0,
+        zeroHash,
+        zeroHash,
+        false,
+        useATokenAsFrom,
+        useATokenAsTo
+      );
+      method = lendingPool.methods.flashLoan(
+        repayAdapter.options.address,
+        [debtAsset.options.address],
+        [repayAmount],
+        [0],
+        user,
+        callParams,
+        0
+      );
+    } else {
+      method = repayAdapter.methods.swapAndRepay(
+        collateralAsset.options.address,
+        debtAsset.options.address,
+        maxCollateralAmount,
+        repayAmount,
+        rateMode,
+        { amount: 0, deadline: 0, v: 0, r: zeroHash, s: zeroHash },
+        false,
+        useATokenAsFrom,
+        useATokenAsTo
+      );
+    }
+
+    try {
+      await retry(() => method.estimateGas({ from: user, gas: 2000000 }));
+    } catch (err) {
+      console.log('Cannot repay', err.message);
+      return;
+    }
+    console.log(
+      'Swap and repay',
+      (await method.send({ from: user, gas: 2000000 })).transactionHash
+    );
+    return;
+  }
+  
   console.error(`Unknown action: ${action}`);
   printActions();
 }
