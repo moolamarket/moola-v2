@@ -780,15 +780,6 @@ async function execute(network, action, ...params) {
       .call();
     const mToken = new eth.Contract(MToken, reserveTokens.aTokenAddress);
 
-    console.log(`Checking mToken ${mToken.options.address} for approval`);
-    if ((await mToken.methods.allowance(user, repayAdapter.options.address).call()).length < 30) {
-      console.log(
-        'Approve UniswapAdapter',
-        (await mToken.methods.approve(repayAdapter.options.address, maxUint256).send({ from: user, gas: 2000000 }))
-          .transactionHash
-      );
-    }
-
     let maxCollateralAmount = 0;
     if (collateralAsset != debtAsset) {
       const uniswap = new kit.web3.eth.Contract(
@@ -804,6 +795,16 @@ async function execute(network, action, ...params) {
       ]).call();
       maxCollateralAmount = BN(amounts[0]).plus(BN(amounts[0]).dividedBy(10)).toFixed(0); // 10% slippage
     }
+
+    console.log(`Checking mToken ${mToken.options.address} for approval`);
+    if (BN(await mToken.methods.allowance(user, repayAdapter.options.address).call()).lt(BN(maxCollateralAmount))) {
+      console.log(
+        'Approve UniswapAdapter',
+        (await mToken.methods.approve(repayAdapter.options.address, maxCollateralAmount).send({ from: user, gas: 2000000 }))
+          .transactionHash
+      );
+    }
+
 
     let method;
 
