@@ -60,8 +60,8 @@ function buildLiquiditySwapParams(
   r,
   s,
   useEthPath,
-  beforeNormal,
-  afterNormal
+  useATokenAsFrom,
+  useATokenAsTo
 ) {
   return ethers.utils.defaultAbiCoder.encode(
     [
@@ -87,8 +87,8 @@ function buildLiquiditySwapParams(
       r,
       s,
       useEthPath,
-      beforeNormal,
-      afterNormal,
+      useATokenAsFrom,
+      useATokenAsTo,
     ]
   );
 };
@@ -654,8 +654,8 @@ async function execute(network, action, ...params) {
     const tokenTo = tokens[params[3]];
     const user = params[1];
     const amount = web3.utils.toWei(params[4]);
-    const beforeNormal = params[2] == 'celo';
-    const afterNormal = params[3] == 'celo';
+    const useATokenAsFrom = params[2] != 'celo';
+    const useATokenAsTo = params[3] != 'celo';
 
     const reserveTokens = await dataProvider.methods.getReserveTokensAddresses(tokenFrom.options.address).call();
     const mToken = new eth.Contract(MToken, reserveTokens.aTokenAddress);
@@ -678,8 +678,8 @@ async function execute(network, action, ...params) {
       ['0x0000000000000000000000000000000000000000000000000000000000000000'],
       ['0x0000000000000000000000000000000000000000000000000000000000000000'],
       [false],
-      [beforeNormal],
-      [afterNormal],
+      [useATokenAsFrom],
+      [useATokenAsTo],
     );
 
     try {
