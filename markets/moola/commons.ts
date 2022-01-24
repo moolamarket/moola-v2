@@ -42,6 +42,9 @@ export const CommonsConfig: ICommonConfiguration = {
     CEUR: {
       borrowRate: oneRay.multipliedBy(0.039).toFixed(),
     },
+    CREAL: {
+      borrowRate: oneRay.multipliedBy(0.039).toFixed(),
+    },
     MOO: {
       borrowRate: oneRay.multipliedBy(0.03).toFixed(),
     },
@@ -75,7 +78,7 @@ export const CommonsConfig: ICommonConfiguration = {
   LendingRateOracle: {
     [eCeloNetwork.celo]: '',
     [eCeloNetwork.alfajores]: '',
-  },  
+  },
   LendingPoolCollateralManager: {
     [eCeloNetwork.celo]: '',
     [eCeloNetwork.alfajores]: '',

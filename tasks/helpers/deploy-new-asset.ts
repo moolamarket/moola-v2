@@ -9,6 +9,8 @@ import {
   deployDefaultReserveInterestRateStrategy,
   deployStableDebtToken,
   deployVariableDebtToken,
+  deployCREALConfiguratorAlfajores,
+  deployCREALConfiguratorCelo,
 } from './../../helpers/contracts-deployments';
 import { setDRE } from '../../helpers/misc-utils';
 import { ZERO_ADDRESS } from './../../helpers/constants';
@@ -99,3 +101,17 @@ WRONG RESERVE ASSET SETUP:
     Strategy Implementation for ${symbol} address: ${rates.address}
     `);
   });
+
+task('external:deploy-crealconfigurator-alfajores', 'Deploy cREAL configurator').setAction(
+  async (params, localBRE) => {
+    setDRE(localBRE);
+    await deployCREALConfiguratorAlfajores();
+  }
+);
+
+task('external:deploy-crealconfigurator-celo', 'Deploy cREAL configurator').setAction(
+  async (params, localBRE) => {
+    setDRE(localBRE);
+    await deployCREALConfiguratorCelo();
+  }
+);
