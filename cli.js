@@ -109,9 +109,6 @@ function printActions() {
   console.info('migrate-step-2 address [privateKey]');
   console.info('liquidation-bot address [privateKey]');
   console.info('liquidity-swap [privateKey] address celo|cusd|ceur to celo|cusd|ceur amount');
-  console.info(
-    'liquidation-call collateralAsset(celo|cusd|ceur|creal) debtAsset(celo|cusd|ceur|creal) userToLiquidate debtToCover receiveAToken(true|false) address [privateKey]'
-  );
 }
 
 const retry = async (fun, tries = 5) => {
@@ -170,10 +167,7 @@ async function execute(network, action, ...params) {
         console.info(`Available networks: test, main, or custom node URL.`);
         return;
       }
-      addressProvider = new kit.web3.eth.Contract(
-        LendingPoolAddressesProvider,
-        '0xD1088091A174d33412a968Fa34Cb67131188B332'
-      );
+      addressProvider = new kit.web3.eth.Contract(LendingPoolAddressesProvider, '0xD1088091A174d33412a968Fa34Cb67131188B332');
       cEUR = new kit.web3.eth.Contract(MToken, '0xD8763CBa276a3738E6DE85b4b3bF5FDed6D6cA73');
       cUSD = new kit.web3.eth.Contract(MToken, '0x765DE816845861e75A25fCA122bb6898B8B1282a');
       cREAL = new kit.web3.eth.Contract(MToken, '0xe8537a3d056DA446677B9E9d6c5dB704EaAb4787');
@@ -201,7 +195,6 @@ async function execute(network, action, ...params) {
     ceur: cEUR.options.address,
     creal: cREAL.options.address,
   };
-
   if (action === 'balanceof') {
     const token = tokens[params[0]];
     const user = params[1];
@@ -401,7 +394,6 @@ async function execute(network, action, ...params) {
     console.log('Borrow', (await lendingPool.methods.borrow(reserve, amount, rate, 0, from).send({from: user, gas: 2000000})).transactionHash);
     return;
   }
-
   if (action == 'repayfor') {
     const reserve = reserves[params[0]];
     const token = tokens[params[0]];
@@ -670,32 +662,18 @@ async function execute(network, action, ...params) {
     const beforeNormal = params[2] == 'celo';
     const afterNormal = params[3] == 'celo';
 
-    const reserveTokens = await dataProvider.methods
-      .getReserveTokensAddresses(tokenFrom.options.address)
-      .call();
+    const reserveTokens = await dataProvider.methods.getReserveTokensAddresses(tokenFrom.options.address).call();
     const mToken = new eth.Contract(MToken, reserveTokens.aTokenAddress);
 
-    const [tokenFromPrice, tokenToPrice] = await priceOracle.methods
-      .getAssetsPrices([tokenFrom.options.address, tokenTo.options.address])
-      .call();
-    const tokenToSwapPrice = BN(amount)
-      .multipliedBy(BN(tokenFromPrice))
-      .dividedBy(BN(tokenToPrice))
-      .toFixed(0);
+    const [tokenFromPrice, tokenToPrice] = await priceOracle.methods.getAssetsPrices([tokenFrom.options.address, tokenTo.options.address]).call();
+    const tokenToSwapPrice = BN(amount).multipliedBy(BN(tokenFromPrice)).dividedBy(BN(tokenToPrice)).toFixed(0);
 
-    console.log(`Checking mToken ${mToken.options.address} for approval`);
+    console.log(`Checking mToken ${mToken.options.address} for approval`)
     if ((await mToken.methods.allowance(user, liquiditySwapAdapter).call()).length < 30) {
-      console.log(
-        'Approve UniswapAdapter',
-        (
-          await mToken.methods
-            .approve(liquiditySwapAdapter, maxUint256)
-            .send({ from: user, gas: 2000000 })
-        ).transactionHash
-      );
+      console.log('Approve UniswapAdapter', (await mToken.methods.approve(liquiditySwapAdapter, maxUint256).send({from: user, gas: 2000000})).transactionHash);
     }
 
-    const callParams = buildLiquiditySwapParams(
+    const callParams =  buildLiquiditySwapParams(
       [tokenTo.options.address],
       [tokenToSwapPrice],
       [0],
@@ -706,72 +684,20 @@ async function execute(network, action, ...params) {
       ['0x0000000000000000000000000000000000000000000000000000000000000000'],
       [false],
       [beforeNormal],
-      [afterNormal]
+      [afterNormal],
     );
 
     try {
-      await retry(() =>
-        lendingPool.methods
-          .flashLoan(
-            liquiditySwapAdapter,
-            [tokenFrom.options.address],
-            [amount],
-            [0],
-            user,
-            callParams,
-            0
-          )
-          .estimateGas({ from: user, gas: 2000000 })
-      );
+      await retry(() => lendingPool.methods.flashLoan(
+        liquiditySwapAdapter, [tokenFrom.options.address], [amount], [0], user, callParams, 0).estimateGas({from: user, gas: 2000000}));
     } catch (err) {
       console.log('Cannot swap liquidity', err.message);
       return;
     }
-    console.log(
-      'Liquidity swap',
-      (
-        await lendingPool.methods
-          .flashLoan(
-            liquiditySwapAdapter,
-            [tokenFrom.options.address],
-            [amount],
-            [0],
-            user,
-            callParams,
-            0
-          )
-          .send({ from: user, gas: 2000000 })
-      ).transactionHash
-    );
+    console.log('Liquidity swap', (await lendingPool.methods.flashLoan(
+      liquiditySwapAdapter, [tokenFrom.options.address], [amount], [0], user, callParams, 0).send({from: user, gas: 2000000})).transactionHash);
     return;
   }
-
-  if (action === 'liquidation-call') {
-    const collateralAsset = tokens[params[0]].options.address;
-    const debtAsset = tokens[params[1]].options.address;
-    const userToLiquidate = params[2];
-    const debtToCover = params[3];
-    const receiveAToken = params[4] === 'true';
-    const user = params[5];
-
-    if (privateKeyRequired) {
-      pk = params[6];
-      if (!pk) {
-        console.error('Missing private key');
-        return;
-      }
-      kit.addAccount(pk);
-    }
-
-    const txHash = (
-      await lendingPool.methods
-        .liquidationCall(collateralAsset, debtAsset, userToLiquidate, debtToCover, receiveAToken)
-        .send({ from: user, gas: 2000000 })
-    ).transactionHash;
-
-    console.log('liquidationCall', txHash);
-  }
-
   console.error(`Unknown action: ${action}`);
   printActions();
 }
