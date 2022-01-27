@@ -137,13 +137,6 @@ function buildSwapAndRepayParams(
   );  
 }
 
-function isValidAsset(asset) {
-  if (asset !== 'celo' && asset !== 'cusd' && asset !== 'ceur' && asset !== 'creal') {
-    console.error('assets can be only "celo|cusd|ceur|creal"');
-    return false;
-  }
-  return true;
-}
 
 function isValidRateMode(rateMode) {
   if (rateMode !== 'stable' && rateMode !== 'variable') {
@@ -155,7 +148,7 @@ function isValidRateMode(rateMode) {
 
 function isNumeric(num) {
   if (isNaN(num)) {
-    console.error('invalid number');
+    console.error(`invalid number ${num}`);
     return false;
   }
   return true;
@@ -199,6 +192,15 @@ const retry = async (fun, tries = 5) => {
 };
 
 async function execute(network, action, ...params) {
+
+  function isValidAsset(asset) {
+    if (!tokens[asset]) {
+      console.error(`assets can be only "celo|cusd|ceur|creal" but given value is ${asset}`);
+      return false;
+    }
+    return true;
+  }
+
   if (network === undefined) {
     console.info('Usage: test|main|URL action params');
     printActions();
@@ -844,8 +846,19 @@ async function execute(network, action, ...params) {
     }
 
     console.log(`Checking mToken ${mToken.options.address} for approval`);
-    if (BN(await mToken.methods.allowance(user, repayAdapter.options.address).call()).lt(BN(maxCollateralAmount))) {
-      console.log('Approve UniswapAdapter', (await mToken.methods .approve(repayAdapter.options.address, maxCollateralAmount) .send({ from: user, gas: 2000000 })).transactionHash);
+    if (
+      BN(await mToken.methods.allowance(user, repayAdapter.options.address).call()).lt(
+        BN(maxCollateralAmount)
+      )
+    ) {
+      console.log(
+        'Approve UniswapAdapter',
+        (
+          await mToken.methods
+            .approve(repayAdapter.options.address, maxCollateralAmount)
+            .send({ from: user, gas: 2000000 })
+        ).transactionHash
+      );
     }
 
     let method;
