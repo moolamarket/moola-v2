@@ -137,6 +137,38 @@ function buildSwapAndRepayParams(
   );  
 }
 
+function isValidAsset(asset) {
+  if (asset !== 'celo' && asset !== 'cusd' && asset !== 'ceur' && asset !== 'creal') {
+    console.error('assets can be only "celo|cusd|ceur|creal"');
+    return false;
+  }
+  return true;
+}
+
+function isValidRateMode(rateMode) {
+  if (rateMode !== 'stable' && rateMode !== 'variable') {
+    console.error('rateMode can be only "stable|variable"');
+    return false;
+  }
+  return true;
+}
+
+function isNumeric(num) {
+  if (isNaN(num)) {
+    console.error('invalid number');
+    return false;
+  }
+  return true;
+}
+
+function isValidBoolean(boolStr) {
+  if (boolStr !== 'true' && boolStr !== 'false') {
+    console.error('boolean values can be only true|false');
+    return false;
+  }
+  return true;
+}
+
 function printActions() {
   console.info('Available actions:');
   console.info('balanceOf celo|cusd|ceur|creal address');
@@ -152,8 +184,8 @@ function printActions() {
   console.info('repayFor celo|cusd|ceur|creal for address amount stable|variable [privateKey]');
   console.info('migrate-step-2 address [privateKey]');
   console.info('liquidation-bot address [privateKey]');
-  console.info('liquidity-swap address celo|cusd|ceur to celo|cusd|ceur amount [privateKey]');
-  console.info('repay-from-collateral address collateralAsset(celo|cusd|ceur) debtAsset(celo|cusd|ceur) debtRateMode(1|2) debtRepayAmount useFlashloan(true|false) [privateKey]');
+  console.info('liquidity-swap address celo|cusd|ceur|creal to celo|cusd|ceur|creal amount [privateKey]');
+  console.info('repay-from-collateral address collateralAsset(celo|cusd|ceur|creal) debtAsset(celo|cusd|ceur|creal) debtRateMode(stable|variable) debtRepayAmount useFlashloan(true|false) [privateKey]');
 }
 
 const retry = async (fun, tries = 5) => {
@@ -178,6 +210,7 @@ async function execute(network, action, ...params) {
   let CELO;
   let cUSD;
   let cEUR;
+  let cREAL;
   let migrator;
   let privateKeyRequired = true;
   let liquiditySwapAdapter;
@@ -764,10 +797,16 @@ async function execute(network, action, ...params) {
       kit.addAccount(pk);
     }
 
+    if (!isValidAsset(params[1])) return;
+    if (!isValidAsset(params[2])) return;
+    if (!isValidRateMode(params[3])) return;
+    if (!isNumeric(params[4])) return;
+    if (!isValidBoolean(params[5])) return;
+
     const user = params[0];
     const collateralAsset = tokens[params[1]];
     const debtAsset = tokens[params[2]];
-    const rateMode = params[3];
+    const rateMode = params[3] === 'stable' ? 1 : 2;
     const repayAmount = BN(web3.utils.toWei(params[4]));
     const useFlashLoan = params[5] == 'true' ? true : false;
     const useATokenAsFrom = params[1] != 'celo';
@@ -775,10 +814,14 @@ async function execute(network, action, ...params) {
 
     const zeroHash = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
-    const reserveTokens = await dataProvider.methods
+    const reserveCollateralToken = await dataProvider.methods
       .getReserveTokensAddresses(collateralAsset.options.address)
       .call();
-    const mToken = new eth.Contract(MToken, reserveTokens.aTokenAddress);
+    const mToken = new eth.Contract(MToken, reserveCollateralToken.aTokenAddress);
+
+    const reserveDebtToken = await dataProvider.methods
+      .getReserveTokensAddresses(debtAsset.options.address)
+      .call();
 
     let maxCollateralAmount = 0;
     if (collateralAsset != debtAsset) {
@@ -789,22 +832,21 @@ async function execute(network, action, ...params) {
       const amountOut = useFlashLoan
         ? repayAmount.plus(repayAmount.multipliedBy(9).dividedBy(10000))
         : repayAmount;
-      const amounts = await uniswap.methods.getAmountsIn(amountOut, [
-        collateralAsset.options.address,
-        debtAsset.options.address,
-      ]).call();
-      maxCollateralAmount = BN(amounts[0]).plus(BN(amounts[0]).dividedBy(10)).toFixed(0); // 10% slippage
+      const amounts = await uniswap.methods
+        .getAmountsIn(amountOut, [
+          useATokenAsFrom ? reserveCollateralToken.aTokenAddress : collateralAsset.options.address,
+          useATokenAsTo ? reserveDebtToken.aTokenAddress : debtAsset.options.address,
+        ])
+        .call();
+      maxCollateralAmount = BN(amounts[0])
+        .plus(BN(amounts[0]).multipliedBy(1).dividedBy(1000))
+        .toFixed(0); // 0.1% slippage
     }
 
     console.log(`Checking mToken ${mToken.options.address} for approval`);
     if (BN(await mToken.methods.allowance(user, repayAdapter.options.address).call()).lt(BN(maxCollateralAmount))) {
-      console.log(
-        'Approve UniswapAdapter',
-        (await mToken.methods.approve(repayAdapter.options.address, maxCollateralAmount).send({ from: user, gas: 2000000 }))
-          .transactionHash
-      );
+      console.log('Approve UniswapAdapter', (await mToken.methods .approve(repayAdapter.options.address, maxCollateralAmount) .send({ from: user, gas: 2000000 })).transactionHash);
     }
-
 
     let method;
 
