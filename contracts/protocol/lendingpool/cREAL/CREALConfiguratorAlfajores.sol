@@ -1,10 +1,10 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import {ERC20} from './dependencies/openzeppelin/contracts/ERC20.sol';
-import {Ownable} from './dependencies/openzeppelin/contracts/Ownable.sol';
-import './protocol/lendingpool/LendingPoolConfigurator.sol';
-import './interfaces/ILendingPoolConfigurator.sol';
+import {ERC20} from '../../../dependencies/openzeppelin/contracts/ERC20.sol';
+import {Ownable} from '../../../dependencies/openzeppelin/contracts/Ownable.sol';
+import '../../../protocol/lendingpool/LendingPoolConfigurator.sol';
+import '../../../interfaces/ILendingPoolConfigurator.sol';
 
 contract CREALConfiguratorAlfajores is Ownable {
   address constant lendingPoolConfiguratorAddress = 0x39fe2A4a4174bB5cAC5568ce0715a0b320bcB231;

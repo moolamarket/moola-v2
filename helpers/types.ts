@@ -96,7 +96,7 @@ export enum eContractid {
   UniswapRepayAdapter = 'UniswapRepayAdapter',
   FlashLiquidationAdapter = 'FlashLiquidationAdapter',
   CREALConfiguratorAlfajores = 'CREALConfiguratorAlfajores',
-  CREALConfiguratorMainnet = 'CREALConfiguratorMainnet',
+  CREALConfiguratorCelo = 'CREALConfiguratorCelo',
 }
 
 /*
