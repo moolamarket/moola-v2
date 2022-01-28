@@ -59,6 +59,7 @@ export const AmmConfig: IAmmConfiguration = {
   ReserveAssets: {
     [eEthereumNetwork.buidlerevm]: {},
     [eEthereumNetwork.hardhat]: {},
+    [eEthereumNetwork.ganache]: {},
     [eEthereumNetwork.coverage]: {},
     [eEthereumNetwork.kovan]: {
       DAI: '0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD',
@@ -83,8 +84,7 @@ export const AmmConfig: IAmmConfiguration = {
       BptWBTCWETH: '0x110569E3261bC0934dA637b019f6f1b6F50ec574',
       BptBALWETH: '0xad01D8e0Fa9EAA8Fe76dA30CFb1BCe12707aE6c5',
     },
-    [eEthereumNetwork.ropsten]: {
-    },
+    [eEthereumNetwork.ropsten]: {},
     [eEthereumNetwork.main]: {
       DAI: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
       USDC: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
