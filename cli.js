@@ -265,7 +265,7 @@ async function execute(network, action, ...params) {
     creal: cREAL,
   };
 
-  const isValidAsset() = (asset) => {
+  const isValidAsset = (asset) => {
     if (!tokens[asset]) {
       console.error(`assets can be only ${Object.keys(tokens).join('|')} but given value is ${asset}`);
       return false;
