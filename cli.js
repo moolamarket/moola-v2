@@ -163,22 +163,23 @@ function isValidBoolean(boolStr) {
 }
 
 function printActions() {
+  console.info('Available assets: celo|cusd|ceur|creal');
   console.info('Available actions:');
-  console.info('balanceOf celo|cusd|ceur|creal address');
-  console.info('getUserReserveData celo|cusd|ceur|creal address');
-  console.info('getReserveData celo|cusd|ceur|creal');
+  console.info('balanceOf asset address');
+  console.info('getUserReserveData asset address');
+  console.info('getReserveData asset');
   console.info('getUserAccountData address');
-  console.info('deposit celo|cusd|ceur|creal address amount [privateKey]');
-  console.info('borrow celo|cusd|ceur|creal address amount stable|variable [privateKey]');
-  console.info('repay celo|cusd|ceur|creal address amount|all stable|variable [privateKey]');
-  console.info('redeem celo|cusd|ceur|creal address amount|all [privateKey]');
-  console.info('delegate celo|cusd|ceur|creal to address amount|all stable|variable [privateKey]');
-  console.info('borrowFrom celo|cusd|ceur|creal from address amount [privateKey]');
-  console.info('repayFor celo|cusd|ceur|creal for address amount stable|variable [privateKey]');
+  console.info('deposit asset address amount [privateKey]');
+  console.info('borrow asset address amount stable|variable [privateKey]');
+  console.info('repay asset address amount|all stable|variable [privateKey]');
+  console.info('redeem asset address amount|all [privateKey]');
+  console.info('delegate asset to address amount|all stable|variable [privateKey]');
+  console.info('borrowFrom asset from address amount [privateKey]');
+  console.info('repayFor asset for address amount stable|variable [privateKey]');
+  console.info('liquidity-swap address asset-from asset-to amount [privateKey]');
+  console.info('repay-from-collateral address collateral-asset debt-asset stable|variable debt-amount useFlashloan(true|false) [privateKey]');
   console.info('migrate-step-2 address [privateKey]');
   console.info('liquidation-bot address [privateKey]');
-  console.info('liquidity-swap address celo|cusd|ceur|creal to celo|cusd|ceur|creal amount [privateKey]');
-  console.info('repay-from-collateral address collateralAsset(celo|cusd|ceur|creal) debtAsset(celo|cusd|ceur|creal) debtRateMode(stable|variable) debtRepayAmount useFlashloan(true|false) [privateKey]');
 }
 
 const retry = async (fun, tries = 5) => {
@@ -192,15 +193,6 @@ const retry = async (fun, tries = 5) => {
 };
 
 async function execute(network, action, ...params) {
-
-  function isValidAsset(asset) {
-    if (!tokens[asset]) {
-      console.error(`assets can be only "celo|cusd|ceur|creal" but given value is ${asset}`);
-      return false;
-    }
-    return true;
-  }
-
   if (network === undefined) {
     console.info('Usage: test|main|URL action params');
     printActions();
@@ -271,6 +263,14 @@ async function execute(network, action, ...params) {
     cusd: cUSD,
     ceur: cEUR,
     creal: cREAL,
+  };
+
+  const isValidAsset() = (asset) => {
+    if (!tokens[asset]) {
+      console.error(`assets can be only ${Object.keys(tokens).join('|')} but given value is ${asset}`);
+      return false;
+    }
+    return true;
   };
 
   const reserves = {
@@ -846,18 +846,10 @@ async function execute(network, action, ...params) {
     }
 
     console.log(`Checking mToken ${mToken.options.address} for approval`);
-    if (
-      BN(await mToken.methods.allowance(user, repayAdapter.options.address).call()).lt(
-        BN(maxCollateralAmount)
-      )
-    ) {
+    if (BN(await mToken.methods.allowance(user, repayAdapter.options.address).call()).lt(BN(maxCollateralAmount))) {
       console.log(
         'Approve UniswapAdapter',
-        (
-          await mToken.methods
-            .approve(repayAdapter.options.address, maxCollateralAmount)
-            .send({ from: user, gas: 2000000 })
-        ).transactionHash
+        (await mToken.methods.approve(repayAdapter.options.address, maxCollateralAmount).send({from: user, gas: 2000000})).transactionHash
       );
     }
 
@@ -893,7 +885,7 @@ async function execute(network, action, ...params) {
         maxCollateralAmount,
         repayAmount,
         rateMode,
-        { amount: 0, deadline: 0, v: 0, r: zeroHash, s: zeroHash },
+        {amount: 0, deadline: 0, v: 0, r: zeroHash, s: zeroHash},
         false,
         useATokenAsFrom,
         useATokenAsTo
@@ -901,14 +893,14 @@ async function execute(network, action, ...params) {
     }
 
     try {
-      await retry(() => method.estimateGas({ from: user, gas: 2000000 }));
+      await retry(() => method.estimateGas({from: user, gas: 2000000}));
     } catch (err) {
       console.log('Cannot repay', err.message);
       return;
     }
     console.log(
       'Swap and repay',
-      (await method.send({ from: user, gas: 2000000 })).transactionHash
+      (await method.send({from: user, gas: 2000000})).transactionHash
     );
     return;
   }
