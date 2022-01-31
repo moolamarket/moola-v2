@@ -265,7 +265,7 @@ export const strategyXSUSHI: IReserveParams = {
   reserveFactor: '3500',
 };
 
-export const strategyMOOT: IReserveParams = {
+export const strategyMOBI: IReserveParams = {
   strategy: rateStrategyVolatileFour,
   baseLTVAsCollateral: '2500',
   liquidationThreshold: '4500',
@@ -277,7 +277,7 @@ export const strategyMOOT: IReserveParams = {
   reserveFactor: '3500',
 };
 
-export const strategyMOBI: IReserveParams = {
+export const strategyPOOF: IReserveParams = {
   strategy: rateStrategyVolatileFour,
   baseLTVAsCollateral: '2500',
   liquidationThreshold: '4500',

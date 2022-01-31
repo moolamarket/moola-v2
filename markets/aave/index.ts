@@ -23,8 +23,8 @@ import {
   strategyWETH,
   strategyYFI,
   strategyXSUSHI,
-  strategyMOOT,
   strategyMOBI,
+  strategyPOOF,
 } from './reservesConfigs';
 
 // ----------------
@@ -57,8 +57,8 @@ export const AaveConfig: IAaveConfiguration = {
     YFI: strategyYFI,
     ZRX: strategyZRX,
     xSUSHI: strategyXSUSHI,
-    MOOT: strategyMOOT,
     MOBI: strategyMOBI,
+    POOF: strategyPOOF,
   },
   ReserveAssets: {
     [eEthereumNetwork.buidlerevm]: {},
