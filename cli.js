@@ -180,13 +180,10 @@ function printActions() {
   console.info('repay-from-collateral address collateral-asset debt-asset stable|variable debt-amount useFlashloan(true|false) [privateKey]');
   console.info('migrate-step-2 address [privateKey]');
   console.info('liquidation-bot address [privateKey]');
-<<<<<<< HEAD
   console.info('liquidity-swap [privateKey] address celo|cusd|ceur to celo|cusd|ceur amount');
   console.info(
     'liquidation-call collateralAsset(celo|cusd|ceur|creal) debtAsset(celo|cusd|ceur|creal) userToLiquidate debtToCover receiveAToken(true|false) address [privateKey]'
   );
-=======
->>>>>>> main
 }
 
 const retry = async (fun, tries = 5) => {
@@ -793,13 +790,10 @@ async function execute(network, action, ...params) {
       ['0x0000000000000000000000000000000000000000000000000000000000000000'],
       ['0x0000000000000000000000000000000000000000000000000000000000000000'],
       [false],
-<<<<<<< HEAD
       [beforeNormal],
       [afterNormal]
-=======
       [useATokenAsFrom],
       [useATokenAsTo],
->>>>>>> main
     );
 
     try {
@@ -839,7 +833,6 @@ async function execute(network, action, ...params) {
     return;
   }
 
-<<<<<<< HEAD
   if (action === 'liquidation-call') {
     const collateralAsset = tokens[params[0]].options.address;
     const debtAsset = tokens[params[1]].options.address;
@@ -847,14 +840,32 @@ async function execute(network, action, ...params) {
     const debtToCover = params[3];
     const receiveAToken = params[4] === 'true';
     const user = params[5];
-=======
+
+        if (privateKeyRequired) {
+      pk = params[6];
+      if (!pk) {
+        console.error('Missing private key');
+        return;
+      }
+      kit.addAccount(pk);
+    }
+
+    const txHash = (
+      await lendingPool.methods
+        .liquidationCall(collateralAsset, debtAsset, userToLiquidate, debtToCover, receiveAToken)
+        .send({ from: user, gas: 2000000 })
+    ).transactionHash;
+
+    console.log('liquidationCall', txHash);
+  }
+
+    
   if (action == 'repay-from-collateral') {
     if (network == 'test') {
       throw new Error(
         'repay from collateral only works on the mainnet due to low liquidity in pools'
       );
     }
->>>>>>> main
 
     if (privateKeyRequired) {
       pk = params[6];
@@ -865,17 +876,6 @@ async function execute(network, action, ...params) {
       kit.addAccount(pk);
     }
 
-<<<<<<< HEAD
-    const txHash = (
-      await lendingPool.methods
-        .liquidationCall(collateralAsset, debtAsset, userToLiquidate, debtToCover, receiveAToken)
-        .send({ from: user, gas: 2000000 })
-    ).transactionHash;
-
-    console.log('liquidationCall', txHash);
-  }
-
-=======
     if (!isValidAsset(params[1])) return;
     if (!isValidAsset(params[2])) return;
     if (!isValidRateMode(params[3])) return;
@@ -982,7 +982,6 @@ async function execute(network, action, ...params) {
     return;
   }
   
->>>>>>> main
   console.error(`Unknown action: ${action}`);
   printActions();
 }
