@@ -137,8 +137,7 @@ const buidlerConfig: HardhatUserConfig = {
     ganache: {
       url: 'HTTP://127.0.0.1:7545',
       accounts: {
-        mnemonic:
-          'coral exhibit present unusual wisdom word execute remove busy illegal lunch trap',
+        mnemonic: 'horse today punch dwarf outdoor element forget index dry zebra turkey note',
         path: "m/44'/60'/0'/0",
         initialIndex: 0,
         count: 20,
