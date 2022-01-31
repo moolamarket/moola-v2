@@ -82,16 +82,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
       });
 
       it('should correctly swap tokens and deposit the out tokens in the pool', async () => {
-        const {
-          users,
-          weth,
-          oracle,
-          dai,
-          aDai,
-          aWETH,
-          pool,
-          uniswapLiquiditySwapAdapter,
-        } = testEnv;
+        const { users, weth, oracle, dai, aDai, aWETH, pool, uniswapLiquiditySwapAdapter } =
+          testEnv;
         const user = users[0].signer;
         const userAddress = users[0].address;
 
@@ -123,8 +115,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
-          [true],
-          [true],
+          [false],
+          [false]
         );
 
         await expect(
@@ -161,17 +153,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
       });
 
       it('should correctly swap and deposit multiple tokens', async () => {
-        const {
-          users,
-          weth,
-          oracle,
-          dai,
-          aDai,
-          aWETH,
-          usdc,
-          pool,
-          uniswapLiquiditySwapAdapter,
-        } = testEnv;
+        const { users, weth, oracle, dai, aDai, aWETH, usdc, pool, uniswapLiquiditySwapAdapter } =
+          testEnv;
         const user = users[0].signer;
         const userAddress = users[0].address;
 
@@ -241,8 +224,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             '0x0000000000000000000000000000000000000000000000000000000000000000',
           ],
           [false, false],
-          [true, true],
-          [true, true],
+          [false, false],
+          [false, false]
         );
 
         await pool
@@ -278,17 +261,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
       });
 
       it('should correctly swap and deposit multiple tokens using permit', async () => {
-        const {
-          users,
-          weth,
-          oracle,
-          dai,
-          aDai,
-          aWETH,
-          usdc,
-          pool,
-          uniswapLiquiditySwapAdapter,
-        } = testEnv;
+        const { users, weth, oracle, dai, aDai, aWETH, usdc, pool, uniswapLiquiditySwapAdapter } =
+          testEnv;
         const user = users[0].signer;
         const userAddress = users[0].address;
         const chainId = DRE.network.config.chainId || BUIDLEREVM_CHAINID;
@@ -359,10 +333,11 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           deadline,
           amountWETHtoSwap.toString()
         );
-        const { v: aWETHv, r: aWETHr, s: aWETHs } = getSignatureFromTypedData(
-          ownerPrivateKey,
-          aWethMsgParams
-        );
+        const {
+          v: aWETHv,
+          r: aWETHr,
+          s: aWETHs,
+        } = getSignatureFromTypedData(ownerPrivateKey, aWethMsgParams);
 
         const aUsdcNonce = (await aUsdc._nonces(userAddress)).toNumber();
         const aUsdcMsgParams = buildPermitParams(
@@ -376,10 +351,11 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           deadline,
           amountUSDCtoSwap.toString()
         );
-        const { v: aUsdcv, r: aUsdcr, s: aUsdcs } = getSignatureFromTypedData(
-          ownerPrivateKey,
-          aUsdcMsgParams
-        );
+        const {
+          v: aUsdcv,
+          r: aUsdcr,
+          s: aUsdcs,
+        } = getSignatureFromTypedData(ownerPrivateKey, aUsdcMsgParams);
         const params = buildLiquiditySwapParams(
           [dai.address, dai.address],
           [expectedDaiAmountForEth, expectedDaiAmountForUsdc],
@@ -390,8 +366,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           [aWETHr, aUsdcr],
           [aWETHs, aUsdcs],
           [false, false],
-          [true, true],
-          [true, true],
+          [false, false],
+          [false, false]
         );
 
         await pool
@@ -427,16 +403,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
       });
 
       it('should correctly swap tokens with permit', async () => {
-        const {
-          users,
-          weth,
-          oracle,
-          dai,
-          aDai,
-          aWETH,
-          pool,
-          uniswapLiquiditySwapAdapter,
-        } = testEnv;
+        const { users, weth, oracle, dai, aDai, aWETH, pool, uniswapLiquiditySwapAdapter } =
+          testEnv;
         const user = users[0].signer;
         const userAddress = users[0].address;
 
@@ -489,8 +457,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           [r],
           [s],
           [false],
-          [true],
-          [true],
+          [false],
+          [false]
         );
 
         await expect(
@@ -558,8 +526,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
-          [true],
-          [true],
+          [false],
+          [false]
         );
 
         await expect(
@@ -586,8 +554,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
-          [true],
-          [true],
+          [false],
+          [false]
         );
 
         await expect(
@@ -614,8 +582,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
-          [true],
-          [true],
+          [false],
+          [false]
         );
 
         await expect(
@@ -645,8 +613,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ],
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
-          [true],
-          [true],
+          [false],
+          [false]
         );
 
         await expect(
@@ -676,8 +644,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             '0x0000000000000000000000000000000000000000000000000000000000000000',
           ],
           [false],
-          [true],
-          [true],
+          [false],
+          [false]
         );
 
         await expect(
@@ -704,8 +672,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
-          [true],
-          [true],
+          [false],
+          [false]
         );
 
         await expect(
@@ -732,8 +700,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
-          [true],
-          [true],
+          [false],
+          [false]
         );
 
         await expect(
@@ -760,8 +728,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
-          [true],
-          [true],
+          [false],
+          [false]
         );
 
         await expect(
@@ -788,8 +756,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false, false],
-          [true, true],
-          [true, true],
+          [false, false],
+          [false, false]
         );
 
         await expect(
@@ -839,8 +807,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
-          [true],
-          [true],
+          [false],
+          [false]
         );
 
         await expect(
@@ -857,16 +825,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
       });
 
       it('should work correctly with tokens of different decimals', async () => {
-        const {
-          users,
-          usdc,
-          oracle,
-          dai,
-          aDai,
-          uniswapLiquiditySwapAdapter,
-          pool,
-          deployer,
-        } = testEnv;
+        const { users, usdc, oracle, dai, aDai, uniswapLiquiditySwapAdapter, pool, deployer } =
+          testEnv;
         const user = users[0].signer;
         const userAddress = users[0].address;
 
@@ -921,8 +881,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
-          [true],
-          [true],
+          [false],
+          [false]
         );
 
         await expect(
@@ -988,8 +948,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
-          [true],
-          [true],
+          [false],
+          [false]
         );
 
         await expect(
@@ -1008,16 +968,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
       });
 
       it('should correctly swap tokens all the balance', async () => {
-        const {
-          users,
-          weth,
-          oracle,
-          dai,
-          aDai,
-          aWETH,
-          pool,
-          uniswapLiquiditySwapAdapter,
-        } = testEnv;
+        const { users, weth, oracle, dai, aDai, aWETH, pool, uniswapLiquiditySwapAdapter } =
+          testEnv;
         const user = users[0].signer;
         const userAddress = users[0].address;
 
@@ -1050,8 +1002,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           ['0x0000000000000000000000000000000000000000000000000000000000000000'],
           [false],
-          [true],
-          [true],
+          [false],
+          [false]
         );
 
         // Flashloan + premium > aToken balance. Then it will only swap the balance - premium
@@ -1093,16 +1045,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
       });
 
       it('should correctly swap tokens all the balance using permit', async () => {
-        const {
-          users,
-          weth,
-          oracle,
-          dai,
-          aDai,
-          aWETH,
-          pool,
-          uniswapLiquiditySwapAdapter,
-        } = testEnv;
+        const { users, weth, oracle, dai, aDai, aWETH, pool, uniswapLiquiditySwapAdapter } =
+          testEnv;
         const user = users[0].signer;
         const userAddress = users[0].address;
 
@@ -1155,8 +1099,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           [r],
           [s],
           [false],
-          [true],
-          [true]
+          [false],
+          [false]
         );
 
         // Flashloan + premium > aToken balance. Then it will only swap the balance - premium
@@ -1492,17 +1436,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
       });
 
       it('should correctly swap tokens and deposit multiple tokens', async () => {
-        const {
-          users,
-          weth,
-          usdc,
-          oracle,
-          dai,
-          aDai,
-          aWETH,
-          uniswapLiquiditySwapAdapter,
-          pool,
-        } = testEnv;
+        const { users, weth, usdc, oracle, dai, aDai, aWETH, uniswapLiquiditySwapAdapter, pool } =
+          testEnv;
         const user = users[0].signer;
         const userAddress = users[0].address;
 
@@ -1593,17 +1528,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
       });
 
       it('should correctly swap tokens and deposit multiple tokens using permit', async () => {
-        const {
-          users,
-          weth,
-          usdc,
-          oracle,
-          dai,
-          aDai,
-          aWETH,
-          uniswapLiquiditySwapAdapter,
-          pool,
-        } = testEnv;
+        const { users, weth, usdc, oracle, dai, aDai, aWETH, uniswapLiquiditySwapAdapter, pool } =
+          testEnv;
         const user = users[0].signer;
         const userAddress = users[0].address;
         const chainId = DRE.network.config.chainId || BUIDLEREVM_CHAINID;
@@ -1666,10 +1592,11 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           deadline,
           amountWETHtoSwap.toString()
         );
-        const { v: aWETHv, r: aWETHr, s: aWETHs } = getSignatureFromTypedData(
-          ownerPrivateKey,
-          aWethMsgParams
-        );
+        const {
+          v: aWETHv,
+          r: aWETHr,
+          s: aWETHs,
+        } = getSignatureFromTypedData(ownerPrivateKey, aWethMsgParams);
 
         const aUsdcNonce = (await aUsdc._nonces(userAddress)).toNumber();
         const aUsdcMsgParams = buildPermitParams(
@@ -1683,10 +1610,11 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           deadline,
           amountUSDCtoSwap.toString()
         );
-        const { v: aUsdcv, r: aUsdcr, s: aUsdcs } = getSignatureFromTypedData(
-          ownerPrivateKey,
-          aUsdcMsgParams
-        );
+        const {
+          v: aUsdcv,
+          r: aUsdcr,
+          s: aUsdcs,
+        } = getSignatureFromTypedData(ownerPrivateKey, aUsdcMsgParams);
 
         await uniswapLiquiditySwapAdapter.connect(user).swapAndDeposit(
           [weth.address, usdc.address],

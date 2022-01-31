@@ -280,8 +280,8 @@ export const buildLiquiditySwapParams = (
   r: (string | Buffer)[],
   s: (string | Buffer)[],
   useEthPath: boolean[],
-  beforeNormal: boolean[],
-  afterNormal: boolean[]
+  useATokenAsFrom: boolean[],
+  useATokenAsTo: boolean[]
 ) => {
   return ethers.utils.defaultAbiCoder.encode(
     [
@@ -307,8 +307,8 @@ export const buildLiquiditySwapParams = (
       r,
       s,
       useEthPath,
-      beforeNormal,
-      afterNormal,
+      useATokenAsFrom,
+      useATokenAsTo,
     ]
   );
 };
@@ -322,11 +322,37 @@ export const buildRepayAdapterParams = (
   v: BigNumberish,
   r: string | Buffer,
   s: string | Buffer,
-  useEthPath: boolean
+  useEthPath: boolean,
+  useATokenAsFrom: boolean,
+  useATokenAsTo: boolean
 ) => {
   return ethers.utils.defaultAbiCoder.encode(
-    ['address', 'uint256', 'uint256', 'uint256', 'uint256', 'uint8', 'bytes32', 'bytes32', 'bool'],
-    [collateralAsset, collateralAmount, rateMode, permitAmount, deadline, v, r, s, useEthPath]
+    [
+      'address',
+      'uint256',
+      'uint256',
+      'uint256',
+      'uint256',
+      'uint8',
+      'bytes32',
+      'bytes32',
+      'bool',
+      'bool',
+      'bool',
+    ],
+    [
+      collateralAsset,
+      collateralAmount,
+      rateMode,
+      permitAmount,
+      deadline,
+      v,
+      r,
+      s,
+      useEthPath,
+      useATokenAsFrom,
+      useATokenAsTo,
+    ]
   );
 };
 
