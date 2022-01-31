@@ -174,7 +174,7 @@ function printActions() {
   console.info('repay asset address amount|all stable|variable [privateKey]');
   console.info('redeem asset address amount|all [privateKey]');
   console.info('delegate asset to address amount|all stable|variable [privateKey]');
-  console.info('borrowFrom asset from address amount [privateKey]');
+  console.info('borrowFrom asset from address amount stable|variable [privateKey]');
   console.info('repayFor asset for address amount stable|variable [privateKey]');
   console.info('liquidity-swap address asset-from asset-to amount [privateKey]');
   console.info('repay-from-collateral address collateral-asset debt-asset stable|variable debt-amount useFlashloan(true|false) [privateKey]');
