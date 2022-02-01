@@ -27,7 +27,7 @@ export const NETWORKS_RPC_URL: iParamsPerNetwork<string> = {
     : `https://mainnet.infura.io/v3/${INFURA_KEY}`,
   [eEthereumNetwork.coverage]: 'http://localhost:8555',
   [eEthereumNetwork.hardhat]: 'http://localhost:8545',
-  [eEthereumNetwork.ganache]: 'http://localhost:7545',
+  [eEthereumNetwork.ganache]: 'http://localhost:8545',
   [eEthereumNetwork.buidlerevm]: 'http://localhost:8545',
   [eEthereumNetwork.tenderlyMain]: `https://rpc.tenderly.co/fork/${TENDERLY_FORK_ID}`,
   [eCeloNetwork.celo]: 'https://forno.celo.org',

@@ -73,12 +73,24 @@ const buidlerConfig: HardhatUserConfig = {
       metadata: {
         useLiteralContent: true,
       },
-      outputSelection: {
-        '*': {
-          '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode', 'evm.methodIdentifiers', 'metadata'],
-          '': ['ast'],
-        },
-      },
+      outputSelection:
+      {
+        '*':
+        {
+          '*':
+          [
+            'abi',
+            'evm.bytecode',
+            'evm.deployedBytecode',
+            'evm.methodIdentifiers',
+            'metadata'
+          ],
+          '':
+          [
+            'ast'
+          ]
+        }
+      }
     },
   },
   typechain: {
@@ -135,10 +147,9 @@ const buidlerConfig: HardhatUserConfig = {
       url: 'http://localhost:8545',
     },
     ganache: {
-      url: 'HTTP://127.0.0.1:7545',
+      url: 'http://ganache:8545',
       accounts: {
-        mnemonic:
-          'coral exhibit present unusual wisdom word execute remove busy illegal lunch trap',
+        mnemonic: 'fox sight canyon orphan hotel grow hedgehog build bless august weather swarm',
         path: "m/44'/60'/0'/0",
         initialIndex: 0,
         count: 20,

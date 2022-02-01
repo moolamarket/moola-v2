@@ -75,7 +75,7 @@ export const MOCK_CHAINLINK_AGGREGATORS_PRICES = {
   WMATIC: oneEther.multipliedBy('0.003620948469').toFixed(),
   STAKE: oneEther.multipliedBy('0.003620948469').toFixed(),
   xSUSHI: oneEther.multipliedBy('0.00913428586').toFixed(),
-  MOBI: oneEther.multipliedBy('0.00913428586').toFixed(),
-  POOF: oneEther.multipliedBy('0.00913428586').toFixed(),
+  MOBI: oneEther.multipliedBy('0.01075696944').toFixed(),
+  POOF: oneEther.multipliedBy('0.00244578105').toFixed(),
   USD: oneEther.multipliedBy('0.223359').toFixed(),
 };
