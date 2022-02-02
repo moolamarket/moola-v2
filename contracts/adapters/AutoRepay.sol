@@ -2,6 +2,8 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import {EnumerableSet} from '@openzeppelin/contracts/utils/EnumerableSet.sol';
+
 import {BaseUniswapAdapter} from './BaseUniswapAdapter.sol';
 import {ILendingPoolAddressesProvider} from '../interfaces/ILendingPoolAddressesProvider.sol';
 import {IUniswapV2Router02} from '../interfaces/IUniswapV2Router02.sol';
@@ -11,7 +13,7 @@ import {SafeERC20} from '../dependencies/openzeppelin/contracts/SafeERC20.sol';
 
 contract AutoRepay is BaseUniswapAdapter {
   using SafeERC20 for IERC20;
-
+  using EnumerableSet for EnumerableSet.AddressSet;
   struct RepayParams {
     address user;
     address collateralAsset;
@@ -29,6 +31,8 @@ contract AutoRepay is BaseUniswapAdapter {
     uint256 maxHealthFactor;
   }
 
+  EnumerableSet.AddressSet private _whitelistedAddresses;
+
   mapping(address => UserInfo) public userInfos;
 
   uint256 public constant FEE = 10;
@@ -39,6 +43,27 @@ contract AutoRepay is BaseUniswapAdapter {
     IUniswapV2Router02 uniswapRouter,
     address wethAddress
   ) public BaseUniswapAdapter(addressesProvider, uniswapRouter, wethAddress) {}
+
+  function whitelistAddress(address userAddress) public onlyOwner returns (bool) {
+    return _whitelistedAddresses.add(userAddress);
+  }
+
+  function removeFromWhitelist(address userAddress) public onlyOwner returns (bool) {
+    return _whitelistedAddresses.remove(userAddress);
+  }
+
+  function userIsWhitelisted(address userAddress) public view returns (bool) {
+    return _whitelistedAddresses.contains(userAddress);
+  }
+
+  function getWitelistedAddresses() public view returns (address[] memory) {
+    uint256 length = _whitelistedAddresses.length();
+    address[] memory addresses = new address[](length);
+    for (uint256 i = 0; i < length; i++) {
+      addresses[i] = _whitelistedAddresses.at(i);
+    }
+    return addresses;
+  }
 
   function setMinMaxHealthFactor(uint256 minHealthFactor, uint256 maxHealthFactor) public {
     require(
@@ -130,6 +155,7 @@ contract AutoRepay is BaseUniswapAdapter {
     PermitSignature calldata permitSignature,
     bool[4] memory boolParams // useEthPath, useATokenAsFrom, useATokenAsTo, useFlashloan
   ) public {
+    require(userIsWhitelisted(msg.sender), 'Caller is not whitelisted');
     _checkMinHealthFactor(addressParams[0]);
     if (boolParams[3]) {
       bytes memory params = abi.encode(
