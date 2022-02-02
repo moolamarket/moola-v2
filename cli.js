@@ -185,6 +185,8 @@ function printActions() {
   console.info(
     'auto-repay callerAddress userAddress collateral-asset debt-asset stable|variable debt-amount useFlashloan(true|false) [callerPrivateKey]'
   );
+  console.info('auto-repay-user-info userAddress');
+  console.info('set-auto-repay-params address minHealthFactor maxHealthFactor [privateKey]');
 }
 
 const retry = async (fun, tries = 5) => {
@@ -1416,6 +1418,61 @@ async function execute(network, action, ...params) {
       return;
     }
     console.log('auto repay', (await method.send({ from: caller, gas: 2000000 })).transactionHash);
+    return;
+  }
+
+  if (action == 'auto-repay-user-info') {
+    const user = params[0];
+    const userInfo = await autoRepay.methods.userInfos(user).call();
+    console.log(
+      `${user} user info:\n\tminimum health factor -> ${userInfo.minHealthFactor.toString()}\n\tmaximum health factor -> ${userInfo.maxHealthFactor.toString()}`
+    );
+    console.log('allowances for AutoRepay contract:');
+    for (const token of Object.values(tokens)) {
+      const reserveToken = await dataProvider.methods
+        .getReserveTokensAddresses(token.options.address)
+        .call();
+      const mToken = new eth.Contract(MToken, reserveToken.aTokenAddress);
+      const name = await mToken.methods.name().call();
+      const allowance = await mToken.methods.allowance(user, autoRepay.options.address).call();
+      console.log(`\t${name}: ${allowance}`);
+    }
+    return;
+  }
+
+  if (action == 'set-auto-repay-params') {
+    if (network == 'test') {
+      throw new Error('test network not supported');
+    }
+
+    if (privateKeyRequired) {
+      pk = params[3];
+      if (!pk) {
+        console.error('Missing private key');
+        return;
+      }
+      kit.addAccount(pk);
+    }
+
+    if (!isNumeric(params[1])) return;
+    if (!isNumeric(params[2])) return;
+
+    const user = params[0];
+    const minHealthFactor = web3.utils.toWei(params[1]);
+    const maxHealthFactor = web3.utils.toWei(params[2]);
+
+    const method = autoRepay.methods.setMinMaxHealthFactor(minHealthFactor, maxHealthFactor);
+
+    try {
+      await retry(() => method.estimateGas({ from: user, gas: 2000000 }));
+    } catch (err) {
+      console.log('Cannot set', err.message);
+      return;
+    }
+    console.log(
+      'User info setted',
+      (await method.send({ from: user, gas: 2000000 })).transactionHash
+    );
     return;
   }
 
