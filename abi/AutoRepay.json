@@ -219,7 +219,7 @@
       },
       {
         "internalType": "address",
-        "name": "",
+        "name": "initiator",
         "type": "address"
       },
       {
@@ -338,16 +338,76 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "getWitelistedAddresses",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
-        "internalType": "address[3]",
-        "name": "addressParams",
-        "type": "address[3]"
-      },
-      {
-        "internalType": "uint256[3]",
-        "name": "uintParams",
-        "type": "uint256[3]"
+        "components": [
+          {
+            "internalType": "address",
+            "name": "user",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "collateralAsset",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "debtAsset",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "collateralAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "debtRepayAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "rateMode",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "useEthPath",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "useATokenAsFrom",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "useATokenAsTo",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "useFlashloan",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct AutoRepay.RepayParams",
+        "name": "repayParams",
+        "type": "tuple"
       },
       {
         "components": [
@@ -380,16 +440,30 @@
         "internalType": "struct IBaseUniswapAdapter.PermitSignature",
         "name": "permitSignature",
         "type": "tuple"
-      },
-      {
-        "internalType": "bool[4]",
-        "name": "boolParams",
-        "type": "bool[4]"
       }
     ],
     "name": "increaseHealthFactor",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "userAddress",
+        "type": "address"
+      }
+    ],
+    "name": "isWhitelisted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -403,6 +477,25 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "userAddress",
+        "type": "address"
+      }
+    ],
+    "name": "removeFromWhitelist",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -478,6 +571,25 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "userAddress",
+        "type": "address"
+      }
+    ],
+    "name": "whitelistAddress",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ]
