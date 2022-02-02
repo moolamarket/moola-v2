@@ -241,17 +241,17 @@ contract AutoRepay is BaseUniswapAdapter {
           amounts0.add(feeAmount),
           permitSignature
         );
-        LENDING_POOL.withdraw(repayParams.collateralAsset, feeAmount, caller);
+        IERC20(collateralATokenAddress).safeTransfer(caller, feeAmount);
       } else {
         // Pull aTokens from user
-        _pullAToken(
-          repayParams.collateralAsset,
+        _transferATokenToContractAddress(
           collateralATokenAddress,
           repayParams.user,
           amounts0.add(feeAmount),
           permitSignature
         );
-        IERC20(repayParams.collateralAsset).safeTransfer(caller, feeAmount);
+        IERC20(collateralATokenAddress).safeTransfer(caller, feeAmount);
+        LENDING_POOL.withdraw(repayParams.collateralAsset, amounts0, address(this));
       }
 
       // Swap collateral asset to the debt asset
@@ -275,15 +275,18 @@ contract AutoRepay is BaseUniswapAdapter {
       }
     } else {
       uint256 feeAmount = repayParams.debtRepayAmount.mul(FEE).div(FEE_DECIMALS);
-      // Pull aTokens from user
-      _pullAToken(
-        repayParams.collateralAsset,
+      _transferATokenToContractAddress(
         collateralATokenAddress,
         repayParams.user,
         repayParams.debtRepayAmount.add(premium).add(feeAmount),
         permitSignature
       );
-      IERC20(repayParams.collateralAsset).safeTransfer(caller, feeAmount);
+      IERC20(collateralATokenAddress).safeTransfer(caller, feeAmount);
+      LENDING_POOL.withdraw(
+        repayParams.collateralAsset,
+        repayParams.debtRepayAmount.add(premium),
+        address(this)
+      );
     }
   }
 
