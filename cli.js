@@ -226,7 +226,7 @@ async function execute(network, action, ...params) {
       migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0x78660A4bbe5108c8258c39696209329B3bC214ba');
       liquiditySwapAdapter = '0xe469484419AD6730BeD187c22a47ca38B054B09f';
       repayAdapter = new kit.web3.eth.Contract(UniswapRepayAdapter, '0x55a48631e4ED42D2b12FBA0edc7ad8F66c28375C');
-      autoRepay = new kit.web3.eth.Contract(AutoRepay, '0x68E9909Ae4F776554a67690f7576B4Eb8f866Dd3');
+      autoRepay = new kit.web3.eth.Contract(AutoRepay, '0xb3A011B8FA515C848de949B7D658C8C71F004D4D');
       break;
     case 'main':
       kit = newKit('https://forno.celo.org');
@@ -239,7 +239,7 @@ async function execute(network, action, ...params) {
       migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0xB87ebF9CD90003B66CF77c937eb5628124fA0662');
       liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
       repayAdapter = new kit.web3.eth.Contract(UniswapRepayAdapter, '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c');
-      autoRepay = new kit.web3.eth.Contract(AutoRepay, '0x195C6Fd4B624aBf9AF0c32264A43F5F82fB2AD38');
+      autoRepay = new kit.web3.eth.Contract(AutoRepay, '0xbf54c792A40E87358F97B225e9d124565568aEd4');
       break;
     default:
       try {
@@ -259,7 +259,7 @@ async function execute(network, action, ...params) {
       privateKeyRequired = false;
       liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
       repayAdapter = new kit.web3.eth.Contract(UniswapRepayAdapter, '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c');
-      autoRepay = new kit.web3.eth.Contract(AutoRepay, '0x195C6Fd4B624aBf9AF0c32264A43F5F82fB2AD38');
+      autoRepay = new kit.web3.eth.Contract(AutoRepay, '0xbf54c792A40E87358F97B225e9d124565568aEd4');
   }
   const web3 = kit.web3;
   const eth = web3.eth;
