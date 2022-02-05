@@ -25,6 +25,7 @@ import {
   deployMockUniswapRouter,
   deployUniswapLiquiditySwapAdapter,
   deployUniswapRepayAdapter,
+  deployAutoRepay,
   deployFlashLiquidationAdapter,
   authorizeWETHGateway,
 } from '../../helpers/contracts-deployments';
@@ -150,6 +151,7 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
       CELO: mockTokens.CELO.address,
       CUSD: mockTokens.CUSD.address,
       CEUR: mockTokens.CEUR.address,
+      CREAL: mockTokens.CREAL.address,
       MOO: mockTokens.MOO.address,
       UBE: mockTokens.UBE.address,
       WETH: mockTokens.WETH.address,
@@ -196,7 +198,7 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
       WMATIC: mockTokens.WMATIC.address,
       USD: USD_ADDRESS,
       STAKE: mockTokens.STAKE.address,
-      xSUSHI: mockTokens.xSUSHI.address
+      xSUSHI: mockTokens.xSUSHI.address,
     },
     fallbackOracle
   );
@@ -248,12 +250,8 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
 
   const config = loadPoolConfig(ConfigNames.Aave);
 
-  const {
-    ATokenNamePrefix,
-    StableDebtTokenNamePrefix,
-    VariableDebtTokenNamePrefix,
-    SymbolPrefix,
-  } = config;
+  const { ATokenNamePrefix, StableDebtTokenNamePrefix, VariableDebtTokenNamePrefix, SymbolPrefix } =
+    config;
   const treasuryAddress = await getTreasuryAddress(config);
 
   await initReservesByHelper(
@@ -287,6 +285,7 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
 
   await deployUniswapLiquiditySwapAdapter(adapterParams);
   await deployUniswapRepayAdapter(adapterParams);
+  await deployAutoRepay(adapterParams);
   await deployFlashLiquidationAdapter(adapterParams);
 
   await deployWalletBalancerProvider();
