@@ -1651,8 +1651,6 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const callerFee = amountCollateralToSwap
           .mul(await autoRepay.FEE())
           .div(await autoRepay.FEE_DECIMALS());
-        console.log(callerFee.toString());
-
         await autoRepay.whitelistAddress(callerAddress);
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
