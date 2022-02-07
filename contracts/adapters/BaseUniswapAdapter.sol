@@ -148,11 +148,10 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     uint256 fromAssetPrice = _getPrice(assetToSwapFromPrice);
     uint256 toAssetPrice = _getPrice(assetToSwapToPrice);
 
-    uint256 expectedMinAmountOut =
-      amountToSwap
-        .mul(fromAssetPrice.mul(10**toAssetDecimals))
-        .div(toAssetPrice.mul(10**fromAssetDecimals))
-        .percentMul(PercentageMath.PERCENTAGE_FACTOR.sub(MAX_SLIPPAGE_PERCENT));
+    uint256 expectedMinAmountOut = amountToSwap
+      .mul(fromAssetPrice.mul(10**toAssetDecimals))
+      .div(toAssetPrice.mul(10**fromAssetDecimals))
+      .percentMul(PercentageMath.PERCENTAGE_FACTOR.sub(MAX_SLIPPAGE_PERCENT));
 
     require(expectedMinAmountOut < minAmountOut, 'minAmountOut exceed max slippage');
 
@@ -183,14 +182,14 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
         block.timestamp
       );
 
-      uint256 swappedAmount = IERC20(path[path.length - 1]).balanceOf(address(this)) - balanceBefore;
+      uint256 swappedAmount = IERC20(path[path.length - 1]).balanceOf(address(this)) -
+        balanceBefore;
 
       emit Swapped(assetToSwapFrom, assetToSwapTo, amountToSwap, swappedAmount);
 
       return swappedAmount;
     } else {
-      uint256[] memory amounts =
-      UNISWAP_ROUTER.swapExactTokensForTokens(
+      uint256[] memory amounts = UNISWAP_ROUTER.swapExactTokensForTokens(
         amountToSwap,
         minAmountOut,
         path,
@@ -207,6 +206,8 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
   /**
    * @dev Receive an exact amount `amountToReceive` of `assetToSwapTo` tokens for as few `assetToSwapFrom` tokens as
    * possible.
+   * @param assetToSwapFromPrice Origin asset to get price
+   * @param assetToSwapToPrice Destination asset to get pricce
    * @param assetToSwapFrom Origin asset
    * @param assetToSwapTo Destination asset
    * @param maxAmountToSwap Max amount of `assetToSwapFrom` allowed to be swapped
@@ -214,23 +215,24 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
    * @return the amount swapped
    */
   function _swapTokensForExactTokens(
+    address assetToSwapFromPrice,
+    address assetToSwapToPrice,
     address assetToSwapFrom,
     address assetToSwapTo,
     uint256 maxAmountToSwap,
     uint256 amountToReceive,
     bool useEthPath
   ) internal returns (uint256) {
-    uint256 fromAssetDecimals = _getDecimals(assetToSwapFrom);
-    uint256 toAssetDecimals = _getDecimals(assetToSwapTo);
+    uint256 fromAssetDecimals = _getDecimals(assetToSwapFromPrice);
+    uint256 toAssetDecimals = _getDecimals(assetToSwapToPrice);
 
-    uint256 fromAssetPrice = _getPrice(assetToSwapFrom);
-    uint256 toAssetPrice = _getPrice(assetToSwapTo);
+    uint256 fromAssetPrice = _getPrice(assetToSwapFromPrice);
+    uint256 toAssetPrice = _getPrice(assetToSwapToPrice);
 
-    uint256 expectedMaxAmountToSwap =
-      amountToReceive
-        .mul(toAssetPrice.mul(10**fromAssetDecimals))
-        .div(fromAssetPrice.mul(10**toAssetDecimals))
-        .percentMul(PercentageMath.PERCENTAGE_FACTOR.add(MAX_SLIPPAGE_PERCENT));
+    uint256 expectedMaxAmountToSwap = amountToReceive
+      .mul(toAssetPrice.mul(10**fromAssetDecimals))
+      .div(fromAssetPrice.mul(10**toAssetDecimals))
+      .percentMul(PercentageMath.PERCENTAGE_FACTOR.add(MAX_SLIPPAGE_PERCENT));
 
     require(maxAmountToSwap < expectedMaxAmountToSwap, 'maxAmountToSwap exceed max slippage');
 
@@ -250,14 +252,13 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
       path[1] = assetToSwapTo;
     }
 
-    uint256[] memory amounts =
-      UNISWAP_ROUTER.swapTokensForExactTokens(
-        amountToReceive,
-        maxAmountToSwap,
-        path,
-        address(this),
-        block.timestamp
-      );
+    uint256[] memory amounts = UNISWAP_ROUTER.swapTokensForExactTokens(
+      amountToReceive,
+      maxAmountToSwap,
+      path,
+      address(this),
+      block.timestamp
+    );
 
     emit Swapped(assetToSwapFrom, assetToSwapTo, amounts[0], amounts[amounts.length - 1]);
 
@@ -304,6 +305,25 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     uint256 amount,
     PermitSignature memory permitSignature
   ) internal {
+    _transferATokenToContractAddress(reserveAToken, user, amount, permitSignature);
+
+    // withdraw reserve
+    LENDING_POOL.withdraw(reserve, amount, address(this));
+  }
+
+  /**
+   * @dev Transfer user ATokens to contract address
+   * @param reserveAToken address of the aToken of the reserve
+   * @param user address
+   * @param amount of tokens to be transferred to the contract
+   * @param permitSignature struct containing the permit signature
+   */
+  function _transferATokenToContractAddress(
+    address reserveAToken,
+    address user,
+    uint256 amount,
+    PermitSignature memory permitSignature
+  ) internal {
     if (_usePermit(permitSignature)) {
       IERC20WithPermit(reserveAToken).permit(
         user,
@@ -318,9 +338,6 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
 
     // transfer from user to adapter
     IERC20(reserveAToken).safeTransferFrom(user, address(this), amount);
-
-    // withdraw reserve
-    LENDING_POOL.withdraw(reserve, amount, address(this));
   }
 
   /**
@@ -427,10 +444,9 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     uint256 reserveInDecimals = _getDecimals(reserveIn);
     uint256 reserveOutDecimals = _getDecimals(reserveOut);
 
-    uint256 outPerInPrice =
-      finalAmountIn.mul(10**18).mul(10**reserveOutDecimals).div(
-        bestAmountOut.mul(10**reserveInDecimals)
-      );
+    uint256 outPerInPrice = finalAmountIn.mul(10**18).mul(10**reserveOutDecimals).div(
+      bestAmountOut.mul(10**reserveInDecimals)
+    );
 
     return
       AmountCalc(
@@ -477,8 +493,11 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
         );
     }
 
-    (uint256[] memory amounts, address[] memory path) =
-      _getAmountsInAndPath(reserveIn, reserveOut, amountOut);
+    (uint256[] memory amounts, address[] memory path) = _getAmountsInAndPath(
+      reserveIn,
+      reserveOut,
+      amountOut
+    );
 
     // Add flash loan fee
     uint256 finalAmountIn = amounts[0].add(amounts[0].mul(FLASHLOAN_PREMIUM_TOTAL).div(10000));
@@ -486,10 +505,9 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     uint256 reserveInDecimals = _getDecimals(reserveIn);
     uint256 reserveOutDecimals = _getDecimals(reserveOut);
 
-    uint256 inPerOutPrice =
-      amountOut.mul(10**18).mul(10**reserveInDecimals).div(
-        finalAmountIn.mul(10**reserveOutDecimals)
-      );
+    uint256 inPerOutPrice = amountOut.mul(10**18).mul(10**reserveInDecimals).div(
+      finalAmountIn.mul(10**reserveOutDecimals)
+    );
 
     return
       AmountCalc(

@@ -142,6 +142,8 @@ contract FlashLiquidationAdapter is BaseUniswapAdapter {
       vars.soldAmount = _swapTokensForExactTokens(
         collateralAsset,
         borrowedAsset,
+        collateralAsset,
+        borrowedAsset,
         vars.diffCollateralBalance,
         vars.flashLoanDebt.sub(vars.diffFlashBorrowedBalance),
         useEthPath

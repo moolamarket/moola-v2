@@ -27,8 +27,8 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
     bool[] swapAllBalance;
     PermitParams permitParams;
     bool[] useEthPath;
-    bool[] beforeNormal;
-    bool[] afterNormal;
+    bool[] useATokenAsFrom;
+    bool[] useATokenAsTo;
   }
 
   constructor(
@@ -77,8 +77,8 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
         assets.length == decodedParams.permitParams.r.length &&
         assets.length == decodedParams.permitParams.s.length &&
         assets.length == decodedParams.useEthPath.length &&
-        assets.length == decodedParams.beforeNormal.length &&
-        assets.length == decodedParams.afterNormal.length,
+        assets.length == decodedParams.useATokenAsFrom.length &&
+        assets.length == decodedParams.useATokenAsTo.length,
       'INCONSISTENT_PARAMS'
     );
 
@@ -99,8 +99,8 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
           decodedParams.permitParams.s[i]
         ),
         decodedParams.useEthPath[i],
-        decodedParams.beforeNormal[i],
-        decodedParams.afterNormal[i]
+        decodedParams.useATokenAsFrom[i],
+        decodedParams.useATokenAsTo[i]
       );
     }
 
@@ -216,8 +216,8 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
     bool swapAllBalance,
     PermitSignature memory permitSignature,
     bool useEthPath,
-    bool beforeNormal,
-    bool afterNormal
+    bool useATokenAsFrom,
+    bool useATokenAsTo
   ) internal {
     SwapLiquidityLocalVars memory vars;
 
@@ -228,7 +228,7 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
       ? vars.aTokenInitiatorBalance.sub(premium)
       : amount;
 
-    if (!beforeNormal) {
+    if (useATokenAsFrom) {
       IERC20(assetFrom).safeApprove(address(LENDING_POOL), 0);
       IERC20(assetFrom).safeApprove(address(LENDING_POOL), vars.amountToSwap);
       LENDING_POOL.deposit(assetFrom, vars.amountToSwap, address(this), 0);
@@ -237,20 +237,20 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
     vars.receivedAmount = _swapExactTokensForTokens(
       assetFrom,
       assetTo,
-      beforeNormal ? assetFrom : vars.aToken,
-      afterNormal ? assetTo : _getReserveData(assetTo).aTokenAddress,
+      useATokenAsFrom ? vars.aToken : assetFrom,
+      useATokenAsTo ? _getReserveData(assetTo).aTokenAddress : assetTo,
       vars.amountToSwap,
       minAmountToReceive,
       useEthPath,
-      !beforeNormal || !afterNormal
+      useATokenAsFrom || useATokenAsTo
     );
 
-    if (afterNormal) {
+    if (useATokenAsTo) {
+      IERC20(_getReserveData(assetTo).aTokenAddress).transfer(initiator, vars.receivedAmount);
+    } else {
       IERC20(assetTo).safeApprove(address(LENDING_POOL), 0);
       IERC20(assetTo).safeApprove(address(LENDING_POOL), vars.receivedAmount);
       LENDING_POOL.deposit(assetTo, vars.receivedAmount, initiator, 0);
-    } else {
-      IERC20(_getReserveData(assetTo).aTokenAddress).transfer(initiator, vars.receivedAmount);
     }
 
     vars.flashLoanDebt = amount.add(premium);
@@ -288,12 +288,23 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
       bytes32[] memory r,
       bytes32[] memory s,
       bool[] memory useEthPath,
-      bool[] memory beforeNormal,
-      bool[] memory afterNormal
-    ) =
-      abi.decode(
+      bool[] memory useATokenAsFrom,
+      bool[] memory useATokenAsTo
+    ) = abi.decode(
         params,
-        (address[], uint256[], bool[], uint256[], uint256[], uint8[], bytes32[], bytes32[], bool[], bool[], bool[])
+        (
+          address[],
+          uint256[],
+          bool[],
+          uint256[],
+          uint256[],
+          uint8[],
+          bytes32[],
+          bytes32[],
+          bool[],
+          bool[],
+          bool[]
+        )
       );
 
     return
@@ -303,8 +314,8 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
         swapAllBalance,
         PermitParams(permitAmount, deadline, v, r, s),
         useEthPath,
-        beforeNormal,
-        afterNormal
+        useATokenAsFrom,
+        useATokenAsTo
       );
   }
 }
