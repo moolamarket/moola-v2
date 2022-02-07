@@ -123,7 +123,6 @@ contract AutoRepay is BaseUniswapAdapter {
   ) external override returns (bool) {
     require(msg.sender == address(LENDING_POOL), 'CALLER_MUST_BE_LENDING_POOL');
     require(initiator == address(this), 'Only this contract can call flashloan');
-
     (
       RepayParams memory repayParams,
       PermitSignature memory permitSignature,
@@ -133,33 +132,34 @@ contract AutoRepay is BaseUniswapAdapter {
     repayParams.debtRepayAmount = amounts[0];
 
     // Repay debt. Approves for 0 first to comply with tokens that implement the anti frontrunning approval fix.
-    IERC20(repayParams.debtAsset).safeApprove(address(LENDING_POOL), 0);
-    IERC20(repayParams.debtAsset).safeApprove(address(LENDING_POOL), repayParams.debtRepayAmount);
-    uint256 repaidAmount = IERC20(repayParams.debtAsset).balanceOf(address(this));
-    LENDING_POOL.repay(
-      repayParams.debtAsset,
-      repayParams.debtRepayAmount,
-      repayParams.rateMode,
-      repayParams.user
-    );
-    repaidAmount = repaidAmount.sub(IERC20(repayParams.debtAsset).balanceOf(address(this)));
+    {
+      IERC20(repayParams.debtAsset).safeApprove(address(LENDING_POOL), 0);
+      IERC20(repayParams.debtAsset).safeApprove(address(LENDING_POOL), repayParams.debtRepayAmount);
+      uint256 repaidAmount = IERC20(repayParams.debtAsset).balanceOf(address(this));
+      LENDING_POOL.repay(
+        repayParams.debtAsset,
+        repayParams.debtRepayAmount,
+        repayParams.rateMode,
+        repayParams.user
+      );
+      repaidAmount = repaidAmount.sub(IERC20(repayParams.debtAsset).balanceOf(address(this)));
 
-    uint256 maxCollateralToSwap = repayParams.collateralAmount;
-    if (repaidAmount < repayParams.debtRepayAmount) {
-      maxCollateralToSwap = maxCollateralToSwap.mul(repaidAmount).div(repayParams.debtRepayAmount);
+      uint256 maxCollateralToSwap = repayParams.collateralAmount;
+      if (repaidAmount < repayParams.debtRepayAmount) {
+        maxCollateralToSwap = maxCollateralToSwap.mul(repaidAmount).div(
+          repayParams.debtRepayAmount
+        );
+      }
+
+      repayParams.collateralAmount = maxCollateralToSwap;
+      repayParams.debtRepayAmount = repaidAmount;
     }
-
-    repayParams.collateralAmount = maxCollateralToSwap;
-    repayParams.debtRepayAmount = repaidAmount;
 
     _doSwapAndPullWithFee(repayParams, permitSignature, caller, premiums[0]);
 
     // Repay flashloan. Approves for 0 first to comply with tokens that implement the anti frontrunning approval fix.
     IERC20(repayParams.debtAsset).safeApprove(address(LENDING_POOL), 0);
-    IERC20(repayParams.debtAsset).safeApprove(
-      address(LENDING_POOL),
-      repayParams.debtRepayAmount.add(premiums[0])
-    );
+    IERC20(repayParams.debtAsset).safeApprove(address(LENDING_POOL), amounts[0].add(premiums[0]));
 
     return true;
   }
@@ -275,17 +275,23 @@ contract AutoRepay is BaseUniswapAdapter {
       }
     } else {
       uint256 feeAmount = repayParams.debtRepayAmount.mul(FEE).div(FEE_DECIMALS);
+      uint256 aTokenTransferAmount = repayParams.debtRepayAmount.add(premium).add(feeAmount);
       _transferATokenToContractAddress(
         collateralATokenAddress,
         repayParams.user,
-        repayParams.debtRepayAmount.add(premium).add(feeAmount),
+        aTokenTransferAmount,
         permitSignature
       );
-      IERC20(collateralATokenAddress).safeTransfer(caller, feeAmount);
+      uint256 contractBalanceBefore = IERC20(collateralATokenAddress).balanceOf(address(this));
       LENDING_POOL.withdraw(
         repayParams.collateralAsset,
         repayParams.debtRepayAmount.add(premium),
         address(this)
+      );
+      uint256 contractBalanceAfter = IERC20(collateralATokenAddress).balanceOf(address(this));
+      IERC20(collateralATokenAddress).safeTransfer(
+        caller,
+        aTokenTransferAmount - (contractBalanceBefore - contractBalanceAfter)
       );
     }
   }
