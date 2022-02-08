@@ -289,6 +289,12 @@ export type iAavePoolAssets<T> = Pick<
   | 'xSUSHI'
   | 'MOBI'
   | 'POOF'
+  | 'CELO'
+  | 'CUSD'
+  | 'CEUR'
+  | 'CREAL'
+  | 'MOO'
+  | 'UBE'
 >;
 
 export type iLpPoolAssets<T> = Pick<

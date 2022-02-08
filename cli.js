@@ -234,6 +234,24 @@ async function execute(network, action, ...params) {
       liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
       repayAdapter = new kit.web3.eth.Contract(UniswapRepayAdapter, '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c');
       break;
+    case 'ganache':
+      kit = newKit('http://127.0.0.1:8545');
+      addressProvider = new kit.web3.eth.Contract(
+        LendingPoolAddressesProvider,
+        '0xf62686e9D917D46Ef066cA69217675961A041C2e'
+      );
+      cEUR = new kit.web3.eth.Contract(MToken, '0x3ba99Aaaef61c39eA782A797AAF555AeB1B0913E');
+      cUSD = new kit.web3.eth.Contract(MToken, '0x206e05376028d5C51a7F768914a9da2aDFe39281');
+      cREAL = new kit.web3.eth.Contract(MToken, '0xAe1e70725EFa38fa8DE465d8C0880e3a59Ba4528');
+      CELO = new kit.web3.eth.Contract(MToken, '0xFaEC92Fb215edAf0b1474816f46535c72b6111e4');
+      dataProvider = new kit.web3.eth.Contract(
+        DataProvider,
+        '0x7eE810412Ae0946A9cfdA71ccE3409642F2B93A1'
+      );
+      migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0xB87ebF9CD90003B66CF77c937eb5628124fA0662');
+      liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
+      repayAdapter = new kit.web3.eth.Contract(UniswapRepayAdapter, '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c');
+      break;
     default:
       try {
         kit = newKit(network);
@@ -279,6 +297,7 @@ async function execute(network, action, ...params) {
     ceur: cEUR.options.address,
     creal: cREAL.options.address,
   };
+
   if (action === 'balanceof') {
     const token = tokens[params[0]];
     const user = params[1];

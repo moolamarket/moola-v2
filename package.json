@@ -116,6 +116,7 @@
     "ethereum-waffle": "3.0.2",
     "ethereumjs-util": "7.0.2",
     "ethers": "^5.0.19",
+    "ganache": "^7.0.2",
     "globby": "^11.0.1",
     "hardhat": "^2.0.8",
     "hardhat-gas-reporter": "^1.0.0",

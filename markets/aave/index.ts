@@ -25,6 +25,12 @@ import {
   strategyXSUSHI,
   strategyMOBI,
   strategyPOOF,
+  strategyCELO,
+  strategyCUSD,
+  strategyCEUR,
+  strategyCREAL,
+  strategyUBE,
+  strategyMOO,
 } from './reservesConfigs';
 
 // ----------------
@@ -59,6 +65,12 @@ export const AaveConfig: IAaveConfiguration = {
     xSUSHI: strategyXSUSHI,
     MOBI: strategyMOBI,
     POOF: strategyPOOF,
+    CELO: strategyCELO,
+    CUSD: strategyCUSD,
+    CEUR: strategyCEUR,
+    CREAL: strategyCREAL,
+    MOO: strategyMOO,
+    UBE: strategyUBE,
   },
   ReserveAssets: {
     [eEthereumNetwork.buidlerevm]: {},

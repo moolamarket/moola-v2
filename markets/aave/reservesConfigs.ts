@@ -12,6 +12,8 @@ import {
   rateStrategyVolatileFour,
 } from './rateStrategies';
 
+import { rateStrategyCELO } from '../moola/rateStrategies';
+
 export const strategyBUSD: IReserveParams = {
   strategy: rateStrategyStableOne,
   baseLTVAsCollateral: '0',
@@ -287,4 +289,76 @@ export const strategyPOOF: IReserveParams = {
   reserveDecimals: '18',
   aTokenImpl: eContractid.AToken,
   reserveFactor: '3500',
+};
+
+export const strategyUBE: IReserveParams = {
+  strategy: rateStrategyVolatileFour,
+  baseLTVAsCollateral: '2500',
+  liquidationThreshold: '4500',
+  liquidationBonus: '11500',
+  borrowingEnabled: true,
+  stableBorrowRateEnabled: false,
+  reserveDecimals: '18',
+  aTokenImpl: eContractid.AToken,
+  reserveFactor: '3500',
+};
+
+export const strategyMOO: IReserveParams = {
+  strategy: rateStrategyVolatileFour,
+  baseLTVAsCollateral: '2500',
+  liquidationThreshold: '4500',
+  liquidationBonus: '11500',
+  borrowingEnabled: true,
+  stableBorrowRateEnabled: false,
+  reserveDecimals: '18',
+  aTokenImpl: eContractid.AToken,
+  reserveFactor: '3500',
+};
+
+export const strategyCUSD: IReserveParams = {
+  strategy: rateStrategyStableTwo,
+  baseLTVAsCollateral: '7500',
+  liquidationThreshold: '8000',
+  liquidationBonus: '10500',
+  borrowingEnabled: true,
+  stableBorrowRateEnabled: true,
+  reserveDecimals: '18',
+  aTokenImpl: eContractid.AToken,
+  reserveFactor: '1000',
+};
+
+export const strategyCEUR: IReserveParams = {
+  strategy: rateStrategyStableTwo,
+  baseLTVAsCollateral: '7500',
+  liquidationThreshold: '8000',
+  liquidationBonus: '10500',
+  borrowingEnabled: true,
+  stableBorrowRateEnabled: true,
+  reserveDecimals: '18',
+  aTokenImpl: eContractid.AToken,
+  reserveFactor: '1000',
+};
+
+export const strategyCREAL: IReserveParams = {
+  strategy: rateStrategyStableTwo,
+  baseLTVAsCollateral: '7500',
+  liquidationThreshold: '8000',
+  liquidationBonus: '10500',
+  borrowingEnabled: true,
+  stableBorrowRateEnabled: true,
+  reserveDecimals: '18',
+  aTokenImpl: eContractid.AToken,
+  reserveFactor: '1000',
+};
+
+export const strategyCELO: IReserveParams = {
+  strategy: rateStrategyCELO,
+  baseLTVAsCollateral: '8000',
+  liquidationThreshold: '8250',
+  liquidationBonus: '10500',
+  borrowingEnabled: true,
+  stableBorrowRateEnabled: true,
+  reserveDecimals: '18',
+  aTokenImpl: eContractid.AToken,
+  reserveFactor: '1000',
 };
