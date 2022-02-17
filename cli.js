@@ -293,7 +293,7 @@ async function execute(network, action, ...params) {
     console.info(BN(((await token.methods.balanceOf(user).call()).toString())).div(ether).toFixed());
     return;
   }
-  if (action == 'getuserreservedata') {
+  if (action === 'getuserreservedata') {
     const reserve = reserves[params[0]];
     const user = params[1];
     const data = await dataProvider.methods.getUserReserveData(reserve, user).call();
@@ -313,7 +313,7 @@ async function execute(network, action, ...params) {
     console.table(parsedData);
     return;
   }
-  if (action == 'getuseraccountdata') {
+  if (action === 'getuseraccountdata') {
     const user = params[0];
     const data = await lendingPool.methods.getUserAccountData(user).call();
     const parsedData = {
@@ -327,7 +327,7 @@ async function execute(network, action, ...params) {
     console.table(parsedData);
     return;
   }
-  if (action == 'getreservedata') {
+  if (action === 'getreservedata') {
     const reserve = reserves[params[0]];
     const data = await dataProvider.methods.getReserveData(reserve).call();
     const reserveTokens = await dataProvider.methods.getReserveTokensAddresses(reserve).call();
@@ -349,7 +349,7 @@ async function execute(network, action, ...params) {
     console.table(parsedData);
     return;
   }
-  if (action == 'deposit') {
+  if (action === 'deposit') {
     const reserve = reserves[params[0]];
     const token = tokens[params[0]];
     const user = params[1];
@@ -373,7 +373,7 @@ async function execute(network, action, ...params) {
     console.log('Deposit', (await lendingPool.methods.deposit(reserve, amount, user, 0).send({from: user, gas: 2000000})).transactionHash);
     return;
   }
-  if (action == 'borrow') {
+  if (action === 'borrow') {
     const reserve = reserves[params[0]];
     const user = params[1];
     const amount = web3.utils.toWei(params[2]);
@@ -395,7 +395,7 @@ async function execute(network, action, ...params) {
     console.log('Borrow', (await lendingPool.methods.borrow(reserve, amount, rate, 0, user).send({from: user, gas: 2000000})).transactionHash);
     return;
   }
-  if (action == 'repay') {
+  if (action === 'repay') {
     const reserve = reserves[params[0]];
     const token = tokens[params[0]];
     const user = params[1];
@@ -422,7 +422,7 @@ async function execute(network, action, ...params) {
     console.log('Revoke approve', (await token.methods.approve(lendingPool.options.address, 0).send({from: user, gas: 2000000})).transactionHash);
     return;
   }
-  if (action == 'redeem') {
+  if (action === 'redeem') {
     const reserve = reserves[params[0]];
     const user = params[1];
     const amount = params[2] === 'all' ? maxUint256 : web3.utils.toWei(params[2]);
@@ -443,7 +443,7 @@ async function execute(network, action, ...params) {
     console.log('Redeem', (await lendingPool.methods.withdraw(reserve, amount, user).send({from: user, gas: 2000000})).transactionHash);
     return;
   }
-  if (action == 'delegate') {
+  if (action === 'delegate') {
     const reserve = reserves[params[0]];
     const token = tokens[params[0]];
     const to = params[1];
@@ -463,7 +463,7 @@ async function execute(network, action, ...params) {
     console.log('Approve credit delegation', (await debtToken.methods.approveDelegation(to, amount).send({from: user, gas: 2000000})).transactionHash);
     return;
   }
-  if (action == 'borrowfrom') {
+  if (action === 'borrowfrom') {
     const reserve = reserves[params[0]];
     const from = params[1];
     const user = params[2];
@@ -486,7 +486,7 @@ async function execute(network, action, ...params) {
     console.log('Borrow', (await lendingPool.methods.borrow(reserve, amount, rate, 0, from).send({from: user, gas: 2000000})).transactionHash);
     return;
   }
-  if (action == 'repayfor') {
+  if (action === 'repayfor') {
     const reserve = reserves[params[0]];
     const token = tokens[params[0]];
     const repayfor = params[1];
@@ -514,7 +514,7 @@ async function execute(network, action, ...params) {
     console.log('Revoke approve', (await token.methods.approve(lendingPool.options.address, 0).send({from: user, gas: 2000000})).transactionHash);
     return;
   }
-  if (action == 'migrate-step-2') {
+  if (action === 'migrate-step-2') {
     const user = params[0];
     if (privateKeyRequired) {
       pk = params[1];
@@ -546,7 +546,7 @@ async function execute(network, action, ...params) {
     return;
   }
 
-  if (action == 'liquidation-bot') {
+  if (action === 'liquidation-bot') {
     if (network == 'test') {
       throw new Error('Liquidation bot only works on the mainnet.');
     }
@@ -733,7 +733,7 @@ async function execute(network, action, ...params) {
     }
   }
 
-  if (action == 'liquidity-swap') {
+  if (action === 'liquidity-swap') {
     if (network == 'test') {
       throw new Error('Liquidity swap only works on the mainnet due to low liquidity in pools');
     }
@@ -791,7 +791,7 @@ async function execute(network, action, ...params) {
     return;
   }
 
-  if (action == 'repay-from-collateral') {
+  if (action === 'repay-from-collateral') {
     if (network == 'test') {
       throw new Error(
         'repay from collateral only works on the mainnet due to low liquidity in pools'
@@ -913,7 +913,7 @@ async function execute(network, action, ...params) {
     return;
   }
 
-  if (action == 'auto-repay') {
+  if (action === 'auto-repay') {
     if (network == 'test') {
       throw new Error(
         'repay from collateral only works on the mainnet due to low liquidity in pools'
@@ -986,16 +986,16 @@ async function execute(network, action, ...params) {
 
     const method = autoRepay.methods.increaseHealthFactor(
       {
-        user: user,
+        user,
         collateralAsset: collateralAsset.options.address,
         debtAsset: debtAsset.options.address,
         collateralAmount: maxCollateralAmount.toString(0),
         debtRepayAmount: repayAmount.toFixed(0),
-        rateMode: rateMode,
+        rateMode,
         useEthPath: false,
-        useATokenAsFrom: useATokenAsFrom,
-        useATokenAsTo: useATokenAsTo,
-        useFlashloan: useFlashloan,
+        useATokenAsFrom,
+        useATokenAsTo,
+        useFlashloan,
       },
       { amount: 0, deadline: 0, v: 0, r: ethers.constants.HashZero, s: ethers.constants.HashZero }
     );
@@ -1010,7 +1010,7 @@ async function execute(network, action, ...params) {
     return;
   }
 
-  if (action == 'auto-repay-user-info') {
+  if (action === 'auto-repay-user-info') {
     const user = params[0];
     const userInfo = await autoRepay.methods.userInfos(user).call();
     console.log(
@@ -1029,7 +1029,7 @@ async function execute(network, action, ...params) {
     return;
   }
 
-  if (action == 'set-auto-repay-params') {
+  if (action === 'set-auto-repay-params') {
     if (network == 'test') {
       throw new Error('test network not supported');
     }
