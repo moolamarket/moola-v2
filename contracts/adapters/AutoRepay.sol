@@ -15,6 +15,20 @@ contract AutoRepay is BaseUniswapAdapter {
   using SafeERC20 for IERC20;
   using EnumerableSet for EnumerableSet.AddressSet;
 
+  /**
+   * @dev struct RepayParams
+   *
+   * @param user Address of user
+   * @param colalteralAsset Address of asset to be swapped
+   * @param debtAsset Address of debt asset
+   * @param collateralAmount Amount of the collateral to be swapped
+   * @param debtRepayAmount Amount of the debt to be repaid
+   * @param rateMode Rate mode of the debt to be repaid
+   * @param useEthPath Use Eth in swap path
+   * @param useATokenAsFrom Use aToken as form in swap
+   * @param useATokenAsTo Use aToken as to in swap
+   * @param useFlashloan Use flahsloan for increasing health factor
+   */
   struct RepayParams {
     address user;
     address collateralAsset;
@@ -46,11 +60,11 @@ contract AutoRepay is BaseUniswapAdapter {
     address wethAddress
   ) public BaseUniswapAdapter(addressesProvider, uniswapRouter, wethAddress) {}
 
-  function whitelistAddress(address userAddress) public onlyOwner returns (bool) {
+  function whitelistAddress(address userAddress) external onlyOwner returns (bool) {
     return _whitelistedAddresses.add(userAddress);
   }
 
-  function removeFromWhitelist(address userAddress) public onlyOwner returns (bool) {
+  function removeFromWhitelist(address userAddress) external onlyOwner returns (bool) {
     return _whitelistedAddresses.remove(userAddress);
   }
 
@@ -58,7 +72,7 @@ contract AutoRepay is BaseUniswapAdapter {
     return _whitelistedAddresses.contains(userAddress);
   }
 
-  function getWitelistedAddresses() public view returns (address[] memory) {
+  function getWitelistedAddresses() external view returns (address[] memory) {
     uint256 length = _whitelistedAddresses.length();
     address[] memory addresses = new address[](length);
     for (uint256 i = 0; i < length; i++) {
@@ -67,7 +81,7 @@ contract AutoRepay is BaseUniswapAdapter {
     return addresses;
   }
 
-  function setMinMaxHealthFactor(uint256 minHealthFactor, uint256 maxHealthFactor) public {
+  function setMinMaxHealthFactor(uint256 minHealthFactor, uint256 maxHealthFactor) external {
     require(
       maxHealthFactor >= minHealthFactor,
       'maxHealthFactor should be more or equal than minHealthFactor'
@@ -104,15 +118,11 @@ contract AutoRepay is BaseUniswapAdapter {
    * @param assets Address of debt asset
    * @param amounts Amount of the debt to be repaid
    * @param premiums Fee of the flash loan
+   * @param initiator Address of the caller
    * @param params Additional variadic field to include extra params. Expected parameters:
-   *   address collateralAsset Address of the reserve to be swapped
-   *   uint256 collateralAmount Amount of reserve to be swapped
-   *   uint256 rateMode Rate modes of the debt to be repaid
-   *   uint256 permitAmount Amount for the permit signature
-   *   uint256 deadline Deadline for the permit signature
-   *   uint8 v V param for the permit signature
-   *   bytes32 r R param for the permit signature
-   *   bytes32 s S param for the permit signature
+   *   RepayParams repayParams - See {RepayParams}
+   *   PermitSignature permitSignature - struct containing the permit signature
+   *   address caller - Address of increaseHealthFactor function caller
    */
   function executeOperation(
     address[] calldata assets,
@@ -144,14 +154,12 @@ contract AutoRepay is BaseUniswapAdapter {
       );
       repaidAmount = repaidAmount.sub(IERC20(repayParams.debtAsset).balanceOf(address(this)));
 
-      uint256 maxCollateralToSwap = repayParams.collateralAmount;
       if (repaidAmount < repayParams.debtRepayAmount) {
-        maxCollateralToSwap = maxCollateralToSwap.mul(repaidAmount).div(
+        repayParams.collateralAmount = repayParams.collateralAmount.mul(repaidAmount).div(
           repayParams.debtRepayAmount
         );
       }
 
-      repayParams.collateralAmount = maxCollateralToSwap;
       repayParams.debtRepayAmount = repaidAmount;
     }
 
@@ -164,10 +172,17 @@ contract AutoRepay is BaseUniswapAdapter {
     return true;
   }
 
+  /**
+   * @dev whitelisted address(caller) calls this function, repay debt from collateral
+   * for the user, increases user health factor and take 0.1% fee from collateral
+   *
+   * @param repayParams See {RepayParams}
+   * @param permitSignature struct containing the permit signature
+   */
   function increaseHealthFactor(
     RepayParams memory repayParams,
     PermitSignature calldata permitSignature
-  ) public {
+  ) external {
     require(isWhitelisted(msg.sender), 'Caller is not whitelisted');
     _checkMinHealthFactor(repayParams.user);
     if (repayParams.useFlashloan) {
@@ -192,13 +207,11 @@ contract AutoRepay is BaseUniswapAdapter {
           ? repayParams.debtRepayAmount
           : currentDebt;
       }
-      uint256 maxCollateralToSwap = repayParams.collateralAmount;
       if (amountToRepay < repayParams.debtRepayAmount) {
-        maxCollateralToSwap = maxCollateralToSwap.mul(amountToRepay).div(
+        repayParams.collateralAmount = repayParams.collateralAmount.mul(amountToRepay).div(
           repayParams.debtRepayAmount
         );
       }
-      repayParams.collateralAmount = maxCollateralToSwap;
       repayParams.debtRepayAmount = amountToRepay;
       _doSwapAndPullWithFee(repayParams, permitSignature, msg.sender, 0);
 
@@ -215,6 +228,14 @@ contract AutoRepay is BaseUniswapAdapter {
     _checkHealthFactorInRange(repayParams.user);
   }
 
+  /**
+   * @dev does swap and pull and takes 0.1% fee for caller
+   *
+   * @param repayParams See {RepayParams}
+   * @param permitSignature struct containing the permit signature
+   * @param caller address of increaseHealthFactor function caller
+   * @param premium flashloan fee if called inside executeOperation otherwise 0
+   */
   function _doSwapAndPullWithFee(
     RepayParams memory repayParams,
     PermitSignature memory permitSignature,
@@ -233,24 +254,15 @@ contract AutoRepay is BaseUniswapAdapter {
       require(amounts0 <= repayParams.collateralAmount, 'slippage too high');
       uint256 feeAmount = amounts0.mul(FEE).div(FEE_DECIMALS);
 
-      if (repayParams.useATokenAsFrom) {
-        // Transfer aTokens from user to contract address
-        _transferATokenToContractAddress(
-          collateralATokenAddress,
-          repayParams.user,
-          amounts0.add(feeAmount),
-          permitSignature
-        );
-        IERC20(collateralATokenAddress).safeTransfer(caller, feeAmount);
-      } else {
+      _transferATokenToContractAddress(
+        collateralATokenAddress,
+        repayParams.user,
+        amounts0.add(feeAmount),
+        permitSignature
+      );
+      IERC20(collateralATokenAddress).safeTransfer(caller, feeAmount);
+      if (!repayParams.useATokenAsFrom) {
         // Pull aTokens from user
-        _transferATokenToContractAddress(
-          collateralATokenAddress,
-          repayParams.user,
-          amounts0.add(feeAmount),
-          permitSignature
-        );
-        IERC20(collateralATokenAddress).safeTransfer(caller, feeAmount);
         LENDING_POOL.withdraw(repayParams.collateralAsset, amounts0, address(this));
       }
 
@@ -296,6 +308,9 @@ contract AutoRepay is BaseUniswapAdapter {
     }
   }
 
+  /**
+   * @dev decodes the params and returns them
+   */
   function _decodeParams(bytes memory params)
     internal
     pure
