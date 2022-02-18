@@ -214,6 +214,7 @@ async function execute(network, action, ...params) {
   let liquiditySwapAdapter;
   let repayAdapter;
   let autoRepay;
+  let ubeswap;
   switch (network) {
     case 'test':
       kit = newKit('https://alfajores-forno.celo-testnet.org');
@@ -227,6 +228,7 @@ async function execute(network, action, ...params) {
       liquiditySwapAdapter = '0xe469484419AD6730BeD187c22a47ca38B054B09f';
       repayAdapter = new kit.web3.eth.Contract(UniswapRepayAdapter, '0x55a48631e4ED42D2b12FBA0edc7ad8F66c28375C');
       autoRepay = new kit.web3.eth.Contract(AutoRepay, '0x35652c1ec2577e733aAdfd72919530bA27461EC3');
+      ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
       break;
     case 'main':
       kit = newKit('https://forno.celo.org');
@@ -240,6 +242,7 @@ async function execute(network, action, ...params) {
       liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
       repayAdapter = new kit.web3.eth.Contract(UniswapRepayAdapter, '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c');
       autoRepay = new kit.web3.eth.Contract(AutoRepay, '0x37A2fc04135F065c04bA85e9946785D4379b2b4C');
+      ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
       break;
     default:
       try {
@@ -260,6 +263,7 @@ async function execute(network, action, ...params) {
       liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
       repayAdapter = new kit.web3.eth.Contract(UniswapRepayAdapter, '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c');
       autoRepay = new kit.web3.eth.Contract(AutoRepay, '0x37A2fc04135F065c04bA85e9946785D4379b2b4C');
+      ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
   }
   const web3 = kit.web3;
   const eth = web3.eth;
@@ -835,14 +839,10 @@ async function execute(network, action, ...params) {
 
     let maxCollateralAmount = 0;
     if (collateralAsset != debtAsset) {
-      const uniswap = new kit.web3.eth.Contract(
-        Uniswap,
-        '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121'
-      );
       const amountOut = useFlashLoan
         ? repayAmount.plus(repayAmount.multipliedBy(9).dividedBy(10000))
         : repayAmount;
-      const amounts = await uniswap.methods
+      const amounts = await ubeswap.methods
         .getAmountsIn(amountOut, [
           useATokenAsFrom ? reserveCollateralToken.aTokenAddress : collateralAsset.options.address,
           useATokenAsTo ? reserveDebtToken.aTokenAddress : debtAsset.options.address,
@@ -955,14 +955,10 @@ async function execute(network, action, ...params) {
 
     let maxCollateralAmount = 0;
     if (collateralAsset != debtAsset) {
-      const uniswap = new kit.web3.eth.Contract(
-        Uniswap,
-        '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121'
-      );
       const amountOut = useFlashloan
         ? repayAmount.plus(repayAmount.multipliedBy(9).dividedBy(10000))
         : repayAmount;
-      const amounts = await uniswap.methods
+      const amounts = await ubeswap.methods
         .getAmountsIn(amountOut, [
           useATokenAsFrom ? reserveCollateralToken.aTokenAddress : collateralAsset.options.address,
           useATokenAsTo ? reserveDebtToken.aTokenAddress : debtAsset.options.address,
