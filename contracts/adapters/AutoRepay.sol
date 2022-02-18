@@ -294,16 +294,16 @@ contract AutoRepay is BaseUniswapAdapter {
         aTokenTransferAmount,
         permitSignature
       );
-      uint256 contractBalanceBefore = IERC20(collateralATokenAddress).balanceOf(address(this));
+      // uint256 contractBalanceBefore = IERC20(collateralATokenAddress).balanceOf(address(this));
       LENDING_POOL.withdraw(
         repayParams.collateralAsset,
         repayParams.debtRepayAmount.add(premium),
         address(this)
       );
-      uint256 contractBalanceAfter = IERC20(collateralATokenAddress).balanceOf(address(this));
+      // uint256 contractBalanceAfter = IERC20(collateralATokenAddress).balanceOf(address(this));
       IERC20(collateralATokenAddress).safeTransfer(
         caller,
-        aTokenTransferAmount - (contractBalanceBefore - contractBalanceAfter)
+        IERC20(collateralATokenAddress).balanceOf(address(this))
       );
     }
   }
