@@ -227,7 +227,7 @@ async function execute(network, action, ...params) {
       migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0x78660A4bbe5108c8258c39696209329B3bC214ba');
       liquiditySwapAdapter = '0xe469484419AD6730BeD187c22a47ca38B054B09f';
       repayAdapter = new kit.web3.eth.Contract(UniswapRepayAdapter, '0x55a48631e4ED42D2b12FBA0edc7ad8F66c28375C');
-      autoRepay = new kit.web3.eth.Contract(AutoRepay, '0x35652c1ec2577e733aAdfd72919530bA27461EC3');
+      autoRepay = new kit.web3.eth.Contract(AutoRepay, '0x19F8322CaC86623432e9142a349504DE6754f12A');
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
       break;
     case 'main':
@@ -241,7 +241,7 @@ async function execute(network, action, ...params) {
       migrator = new kit.web3.eth.Contract(MoolaMigratorV1V2, '0xB87ebF9CD90003B66CF77c937eb5628124fA0662');
       liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
       repayAdapter = new kit.web3.eth.Contract(UniswapRepayAdapter, '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c');
-      autoRepay = new kit.web3.eth.Contract(AutoRepay, '0x37A2fc04135F065c04bA85e9946785D4379b2b4C');
+      autoRepay = new kit.web3.eth.Contract(AutoRepay, '0xCC321F48CF7bFeFe100D1Ce13585dcfF7627f754');
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
       break;
     default:
@@ -262,7 +262,7 @@ async function execute(network, action, ...params) {
       privateKeyRequired = false;
       liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
       repayAdapter = new kit.web3.eth.Contract(UniswapRepayAdapter, '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c');
-      autoRepay = new kit.web3.eth.Contract(AutoRepay, '0x37A2fc04135F065c04bA85e9946785D4379b2b4C');
+      autoRepay = new kit.web3.eth.Contract(AutoRepay, '0xCC321F48CF7bFeFe100D1Ce13585dcfF7627f754');
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
   }
   const web3 = kit.web3;
