@@ -94,6 +94,7 @@ export enum eContractid {
   MockUniswapV2Router02 = 'MockUniswapV2Router02',
   UniswapLiquiditySwapAdapter = 'UniswapLiquiditySwapAdapter',
   UniswapRepayAdapter = 'UniswapRepayAdapter',
+  AutoRepay = 'AutoRepay',
   FlashLiquidationAdapter = 'FlashLiquidationAdapter',
   CREALConfiguratorAlfajores = 'CREALConfiguratorAlfajores',
   CREALConfiguratorCelo = 'CREALConfiguratorCelo',
