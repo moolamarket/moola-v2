@@ -25,7 +25,7 @@ contract AutoRepay is BaseUniswapAdapter {
    * @param debtRepayAmount Amount of the debt to be repaid
    * @param rateMode Rate mode of the debt to be repaid
    * @param useEthPath Use Eth in swap path
-   * @param useATokenAsFrom Use aToken as form in swap
+   * @param useATokenAsFrom Use aToken as from in swap
    * @param useATokenAsTo Use aToken as to in swap
    * @param useFlashloan Use flahsloan for increasing health factor
    */
@@ -118,7 +118,7 @@ contract AutoRepay is BaseUniswapAdapter {
    * @param assets Address of debt asset
    * @param amounts Amount of the debt to be repaid
    * @param premiums Fee of the flash loan
-   * @param initiator Address of the caller
+   * @param initiator Address of the flashloan caller
    * @param params Additional variadic field to include extra params. Expected parameters:
    *   RepayParams repayParams - See {RepayParams}
    *   PermitSignature permitSignature - struct containing the permit signature
@@ -229,7 +229,11 @@ contract AutoRepay is BaseUniswapAdapter {
   }
 
   /**
-   * @dev does swap and pull and takes 0.1% fee for caller
+   * @dev If the collateral asset is not equal to the debt asset,
+   * then this function pulls tokens from the user, transfers the fee to the whitelisted caller,
+   * and swaps the collateral asset to the debt asset.
+   * Otherwise, if the collateral asset is equal to the debt asset then the function pulls tokens
+   * from the user and transfers the fee to the whitelisted caller.
    *
    * @param repayParams See {RepayParams}
    * @param permitSignature struct containing the permit signature
@@ -294,13 +298,11 @@ contract AutoRepay is BaseUniswapAdapter {
         aTokenTransferAmount,
         permitSignature
       );
-      // uint256 contractBalanceBefore = IERC20(collateralATokenAddress).balanceOf(address(this));
       LENDING_POOL.withdraw(
         repayParams.collateralAsset,
         repayParams.debtRepayAmount.add(premium),
         address(this)
       );
-      // uint256 contractBalanceAfter = IERC20(collateralATokenAddress).balanceOf(address(this));
       IERC20(collateralATokenAddress).safeTransfer(
         caller,
         IERC20(collateralATokenAddress).balanceOf(address(this))
@@ -308,9 +310,6 @@ contract AutoRepay is BaseUniswapAdapter {
     }
   }
 
-  /**
-   * @dev decodes the params and returns them
-   */
   function _decodeParams(bytes memory params)
     internal
     pure
