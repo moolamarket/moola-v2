@@ -98,7 +98,7 @@ export enum eContractid {
   CREALConfiguratorAlfajores = 'CREALConfiguratorAlfajores',
   CREALConfiguratorCelo = 'CREALConfiguratorCelo',
   MOOConfiguratorAlfajores = 'MOOConfiguratorAlfajores',
-  MOOConfigurator = 'MOOConfigurator',
+  MOOConfiguratorCelo = 'MOOConfiguratorCelo',
 }
 
 /*

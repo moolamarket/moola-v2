@@ -6,7 +6,7 @@ import {Ownable} from '../../../dependencies/openzeppelin/contracts/Ownable.sol'
 import '../../../protocol/lendingpool/LendingPoolConfigurator.sol';
 import '../../../interfaces/ILendingPoolConfigurator.sol';
 
-contract MOOConfigurator is Ownable {
+contract MOOConfiguratorCelo is Ownable {
   address constant lendingPoolConfiguratorAddress = 0x928F63a83217e427A84504950206834CBDa4Aa65;
 
   LendingPoolConfigurator public lendingPoolConfigurator =
