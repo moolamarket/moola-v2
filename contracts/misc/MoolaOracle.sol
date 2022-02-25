@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import {Ownable} from '../dependencies/openzeppelin/contracts/Ownable.sol';
 import {IERC20} from '../dependencies/openzeppelin/contracts/IERC20.sol';
 
-import {ISlidingWindowOracle} from '../interfaces/ISlidingWindowOracle.sol';
+import {IUbeswapPriceFeed} from '../interfaces/IUbeswapPriceFeed.sol';
 import {IPriceOracleGetter} from '../interfaces/IPriceOracleGetter.sol';
 import {SafeERC20} from '../dependencies/openzeppelin/contracts/SafeERC20.sol';
 
@@ -124,7 +124,7 @@ contract MoolaOracle is IPriceOracleGetter, Ownable {
       return celoProxyPriceProvider.getAssetPrice(_asset);
     }
 
-    uint256 price = ISlidingWindowOracle(source).consult(_asset, 1, CELO);
+    uint256 price = IUbeswapPriceFeed(source).consult();
 
     if (price > 0) {
       return price;
