@@ -14,7 +14,7 @@ import {SafeERC20} from '../dependencies/openzeppelin/contracts/SafeERC20.sol';
 ///         and CeloProxyPriceProvider as options
 /// - CeloProxyPriceProvider is used to provide CELO prices for cUSD, cEUR, cREAL.
 /// - Other tokens are using UbeswapPriceFeed.
-/// - If the returned price by the source is <= 0, the call is forwarded to a fallbackOracle
+/// - If the returned price by the source is 0, the call is forwarded to a fallbackOracle
 /// - Owned by the Moola governance system, allowed to add sources for assets, replace them
 ///   and change the fallbackOracle
 contract MoolaOracle is IPriceOracleGetter, Ownable {
