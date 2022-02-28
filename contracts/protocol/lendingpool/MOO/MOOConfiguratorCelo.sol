@@ -19,7 +19,7 @@ contract MOOConfiguratorCelo is Ownable {
   address constant aTokenImpl = 0x55bFCED2451b2154e06604D4269c9349F31141e6;
   address constant stableDebtTokenImpl = 0xaCdb7B3e2b0a038F1f4eF04736728E0065b689DA;
   address constant variableDebtTokenImpl = 0x0301Cf8F1FCD9255BD32FB7e0fE5B3494f445C2C;
-  address constant interestRateStrategyAddress = 0xb3072f5F0d5e8B9036aEC29F37baB70E86EA0018;
+  address constant interestRateStrategyAddress = 0x801443470c119F2eac65F13886D9e293CdecE2DF;
   address constant treasury = 0x313bc86D3D6e86ba164B2B451cB0D9CfA7943e5c;
   address constant incentivesController = 0x0000000000000000000000000000000000000000;
   string constant underlyingAssetName = 'Moola';

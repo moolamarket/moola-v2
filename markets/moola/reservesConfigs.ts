@@ -39,10 +39,10 @@ export const strategyCREAL: IReserveParams = {
 };
 
 export const strategyMOO: IReserveParams = {
-  strategy: rateStrategyStableTwo,
+  strategy: rateStrategyCELO,
   baseLTVAsCollateral: '5000',
   liquidationThreshold: '6500',
-  liquidationBonus: '1000',
+  liquidationBonus: '11000',
   borrowingEnabled: true,
   stableBorrowRateEnabled: true,
   reserveDecimals: '18',

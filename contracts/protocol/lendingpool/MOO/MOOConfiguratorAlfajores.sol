@@ -19,7 +19,7 @@ contract MOOConfiguratorAlfajores is Ownable {
   address constant aTokenImpl = 0xe8B286649713447D8d5fBeBC28c731830d19B6C9;
   address constant stableDebtTokenImpl = 0xB6a5059A228a16Fa2827E28E52ceC96BBC63D639;
   address constant variableDebtTokenImpl = 0xB65b6a6a6F78E4daABF259c756567ae346699687;
-  address constant interestRateStrategyAddress = 0x5B41b0c78659636c6664f08F7cCb620ceA3F1206;
+  address constant interestRateStrategyAddress = 0x3C06Fb2f5Ab65b0e35F91073d88afE2b017D04b8;
   address constant treasury = 0x643C574128c7C56A1835e021Ad0EcC2592E72624;
   address constant incentivesController = 0x0000000000000000000000000000000000000000;
   string constant underlyingAssetName = 'Moola';
