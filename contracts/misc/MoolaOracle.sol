@@ -29,7 +29,6 @@ contract MoolaOracle is IPriceOracleGetter, Ownable {
   mapping(address => IPriceOracleGetter) private assetsSources;
 
   IPriceOracleGetter private fallbackOracle;
-  IPriceOracleGetter private celoProxyPriceProvider;
 
   address public immutable WETH;
   address public immutable CELO;
@@ -37,19 +36,16 @@ contract MoolaOracle is IPriceOracleGetter, Ownable {
   /// @notice Constructor
   /// @param _assets The addresses of the assets
   /// @param _sources The address of the source of each asset
-  /// @param _celoProxyPriceProvider The address of the celo proxy price provider
   /// @param _fallbackOracle The address of the fallback oracle to use if the data of an aggregator is not consistent
   constructor(
     address[] memory _assets,
     address[] memory _sources,
-    address _celoProxyPriceProvider,
     address _fallbackOracle,
     address _weth,
     address _celo
   ) public {
-    internalSetCeloProxyPriceProvider(_celoProxyPriceProvider);
     internalSetFallbackOracle(_fallbackOracle);
-    setAssetsSources(_assets, _sources);
+    internalSetAssetsSources(_assets, _sources);
 
     WETH = _weth;
     CELO = _celo;
@@ -65,7 +61,7 @@ contract MoolaOracle is IPriceOracleGetter, Ownable {
     external
     onlyOwner
   {
-    setAssetsSources(_assets, _sources);
+    internalSetAssetsSources(_assets, _sources);
   }
 
   /// @notice Sets the fallbackOracle
@@ -75,20 +71,13 @@ contract MoolaOracle is IPriceOracleGetter, Ownable {
     internalSetFallbackOracle(_fallbackOracle);
   }
 
-  /// @notice Sets the celoProxyPriceProvider
-  /// - Callable only by the Moola governance
-  /// @param _celoProxyPriceProvider The address of the celoProxyPriceProvider
-  function setCeloProxyPriceProvider(address _celoProxyPriceProvider) external onlyOwner {
-    internalSetCeloProxyPriceProvider(_celoProxyPriceProvider);
-  }
-
   /// @notice Internal function to set the sources for each asset
   /// @param _assets The addresses of the assets
   /// @param _sources The address of the source of each asset
-  function setAssetsSources(address[] memory _assets, address[] memory _sources) internal {
+  function internalSetAssetsSources(address[] memory _assets, address[] memory _sources) internal {
     require(_assets.length == _sources.length, 'INCONSISTENT_PARAMS_LENGTH');
     for (uint256 i = 0; i < _assets.length; i++) {
-      assetsSources[_assets[i]] = _sources[i];
+      assetsSources[_assets[i]] = IPriceOracleGetter(_sources[i]);
       emit AssetSourceUpdated(_assets[i], _sources[i]);
     }
   }
@@ -100,13 +89,6 @@ contract MoolaOracle is IPriceOracleGetter, Ownable {
     emit FallbackOracleUpdated(_fallbackOracle);
   }
 
-  /// @notice Internal function to set the celoProxyPriceProvider
-  /// @param _celoProxyPriceProvider The address of the celoProxyPriceProvider
-  function internalSetCeloProxyPriceProvider(address _celoProxyPriceProvider) internal {
-    celoProxyPriceProvider = IPriceOracleGetter(_celoProxyPriceProvider);
-    emit CeloProxyAddressUpdated(_celoProxyPriceProvider);
-  }
-
   /// @notice Gets an asset price by address
   /// @param _asset The asset address
   function getAssetPrice(address _asset) public view override returns (uint256) {
@@ -114,17 +96,13 @@ contract MoolaOracle is IPriceOracleGetter, Ownable {
       return 1 ether;
     }
 
-    address source = assetsSources[_asset];
+    IPriceOracleGetter source = assetsSources[_asset];
 
-    if (source == address(0)) {
+    if (address(source) == address(0)) {
       return fallbackOracle.getAssetPrice(_asset);
     }
 
-    if (source == address(celoProxyPriceProvider)) {
-      return celoProxyPriceProvider.getAssetPrice(_asset);
-    }
-
-    uint256 price = IUbeswapPriceFeed(source).consult();
+    uint256 price = source.getAssetPrice(_asset);
 
     if (price > 0) {
       return price;
@@ -154,11 +132,5 @@ contract MoolaOracle is IPriceOracleGetter, Ownable {
   /// @return address The addres of the fallback oracle
   function getFallbackOracle() external view returns (address) {
     return address(fallbackOracle);
-  }
-
-  /// @notice Gets the address of the celo proxy price provider
-  /// @return address The addres of the celo proxy price provider
-  function getCeloProxyPriceProvider() external view returns (address) {
-    return address(celoProxyPriceProvider);
   }
 }
