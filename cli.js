@@ -3,6 +3,7 @@ const LendingPoolAddressesProvider = require('./abi/LendingPoolAddressProvider.j
 const LendingPool = require('./abi/LendingPool.json');
 const PriceOracle = require('./abi/PriceOracle.json');
 const UniswapRepayAdapter = require('./abi/UniswapRepayAdapter.json');
+const AutoRepay = require('./abi/AutoRepay.json');
 const Uniswap = require('./abi/Uniswap.json');
 const DataProvider = require('./abi/MoolaProtocolDataProvider.json');
 const MToken = require('./abi/MToken.json');
@@ -181,6 +182,11 @@ function printActions() {
   );
   console.info('migrate-step-2 address [privateKey]');
   console.info('liquidation-bot address [privateKey]');
+  console.info(
+    'auto-repay callerAddress userAddress collateral-asset debt-asset stable|variable debt-amount useFlashloan(true|false) [callerPrivateKey]'
+  );
+  console.info('auto-repay-user-info userAddress');
+  console.info('set-auto-repay-params address minHealthFactor maxHealthFactor [privateKey]');
 }
 
 const retry = async (fun, tries = 5) => {
@@ -211,6 +217,8 @@ async function execute(network, action, ...params) {
   let privateKeyRequired = true;
   let liquiditySwapAdapter;
   let repayAdapter;
+  let autoRepay;
+  let ubeswap;
   switch (network) {
     case 'test':
       kit = newKit('https://alfajores-forno.celo-testnet.org');
@@ -236,6 +244,11 @@ async function execute(network, action, ...params) {
         UniswapRepayAdapter,
         '0x55a48631e4ED42D2b12FBA0edc7ad8F66c28375C'
       );
+      autoRepay = new kit.web3.eth.Contract(
+        AutoRepay,
+        '0x19F8322CaC86623432e9142a349504DE6754f12A'
+      );
+      ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
       break;
     case 'main':
       kit = newKit('https://forno.celo.org');
@@ -261,6 +274,11 @@ async function execute(network, action, ...params) {
         UniswapRepayAdapter,
         '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c'
       );
+      autoRepay = new kit.web3.eth.Contract(
+        AutoRepay,
+        '0xCC321F48CF7bFeFe100D1Ce13585dcfF7627f754'
+      );
+      ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
       break;
     default:
       try {
@@ -293,6 +311,11 @@ async function execute(network, action, ...params) {
         UniswapRepayAdapter,
         '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c'
       );
+      autoRepay = new kit.web3.eth.Contract(
+        AutoRepay,
+        '0xCC321F48CF7bFeFe100D1Ce13585dcfF7627f754'
+      );
+      ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
   }
   const web3 = kit.web3;
   const eth = web3.eth;
@@ -340,7 +363,7 @@ async function execute(network, action, ...params) {
     );
     return;
   }
-  if (action == 'getuserreservedata') {
+  if (action === 'getuserreservedata') {
     const reserve = reserves[params[0]];
     const user = params[1];
     const data = await dataProvider.methods.getUserReserveData(reserve, user).call();
@@ -362,7 +385,7 @@ async function execute(network, action, ...params) {
     console.table(parsedData);
     return;
   }
-  if (action == 'getuseraccountdata') {
+  if (action === 'getuseraccountdata') {
     const user = params[0];
     const data = await lendingPool.methods.getUserAccountData(user).call();
     const parsedData = {
@@ -376,7 +399,7 @@ async function execute(network, action, ...params) {
     console.table(parsedData);
     return;
   }
-  if (action == 'getreservedata') {
+  if (action === 'getreservedata') {
     const reserve = reserves[params[0]];
     const data = await dataProvider.methods.getReserveData(reserve).call();
     const reserveTokens = await dataProvider.methods.getReserveTokensAddresses(reserve).call();
@@ -400,7 +423,7 @@ async function execute(network, action, ...params) {
     console.table(parsedData);
     return;
   }
-  if (action == 'deposit') {
+  if (action === 'deposit') {
     const reserve = reserves[params[0]];
     const token = tokens[params[0]];
     const user = params[1];
@@ -449,7 +472,7 @@ async function execute(network, action, ...params) {
     );
     return;
   }
-  if (action == 'borrow') {
+  if (action === 'borrow') {
     const reserve = reserves[params[0]];
     const user = params[1];
     const amount = web3.utils.toWei(params[2]);
@@ -482,7 +505,7 @@ async function execute(network, action, ...params) {
     );
     return;
   }
-  if (action == 'repay') {
+  if (action === 'repay') {
     const reserve = reserves[params[0]];
     const token = tokens[params[0]];
     const user = params[1];
@@ -541,7 +564,7 @@ async function execute(network, action, ...params) {
     );
     return;
   }
-  if (action == 'redeem') {
+  if (action === 'redeem') {
     const reserve = reserves[params[0]];
     const user = params[1];
     const amount = params[2] === 'all' ? maxUint256 : web3.utils.toWei(params[2]);
@@ -570,7 +593,7 @@ async function execute(network, action, ...params) {
     );
     return;
   }
-  if (action == 'delegate') {
+  if (action === 'delegate') {
     const reserve = reserves[params[0]];
     const token = tokens[params[0]];
     const to = params[1];
@@ -594,7 +617,7 @@ async function execute(network, action, ...params) {
     );
     return;
   }
-  if (action == 'borrowfrom') {
+  if (action === 'borrowfrom') {
     const reserve = reserves[params[0]];
     const from = params[1];
     const user = params[2];
@@ -628,7 +651,7 @@ async function execute(network, action, ...params) {
     );
     return;
   }
-  if (action == 'repayfor') {
+  if (action === 'repayfor') {
     const reserve = reserves[params[0]];
     const token = tokens[params[0]];
     const repayfor = params[1];
@@ -688,7 +711,7 @@ async function execute(network, action, ...params) {
     );
     return;
   }
-  if (action == 'migrate-step-2') {
+  if (action === 'migrate-step-2') {
     const user = params[0];
     if (privateKeyRequired) {
       pk = params[1];
@@ -771,7 +794,7 @@ async function execute(network, action, ...params) {
     return;
   }
 
-  if (action == 'liquidation-bot') {
+  if (action === 'liquidation-bot') {
     if (network == 'test') {
       throw new Error('Liquidation bot only works on the mainnet.');
     }
@@ -1084,7 +1107,7 @@ async function execute(network, action, ...params) {
     }
   }
 
-  if (action == 'liquidity-swap') {
+  if (action === 'liquidity-swap') {
     if (network == 'test') {
       throw new Error('Liquidity swap only works on the mainnet due to low liquidity in pools');
     }
@@ -1181,7 +1204,7 @@ async function execute(network, action, ...params) {
     return;
   }
 
-  if (action == 'repay-from-collateral') {
+  if (action === 'repay-from-collateral') {
     if (network == 'test') {
       throw new Error(
         'repay from collateral only works on the mainnet due to low liquidity in pools'
@@ -1225,14 +1248,10 @@ async function execute(network, action, ...params) {
 
     let maxCollateralAmount = 0;
     if (collateralAsset != debtAsset) {
-      const uniswap = new kit.web3.eth.Contract(
-        Uniswap,
-        '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121'
-      );
       const amountOut = useFlashLoan
         ? repayAmount.plus(repayAmount.multipliedBy(9).dividedBy(10000))
         : repayAmount;
-      const amounts = await uniswap.methods
+      const amounts = await ubeswap.methods
         .getAmountsIn(amountOut, [
           useATokenAsFrom ? reserveCollateralToken.aTokenAddress : collateralAsset.options.address,
           useATokenAsTo ? reserveDebtToken.aTokenAddress : debtAsset.options.address,
@@ -1306,6 +1325,154 @@ async function execute(network, action, ...params) {
     }
     console.log(
       'Swap and repay',
+      (await method.send({ from: user, gas: 2000000 })).transactionHash
+    );
+    return;
+  }
+
+  if (action === 'auto-repay') {
+    if (network == 'test') {
+      throw new Error(
+        'repay from collateral only works on the mainnet due to low liquidity in pools'
+      );
+    }
+
+    if (privateKeyRequired) {
+      pk = params[7];
+      if (!pk) {
+        console.error('Missing private key');
+        return;
+      }
+      kit.addAccount(pk);
+    }
+
+    if (!isValidAsset(params[2])) return;
+    if (!isValidAsset(params[3])) return;
+    if (!isValidRateMode(params[4])) return;
+    if (!isNumeric(params[5])) return;
+    if (!isValidBoolean(params[6])) return;
+
+    const caller = params[0];
+    const user = params[1];
+    const collateralAsset = tokens[params[2]];
+    const debtAsset = tokens[params[3]];
+    const rateMode = params[4] === 'stable' ? 1 : 2;
+    const repayAmount = BN(web3.utils.toWei(params[5]));
+    const useFlashloan = params[6] == 'true' ? true : false;
+    const useATokenAsFrom = params[2] != 'celo';
+    const useATokenAsTo = params[3] != 'celo';
+
+    const reserveCollateralToken = await dataProvider.methods
+      .getReserveTokensAddresses(collateralAsset.options.address)
+      .call();
+    const mToken = new eth.Contract(MToken, reserveCollateralToken.aTokenAddress);
+    const reserveDebtToken = await dataProvider.methods
+      .getReserveTokensAddresses(debtAsset.options.address)
+      .call();
+
+    let maxCollateralAmount = 0;
+    if (collateralAsset != debtAsset) {
+      const amountOut = useFlashloan
+        ? repayAmount.plus(repayAmount.multipliedBy(9).dividedBy(10000))
+        : repayAmount;
+      const amounts = await ubeswap.methods
+        .getAmountsIn(amountOut, [
+          useATokenAsFrom ? reserveCollateralToken.aTokenAddress : collateralAsset.options.address,
+          useATokenAsTo ? reserveDebtToken.aTokenAddress : debtAsset.options.address,
+        ])
+        .call();
+      maxCollateralAmount = BN(amounts[0])
+        .plus(BN(amounts[0]).multipliedBy(1).dividedBy(1000))
+        .toFixed(0); // 0.1% slippage
+    }
+    const feeAmount = BN(maxCollateralAmount).multipliedBy(10).dividedBy(10000);
+
+    console.log(`Checking mToken ${mToken.options.address} for approval`);
+    if (
+      BN(await mToken.methods.allowance(user, autoRepay.options.address).call()).lt(
+        BN(maxCollateralAmount).plus(feeAmount)
+      )
+    ) {
+      console.log(`user ${user} not approved autoRepay contract as much tokens as needed`);
+      return;
+    }
+
+    const method = autoRepay.methods.increaseHealthFactor(
+      {
+        user,
+        collateralAsset: collateralAsset.options.address,
+        debtAsset: debtAsset.options.address,
+        collateralAmount: maxCollateralAmount.toString(0),
+        debtRepayAmount: repayAmount.toFixed(0),
+        rateMode,
+        useEthPath: false,
+        useATokenAsFrom,
+        useATokenAsTo,
+        useFlashloan,
+      },
+      { amount: 0, deadline: 0, v: 0, r: ethers.constants.HashZero, s: ethers.constants.HashZero }
+    );
+
+    try {
+      await retry(() => method.estimateGas({ from: caller, gas: 2000000 }));
+    } catch (err) {
+      console.log('Cannot auto repay', err.message);
+      return;
+    }
+    console.log('auto repay', (await method.send({ from: caller, gas: 2000000 })).transactionHash);
+    return;
+  }
+
+  if (action === 'auto-repay-user-info') {
+    const user = params[0];
+    const userInfo = await autoRepay.methods.userInfos(user).call();
+    console.log(
+      `${user} user info:\n\tminimum health factor -> ${userInfo.minHealthFactor.toString()}\n\tmaximum health factor -> ${userInfo.maxHealthFactor.toString()}`
+    );
+    console.log('allowances for AutoRepay contract:');
+    for (const token of Object.values(tokens)) {
+      const reserveToken = await dataProvider.methods
+        .getReserveTokensAddresses(token.options.address)
+        .call();
+      const mToken = new eth.Contract(MToken, reserveToken.aTokenAddress);
+      const name = await mToken.methods.name().call();
+      const allowance = await mToken.methods.allowance(user, autoRepay.options.address).call();
+      console.log(`\t${name}: ${allowance}`);
+    }
+    return;
+  }
+
+  if (action === 'set-auto-repay-params') {
+    if (network == 'test') {
+      throw new Error('test network not supported');
+    }
+
+    if (privateKeyRequired) {
+      pk = params[3];
+      if (!pk) {
+        console.error('Missing private key');
+        return;
+      }
+      kit.addAccount(pk);
+    }
+
+    if (!isNumeric(params[1])) return;
+    if (!isNumeric(params[2])) return;
+
+    const user = params[0];
+    const minHealthFactor = web3.utils.toWei(params[1]);
+    const maxHealthFactor = web3.utils.toWei(params[2]);
+
+    const method = autoRepay.methods.setMinMaxHealthFactor(minHealthFactor, maxHealthFactor);
+
+    try {
+      await retry(() => method.estimateGas({ from: user, gas: 2000000 }));
+    } catch (err) {
+      console.log('Cannot set', err.message);
+      return;
+    }
+    console.log(
+      'User info setted',
       (await method.send({ from: user, gas: 2000000 })).transactionHash
     );
     return;
