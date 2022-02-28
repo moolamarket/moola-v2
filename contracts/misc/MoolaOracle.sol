@@ -20,7 +20,6 @@ import {SafeERC20} from '../dependencies/openzeppelin/contracts/SafeERC20.sol';
 contract MoolaOracle is IPriceOracleGetter, Ownable {
   using SafeERC20 for IERC20;
 
-  event WethSet(address indexed weth);
   event CeloSet(address indexed celo);
   event AssetSourceUpdated(address indexed asset, address indexed source);
   event FallbackOracleUpdated(address indexed fallbackOracle);
@@ -30,7 +29,6 @@ contract MoolaOracle is IPriceOracleGetter, Ownable {
 
   IPriceOracleGetter private fallbackOracle;
 
-  address public immutable WETH;
   address public immutable CELO;
 
   /// @notice Constructor
@@ -41,16 +39,13 @@ contract MoolaOracle is IPriceOracleGetter, Ownable {
     address[] memory _assets,
     address[] memory _sources,
     address _fallbackOracle,
-    address _weth,
     address _celo
   ) public {
     internalSetFallbackOracle(_fallbackOracle);
     internalSetAssetsSources(_assets, _sources);
 
-    WETH = _weth;
     CELO = _celo;
 
-    emit WethSet(_weth);
     emit CeloSet(_celo);
   }
 
@@ -92,7 +87,7 @@ contract MoolaOracle is IPriceOracleGetter, Ownable {
   /// @notice Gets an asset price by address
   /// @param _asset The asset address
   function getAssetPrice(address _asset) public view override returns (uint256) {
-    if (_asset == WETH || _asset == CELO) {
+    if (_asset == CELO) {
       return 1 ether;
     }
 
