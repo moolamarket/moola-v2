@@ -31,7 +31,7 @@ contract MOOConfiguratorCelo is Ownable {
   string constant stableDebtTokenSymbol = 'stableDebtmMOO';
   uint256 constant baseLTV = 5000;
   uint256 constant liquidationThreshold = 6500;
-  uint256 constant liquidationBonus = 1000;
+  uint256 constant liquidationBonus = 11000;
   uint256 constant reserveFactor = 1000;
 
   function execute() external onlyOwner {
