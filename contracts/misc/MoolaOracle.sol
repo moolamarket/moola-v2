@@ -26,7 +26,7 @@ contract MoolaOracle is IPriceOracleGetter, Ownable {
   event FallbackOracleUpdated(address indexed fallbackOracle);
   event CeloProxyAddressUpdated(address indexed celoProxyPriceProvider);
 
-  mapping(address => address) private assetsSources;
+  mapping(address => IPriceOracleGetter) private assetsSources;
 
   IPriceOracleGetter private fallbackOracle;
   IPriceOracleGetter private celoProxyPriceProvider;
