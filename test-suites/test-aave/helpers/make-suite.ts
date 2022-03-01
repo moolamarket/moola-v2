@@ -14,6 +14,7 @@ import {
   getUniswapLiquiditySwapAdapter,
   getUniswapRepayAdapter,
   getAutoRepay,
+  getLeverageTrading,
   getFlashLiquidationAdapter,
 } from '../../../helpers/contracts-getters';
 import { eEthereumNetwork, tEthereumAddress } from '../../../helpers/types';
@@ -34,6 +35,7 @@ import { getEthersSigners } from '../../../helpers/contracts-helpers';
 import { UniswapLiquiditySwapAdapter } from '../../../types/UniswapLiquiditySwapAdapter';
 import { UniswapRepayAdapter } from '../../../types/UniswapRepayAdapter';
 import { AutoRepay } from '../../../types/AutoRepay';
+import { LeverageTrading } from '../../../types/LeverageTrading';
 import { getParamPerNetwork } from '../../../helpers/contracts-helpers';
 import { WETH9Mocked } from '../../../types/WETH9Mocked';
 import { WETHGateway } from '../../../types/WETHGateway';
@@ -68,6 +70,7 @@ export interface TestEnv {
   uniswapLiquiditySwapAdapter: UniswapLiquiditySwapAdapter;
   uniswapRepayAdapter: UniswapRepayAdapter;
   autoRepay: AutoRepay;
+  leverageTrading: LeverageTrading;
   registry: LendingPoolAddressesProviderRegistry;
   wethGateway: WETHGateway;
   flashLiquidationAdapter: FlashLiquidationAdapter;
@@ -95,6 +98,7 @@ const testEnv: TestEnv = {
   uniswapLiquiditySwapAdapter: {} as UniswapLiquiditySwapAdapter,
   uniswapRepayAdapter: {} as UniswapRepayAdapter,
   autoRepay: {} as AutoRepay,
+  leverageTrading: {} as LeverageTrading,
   flashLiquidationAdapter: {} as FlashLiquidationAdapter,
   registry: {} as LendingPoolAddressesProviderRegistry,
   wethGateway: {} as WETHGateway,
@@ -162,6 +166,7 @@ export async function initializeMakeSuite() {
   testEnv.uniswapLiquiditySwapAdapter = await getUniswapLiquiditySwapAdapter();
   testEnv.uniswapRepayAdapter = await getUniswapRepayAdapter();
   testEnv.autoRepay = await getAutoRepay();
+  testEnv.leverageTrading = await getLeverageTrading();
   testEnv.flashLiquidationAdapter = await getFlashLiquidationAdapter();
 }
 

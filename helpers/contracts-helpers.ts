@@ -354,6 +354,10 @@ export const buildRepayAdapterParams = (
   );
 };
 
+export const buildLeverageTradingParams = (useATokenAsFroms: boolean[]) => {
+  return ethers.utils.defaultAbiCoder.encode(['bool[]'], [useATokenAsFroms]);
+};
+
 export const buildFlashLiquidationAdapterParams = (
   collateralAsset: tEthereumAddress,
   debtAsset: tEthereumAddress,
