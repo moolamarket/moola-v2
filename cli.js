@@ -4,6 +4,7 @@ const LendingPool = require('./abi/LendingPool.json');
 const PriceOracle = require('./abi/PriceOracle.json');
 const UniswapRepayAdapter = require('./abi/UniswapRepayAdapter.json');
 const AutoRepay = require('./abi/AutoRepay.json');
+const LeverageTrading = require('./abi/LeverageTrading.json')
 const Uniswap = require('./abi/Uniswap.json');
 const DataProvider = require('./abi/MoolaProtocolDataProvider.json');
 const MToken = require('./abi/MToken.json');
@@ -184,6 +185,7 @@ function printActions() {
   console.info('auto-repay callerAddress userAddress collateral-asset debt-asset stable|variable debt-amount useFlashloan(true|false) [callerPrivateKey]');
   console.info('auto-repay-user-info userAddress');
   console.info('set-auto-repay-params address minHealthFactor maxHealthFactor [privateKey]');
+  console.info('leverage-trading address debt-asset stable|variable debt-amount [privateKey]');
 }
 
 const retry = async (fun, tries = 5) => {
@@ -214,6 +216,7 @@ async function execute(network, action, ...params) {
   let liquiditySwapAdapter;
   let repayAdapter;
   let autoRepay;
+  let leverageTrading;
   let ubeswap;
   switch (network) {
     case 'test':
@@ -228,6 +231,7 @@ async function execute(network, action, ...params) {
       liquiditySwapAdapter = '0xe469484419AD6730BeD187c22a47ca38B054B09f';
       repayAdapter = new kit.web3.eth.Contract(UniswapRepayAdapter, '0x55a48631e4ED42D2b12FBA0edc7ad8F66c28375C');
       autoRepay = new kit.web3.eth.Contract(AutoRepay, '0x19F8322CaC86623432e9142a349504DE6754f12A');
+      leverageTrading = new kit.web3.eth.Contract(LeverageTrading, '0x1417810140c3e4df8ccb00e33f577c37685209ab');
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
       break;
     case 'main':
@@ -242,6 +246,7 @@ async function execute(network, action, ...params) {
       liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
       repayAdapter = new kit.web3.eth.Contract(UniswapRepayAdapter, '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c');
       autoRepay = new kit.web3.eth.Contract(AutoRepay, '0xCC321F48CF7bFeFe100D1Ce13585dcfF7627f754');
+      leverageTrading = new kit.web3.eth.Contract(LeverageTrading, '0xD806D409bF4F139d0C1C3c81290DF992Fc174569');
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
       break;
     default:
@@ -263,6 +268,7 @@ async function execute(network, action, ...params) {
       liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
       repayAdapter = new kit.web3.eth.Contract(UniswapRepayAdapter, '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c');
       autoRepay = new kit.web3.eth.Contract(AutoRepay, '0xCC321F48CF7bFeFe100D1Ce13585dcfF7627f754');
+      leverageTrading = new kit.web3.eth.Contract(LeverageTrading, '0xD806D409bF4F139d0C1C3c81290DF992Fc174569');
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
   }
   const web3 = kit.web3;
@@ -1056,6 +1062,58 @@ async function execute(network, action, ...params) {
     }
     console.log(
       'User info setted',
+      (await method.send({ from: user, gas: 2000000 })).transactionHash
+    );
+    return;
+  }
+
+  if (action === 'leverage-trading') {
+    if (network == 'test') {
+      throw new Error(
+        'repay from collateral only works on the mainnet due to low liquidity in pools'
+      );
+    }
+
+    if (privateKeyRequired) {
+      pk = params[4];
+      if (!pk) {
+        console.error('Missing private key');
+        return;
+      }
+      kit.addAccount(pk);
+    }
+
+    if (!isValidAsset(params[1])) return;
+    if (!isValidRateMode(params[2])) return;
+    if (!isNumeric(params[3])) return;
+    if (params[1] === 'celo') {
+      console.error('Celo token not supported as debt asset in this option');
+      return;
+    }
+
+    const user = params[0];
+    const debtAsset = tokens[params[1]];
+    const rateMode = params[2] === 'stable' ? 1 : 2;
+    const debtAmount = BN(web3.utils.toWei(params[3]));
+
+    const callParams = ethers.utils.defaultAbiCoder.encode(['bool[]'], [[true]]);
+    const method = lendingPool.methods.flashLoan(
+      leverageTrading.options.address,
+      [debtAsset.options.address],
+      [debtAmount],
+      [rateMode],
+      user,
+      callParams,
+      0
+    );
+    try {
+      await retry(() => method.estimateGas({ from: user, gas: 2000000 }));
+    } catch (err) {
+      console.log('Cannot do leverage trading', err.message);
+      return;
+    }
+    console.log(
+      'Leverage trading',
       (await method.send({ from: user, gas: 2000000 })).transactionHash
     );
     return;
