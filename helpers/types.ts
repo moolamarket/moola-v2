@@ -98,6 +98,8 @@ export enum eContractid {
   FlashLiquidationAdapter = 'FlashLiquidationAdapter',
   CREALConfiguratorAlfajores = 'CREALConfiguratorAlfajores',
   CREALConfiguratorCelo = 'CREALConfiguratorCelo',
+  MOOConfiguratorAlfajores = 'MOOConfiguratorAlfajores',
+  MOOConfiguratorCelo = 'MOOConfiguratorCelo',
 }
 
 /*
@@ -322,7 +324,10 @@ export type iXDAIPoolAssets<T> = Pick<
   'DAI' | 'USDC' | 'USDT' | 'WBTC' | 'WETH' | 'STAKE'
 >;
 
-export type iMoolaPoolAssets<T> = Pick<iAssetsWithoutUSD<T>, 'CELO' | 'CUSD' | 'CEUR' | 'CREAL'>;
+export type iMoolaPoolAssets<T> = Pick<
+  iAssetsWithoutUSD<T>,
+  'CELO' | 'CUSD' | 'CEUR' | 'CREAL' | 'MOO'
+>;
 
 export type iMultiPoolsAssets<T> = iAssetCommon<T> | iAavePoolAssets<T>;
 
