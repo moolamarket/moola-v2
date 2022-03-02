@@ -168,6 +168,7 @@ function printActions() {
   console.info('balanceOf asset address');
   console.info('getUserReserveData asset address');
   console.info('getReserveData asset');
+  console.info('getReserveConfigurationData asset');
   console.info('getUserAccountData address');
   console.info('deposit asset address amount [privateKey]');
   console.info('borrow asset address amount stable|variable [privateKey]');
@@ -419,6 +420,24 @@ async function execute(network, action, ...params) {
       LastUpdate: new Date(
         BN(data.lastUpdateTimestamp).multipliedBy(1000).toNumber()
       ).toLocaleString(),
+    };
+    console.table(parsedData);
+    return;
+  }
+  if (action == 'getreserveconfigurationdata') {
+    const reserve = reserves[params[0]];
+    const data = await dataProvider.methods.getReserveConfigurationData(reserve).call();
+    const parsedData = {
+      Decimals: BN(data.decimals).toNumber(),
+      LoanToValue: `${BN(data.ltv).div(BN(100))}%`,
+      LiquidationThreshold: `${BN(data.liquidationThreshold).div(BN(100))}%`,
+      LiquidationBonus: `${BN(data.liquidationBonus).div(BN(100)).minus(BN(100))}%`,
+      ReserveFactor: `${BN(data.reserveFactor).div(BN(100))}%`,
+      CollateralEnabled: data.usageAsCollateralEnabled,
+      BorrowingEnabled: data.borrowingEnabled,
+      StableEnabled: data.stableBorrowRateEnabled,
+      Active: data.isActive,
+      Frozen: data.isFrozen,
     };
     console.table(parsedData);
     return;
