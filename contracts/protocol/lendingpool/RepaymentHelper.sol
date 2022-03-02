@@ -42,6 +42,6 @@ contract RepaymentHelper {
       lendingPool.deposit(_asset, remaining, _delegatee, 0);
     }
 
-    emit DelegateRepay(msg.sender, _delegatee, _asset, paybackAmount, _rateMode);
+    emit DelegateRepay(msg.sender, _delegatee, _asset, _amount, _rateMode);
   }
 }
