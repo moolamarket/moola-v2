@@ -1,11 +1,14 @@
 pragma solidity 0.6.12;
 
-import {ILendingPoolAddressesProvider} from '../interfaces/ILendingPoolAddressesProvider.sol';
-import {ILendingPool} from '../interfaces/ILendingPool.sol';
+import {ILendingPoolAddressesProvider} from '../../interfaces/ILendingPoolAddressesProvider.sol';
+import {ILendingPool} from '../../interfaces/ILendingPool.sol';
 import {IERC20} from '../../dependencies/openzeppelin/contracts/IERC20.sol';
+import {SafeERC20} from '../../dependencies/openzeppelin/contracts/SafeERC20.sol';
 
-contract RepaymentHelper {
-  event DelegateRepay(
+contract RepayDelegationHelper {
+  using SafeERC20 for IERC20;
+
+  event DelegatedRepayment(
     address delegator,
     address delegatee,
     address asset,
@@ -26,7 +29,7 @@ contract RepaymentHelper {
    * @param _amount The amount to repay
    * @param _rateMode The rateMode to use for repayment
    */
-  function DelegateRepayHelper(
+  function repayDelegation(
     address _delegatee,
     address _asset,
     uint256 _amount,
@@ -34,14 +37,23 @@ contract RepaymentHelper {
   ) external {
     IERC20(_asset).transferFrom(msg.sender, address(this), _amount);
 
-    ILendingPool lendingPool = ILendingPool(ADDRESSES_PROVIDER.getLendingPool());
-    uint256 paybackAmount = lendingPool.repay(_asset, _amount, _rateMode, _delegatee);
+    address lendingPoolAddress = ADDRESSES_PROVIDER.getLendingPool();
+    // Repay debt. Approves 0 first to comply with tokens that implement the anti frontrunning approval fix
+    IERC20(_asset).safeApprove(lendingPoolAddress, 0);
+    IERC20(_asset).safeApprove(lendingPoolAddress, _amount);
+
+    uint256 paybackAmount = ILendingPool(lendingPoolAddress).repay(
+      _asset,
+      _amount,
+      _rateMode,
+      _delegatee
+    );
 
     uint256 remaining = _amount - paybackAmount;
     if (remaining > 0) {
-      lendingPool.deposit(_asset, remaining, _delegatee, 0);
+      ILendingPool(lendingPoolAddress).deposit(_asset, remaining, _delegatee, 0);
     }
 
-    emit DelegateRepay(msg.sender, _delegatee, _asset, _amount, _rateMode);
+    emit DelegatedRepayment(msg.sender, _delegatee, _asset, _amount, _rateMode);
   }
 }
