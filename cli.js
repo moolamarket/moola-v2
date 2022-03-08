@@ -1502,10 +1502,10 @@ async function execute(network, action, ...params) {
   }
 
   if (action === 'liquidation-call') {
-    const collateralTokenAddr = tokens[params[0].toLowerCase()].options.address;
-    const borrowTokenAddr = tokens[params[1].toLowerCase()].options.address;
+    const collateralAssetAddr = tokens[params[0].toLowerCase()].options.address;
+    const debtAssetAddr = tokens[params[1].toLowerCase()].options.address;
     const riskUser = params[2];
-    const debtToCover = params[3];
+    const debtToCover = web3.utils.toWei(params[3]);
     const receiveAToken = params[4] === 'true';
     const user = params[5];
 
@@ -1518,9 +1518,18 @@ async function execute(network, action, ...params) {
       kit.addAccount(pk);
     }
 
+    const logInfo = {
+      'collateral-asset': collateralAssetAddr,
+      'debt-asset': debtAssetAddr,
+      'risk-user': riskUser,
+      'debt-to-cover': debtToCover,
+      'receive-AToken': receiveAToken,
+    };
+    console.table(logInfo);
+
     try {
       const liquidationCallTxHash = (liquidationCallTxHash = await lendingPool.methods
-        .liquidationCall(collateralTokenAddr, borrowTokenAddr, riskUser, debtToCover, receiveAToken)
+        .liquidationCall(collateralAssetAddr, debtAssetAddr, riskUser, debtToCover, receiveAToken)
         .send({ from: user, gas: 2000000 }));
       console.log('liquidationCall: ', liquidationCallTxHash);
     } catch (err) {
