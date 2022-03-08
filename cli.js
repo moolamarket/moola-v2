@@ -184,13 +184,13 @@ function printActions() {
   console.info('migrate-step-2 address [privateKey]');
   console.info('liquidation-bot address [privateKey]');
   console.info(
-    'liquidation-call collateralAsset debtAsset userToLiquidate debtToCover receiveAToken(true|false) address [privateKey]'
-  );
-  console.info(
     'auto-repay callerAddress userAddress collateral-asset debt-asset stable|variable debt-amount useFlashloan(true|false) [callerPrivateKey]'
   );
   console.info('auto-repay-user-info userAddress');
   console.info('set-auto-repay-params address minHealthFactor maxHealthFactor [privateKey]');
+  console.info(
+    'liquidationCall collateral-asset debt-asset risk-user debt-to-cover receive-AToken(true|false) address [privateKey]'
+  );
 }
 
 const retry = async (fun, tries = 5) => {
@@ -1502,9 +1502,9 @@ async function execute(network, action, ...params) {
   }
 
   if (action === 'liquidation-call') {
-    const collateralAsset = tokens[params[0]].options.address;
-    const debtAsset = tokens[params[1]].options.address;
-    const userToLiquidate = params[2];
+    const collateralTokenAddr = tokens[params[0].toLowerCase()].options.address;
+    const borrowTokenAddr = tokens[params[1].toLowerCase()].options.address;
+    const riskUser = params[2];
     const debtToCover = params[3];
     const receiveAToken = params[4] === 'true';
     const user = params[5];
@@ -1518,13 +1518,16 @@ async function execute(network, action, ...params) {
       kit.addAccount(pk);
     }
 
-    const txHash = (
-      await lendingPool.methods
-        .liquidationCall(collateralAsset, debtAsset, userToLiquidate, debtToCover, receiveAToken)
-        .send({ from: user, gas: 2000000 })
-    ).transactionHash;
+    try {
+      const liquidationCallTxHash = (liquidationCallTxHash = await lendingPool.methods
+        .liquidationCall(collateralTokenAddr, borrowTokenAddr, riskUser, debtToCover, receiveAToken)
+        .send({ from: user, gas: 2000000 }));
+      console.log('liquidationCall: ', liquidationCallTxHash);
+    } catch (err) {
+      console.log(`Cannot liquidate user ${riskUser}: `, err.message);
+    }
 
-    console.log('liquidationCall', txHash);
+    return;
   }
 
   console.error(`Unknown action: ${action}`);
