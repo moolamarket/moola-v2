@@ -1501,21 +1501,33 @@ async function execute(network, action, ...params) {
     return;
   }
 
-  if (action === 'liquidation-call') {
+  if (action === 'liquidationcall') {
     const collateralAssetAddr = tokens[params[0].toLowerCase()].options.address;
-    const debtAssetAddr = tokens[params[1].toLowerCase()].options.address;
+    const debtToken = tokens[params[1].toLowerCase()];
+    const debtAssetAddr = debtToken.options.address;
     const riskUser = params[2];
     const debtToCover = web3.utils.toWei(params[3]);
     const receiveAToken = params[4] === 'true';
     const user = params[5];
 
     if (privateKeyRequired) {
-      pk = params[6];
+      pk = process.env.CELO_BOT_PK || params[6];
       if (!pk) {
         console.error('Missing private key');
         return;
       }
       kit.addAccount(pk);
+    }
+
+    if ((await debtToken.methods.allowance(user, lendingPool.options.address).call()).length < 30) {
+      console.log(
+        'Approve Moola',
+        (
+          await debtToken.methods
+            .approve(lendingPool.options.address, maxUint256)
+            .send({ from: user, gas: 2000000 })
+        ).transactionHash
+      );
     }
 
     const logInfo = {
@@ -1528,10 +1540,10 @@ async function execute(network, action, ...params) {
     console.table(logInfo);
 
     try {
-      const liquidationCallTxHash = (liquidationCallTxHash = await lendingPool.methods
+      const liquidationCallTx = await lendingPool.methods
         .liquidationCall(collateralAssetAddr, debtAssetAddr, riskUser, debtToCover, receiveAToken)
-        .send({ from: user, gas: 2000000 }));
-      console.log('liquidationCall: ', liquidationCallTxHash);
+        .send({ from: user, gas: 2000000 });
+      console.log('liquidationCall: ', liquidationCallTx.transactionHash);
     } catch (err) {
       console.log(`Cannot liquidate user ${riskUser}: `, err.message);
     }
