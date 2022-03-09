@@ -860,7 +860,7 @@ async function execute(network, action, ...params) {
       const currentAllowance = await tokens[token].methods
         .allowance(user, uniswap.options.address)
         .call();
-      if (BN(currentAllowance).comparedTo(ALLOWANCE_THRESHOLD) === -1) {
+      if (BN(currentAllowance).isLessThan(ALLOWANCE_THRESHOLD)) {
         console.log(
           'Approve Uniswap',
           (
@@ -1169,7 +1169,7 @@ async function execute(network, action, ...params) {
 
     console.log(`Checking mToken ${mToken.options.address} for approval`);
     const currentAllowance = await mToken.methods.allowance(user, liquiditySwapAdapter).call();
-    if (BN(currentAllowance).comparedTo(ALLOWANCE_THRESHOLD) === -1) {
+    if (BN(currentAllowance).isLessThan(ALLOWANCE_THRESHOLD)) {
       console.log(
         'Approve UniswapAdapter',
         (
@@ -1526,7 +1526,7 @@ async function execute(network, action, ...params) {
     const currentAllowance = await debtToken.methods
       .allowance(user, lendingPool.options.address)
       .call();
-    if (BN(currentAllowance).comparedTo(ALLOWANCE_THRESHOLD) === -1) {
+    if (BN(currentAllowance).isLessThan(ALLOWANCE_THRESHOLD)) {
       console.log(
         'Approve Moola',
         (
