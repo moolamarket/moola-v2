@@ -26,7 +26,7 @@ import {
   deployUniswapLiquiditySwapAdapter,
   deployUniswapRepayAdapter,
   deployFlashLiquidationAdapter,
-  authorizeWETHGateway
+  authorizeWETHGateway,
 } from '../../helpers/contracts-deployments';
 import { Signer } from 'ethers';
 import { TokenContractId, eContractid, tEthereumAddress, AavePools } from '../../helpers/types';
@@ -146,6 +146,12 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
   await setInitialAssetPricesInOracle(
     ALL_ASSETS_INITIAL_PRICES,
     {
+      CELO: mockTokens.CELO.address,
+      CUSD: mockTokens.CUSD.address,
+      CEUR: mockTokens.CEUR.address,
+      CREAL: mockTokens.CREAL.address,
+      MOO: mockTokens.MOO.address,
+      UBE: mockTokens.UBE.address,
       WETH: mockTokens.WETH.address,
       DAI: mockTokens.DAI.address,
       TUSD: mockTokens.TUSD.address,
@@ -190,6 +196,7 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
       WMATIC: mockTokens.WMATIC.address,
       USD: USD_ADDRESS,
       STAKE: mockTokens.STAKE.address,
+      xSUSHI: mockTokens.xSUSHI.address,
     },
     fallbackOracle
   );
@@ -240,13 +247,9 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
   console.log('Initialize configuration');
 
   const config = loadPoolConfig(ConfigNames.Amm);
-  
-  const { 
-    ATokenNamePrefix,
-    StableDebtTokenNamePrefix,
-    VariableDebtTokenNamePrefix,
-    SymbolPrefix,
-  } = config;
+
+  const { ATokenNamePrefix, StableDebtTokenNamePrefix, VariableDebtTokenNamePrefix, SymbolPrefix } =
+    config;
   const treasuryAddress = await getTreasuryAddress(config);
 
   await initReservesByHelper(

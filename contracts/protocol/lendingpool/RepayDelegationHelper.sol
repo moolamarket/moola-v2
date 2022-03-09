@@ -23,14 +23,14 @@ contract RepayDelegationHelper {
   }
 
   /**
-   * @notice Transfer token from msg.sender to itself, repays the debt of _delegatee, and deposit the remaining to _delegatee if the repaid amount is less than _amount
-   * @param _delegatee The wallet address to repay debt of
+   * @notice Transfer token from msg.sender to itself, repays the debt of _delegator, and deposit the remaining to _delegator if the repaid amount is less than _amount
+   * @param _delegator The wallet address to repay debt of
    * @param _asset The asset address to repay
    * @param _amount The amount to repay
    * @param _rateMode The rateMode to use for repayment
    */
   function repayDelegation(
-    address _delegatee,
+    address _delegator,
     address _asset,
     uint256 _amount,
     uint256 _rateMode
@@ -46,14 +46,14 @@ contract RepayDelegationHelper {
       _asset,
       _amount,
       _rateMode,
-      _delegatee
+      _delegator
     );
 
     uint256 remaining = _amount - paybackAmount;
     if (remaining > 0) {
-      ILendingPool(lendingPoolAddress).deposit(_asset, remaining, _delegatee, 0);
+      ILendingPool(lendingPoolAddress).deposit(_asset, remaining, _delegator, 0);
     }
 
-    emit DelegatedRepayment(msg.sender, _delegatee, _asset, _amount, _rateMode);
+    emit DelegatedRepayment(_delegator, msg.sender, _asset, _amount, _rateMode);
   }
 }
