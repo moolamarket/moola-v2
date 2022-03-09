@@ -31,6 +31,7 @@ const DEBT_TOKENS = {
 const ether = '1000000000000000000';
 const ray = '1000000000000000000000000000';
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+const ALLOWANCE_THRESHOLD = BN('1e+30');
 
 function BN(num) {
   return new BigNumber(num);
@@ -188,6 +189,9 @@ function printActions() {
   );
   console.info('auto-repay-user-info userAddress');
   console.info('set-auto-repay-params address minHealthFactor maxHealthFactor [privateKey]');
+  console.info(
+    'liquidationCall collateral-asset debt-asset risk-user debt-to-cover receive-AToken(true|false) address [privateKey]'
+  );
 }
 
 const retry = async (fun, tries = 5) => {
@@ -354,6 +358,7 @@ async function execute(network, action, ...params) {
     creal: cREAL.options.address,
     moo: MOO.options.address,
   };
+
   if (action === 'balanceof') {
     const token = tokens[params[0]];
     const user = params[1];
@@ -851,9 +856,11 @@ async function execute(network, action, ...params) {
           ).transactionHash
         );
       }
-      if (
-        (await tokens[token].methods.allowance(user, uniswap.options.address).call()).length < 30
-      ) {
+
+      const currentAllowance = await tokens[token].methods
+        .allowance(user, uniswap.options.address)
+        .call();
+      if (BN(currentAllowance).isLessThan(ALLOWANCE_THRESHOLD)) {
         console.log(
           'Approve Uniswap',
           (
@@ -1161,7 +1168,8 @@ async function execute(network, action, ...params) {
       .toFixed(0);
 
     console.log(`Checking mToken ${mToken.options.address} for approval`);
-    if ((await mToken.methods.allowance(user, liquiditySwapAdapter).call()).length < 30) {
+    const currentAllowance = await mToken.methods.allowance(user, liquiditySwapAdapter).call();
+    if (BN(currentAllowance).isLessThan(ALLOWANCE_THRESHOLD)) {
       console.log(
         'Approve UniswapAdapter',
         (
@@ -1494,6 +1502,59 @@ async function execute(network, action, ...params) {
       'User info setted',
       (await method.send({ from: user, gas: 2000000 })).transactionHash
     );
+    return;
+  }
+
+  if (action === 'liquidationcall') {
+    const collateralAssetAddr = tokens[params[0].toLowerCase()].options.address;
+    const debtAsset = tokens[params[1].toLowerCase()];
+    const debtAssetAddr = debtAsset.options.address;
+    const riskUser = params[2];
+    const debtToCover = web3.utils.toWei(params[3]);
+    const receiveAToken = params[4] === 'true';
+    const user = params[5];
+
+    if (privateKeyRequired) {
+      pk = process.env.CELO_BOT_PK || params[6];
+      if (!pk) {
+        console.error('Missing private key');
+        return;
+      }
+      kit.addAccount(pk);
+    }
+
+    const currentAllowance = await debtAsset.methods
+      .allowance(user, lendingPool.options.address)
+      .call();
+    if (BN(currentAllowance).isLessThan(ALLOWANCE_THRESHOLD)) {
+      console.log(
+        'Approve Moola',
+        (
+          await debtAsset.methods
+            .approve(lendingPool.options.address, maxUint256)
+            .send({ from: user, gas: 2000000 })
+        ).transactionHash
+      );
+    }
+
+    const logInfo = {
+      'collateral-asset': collateralAssetAddr,
+      'debt-asset': debtAssetAddr,
+      'risk-user': riskUser,
+      'debt-to-cover': debtToCover,
+      'receive-AToken': receiveAToken,
+    };
+    console.table(logInfo);
+
+    try {
+      const liquidationCallTx = await lendingPool.methods
+        .liquidationCall(collateralAssetAddr, debtAssetAddr, riskUser, debtToCover, receiveAToken)
+        .send({ from: user, gas: 2000000 });
+      console.log('liquidationCall: ', liquidationCallTx.transactionHash);
+    } catch (err) {
+      console.log(`Cannot liquidate user ${riskUser}: `, err.message);
+    }
+
     return;
   }
 
