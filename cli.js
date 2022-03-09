@@ -1507,8 +1507,8 @@ async function execute(network, action, ...params) {
 
   if (action === 'liquidationcall') {
     const collateralAssetAddr = tokens[params[0].toLowerCase()].options.address;
-    const debtToken = tokens[params[1].toLowerCase()];
-    const debtAssetAddr = debtToken.options.address;
+    const debtAsset = tokens[params[1].toLowerCase()];
+    const debtAssetAddr = debtAsset.options.address;
     const riskUser = params[2];
     const debtToCover = web3.utils.toWei(params[3]);
     const receiveAToken = params[4] === 'true';
@@ -1523,14 +1523,14 @@ async function execute(network, action, ...params) {
       kit.addAccount(pk);
     }
 
-    const currentAllowance = await debtToken.methods
+    const currentAllowance = await debtAsset.methods
       .allowance(user, lendingPool.options.address)
       .call();
     if (BN(currentAllowance).isLessThan(ALLOWANCE_THRESHOLD)) {
       console.log(
         'Approve Moola',
         (
-          await debtToken.methods
+          await debtAsset.methods
             .approve(lendingPool.options.address, maxUint256)
             .send({ from: user, gas: 2000000 })
         ).transactionHash
