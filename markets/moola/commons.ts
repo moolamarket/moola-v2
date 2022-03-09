@@ -1,5 +1,11 @@
 import BigNumber from 'bignumber.js';
-import { oneEther, oneRay, RAY, ZERO_ADDRESS, MOCK_CHAINLINK_AGGREGATORS_PRICES } from '../../helpers/constants';
+import {
+  oneEther,
+  oneRay,
+  RAY,
+  ZERO_ADDRESS,
+  MOCK_CHAINLINK_AGGREGATORS_PRICES,
+} from '../../helpers/constants';
 import { ICommonConfiguration, eEthereumNetwork, eCeloNetwork } from '../../helpers/types';
 
 // ----------------
@@ -101,7 +107,7 @@ export const CommonsConfig: ICommonConfiguration = {
   },
   AaveOracle: {
     [eCeloNetwork.celo]: '0x568547688121AA69bDEB8aEB662C321c5D7B98D0',
-    [eCeloNetwork.alfajores]: '0x88A4a87eF224D8b1F463708D0CD62b17De593DAd',
+    [eCeloNetwork.alfajores]: '0x005df00133e6201F8ef4D9B620084AB725CD469c',
   },
   FallbackOracle: {
     [eCeloNetwork.celo]: ZERO_ADDRESS,
