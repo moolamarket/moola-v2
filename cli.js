@@ -31,6 +31,7 @@ const DEBT_TOKENS = {
 const ether = '1000000000000000000';
 const ray = '1000000000000000000000000000';
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+const ALLOWANCE_THRESHOLD = BN('1e+30');
 
 function BN(num) {
   return new BigNumber(num);
@@ -855,9 +856,11 @@ async function execute(network, action, ...params) {
           ).transactionHash
         );
       }
-      if (
-        (await tokens[token].methods.allowance(user, uniswap.options.address).call()).length < 30
-      ) {
+
+      const currentAllowance = await tokens[token].methods
+        .allowance(user, uniswap.options.address)
+        .call();
+      if (BN(currentAllowance).comparedTo(ALLOWANCE_THRESHOLD) === -1) {
         console.log(
           'Approve Uniswap',
           (
@@ -1165,7 +1168,8 @@ async function execute(network, action, ...params) {
       .toFixed(0);
 
     console.log(`Checking mToken ${mToken.options.address} for approval`);
-    if ((await mToken.methods.allowance(user, liquiditySwapAdapter).call()).length < 30) {
+    const currentAllowance = await mToken.methods.allowance(user, liquiditySwapAdapter).call();
+    if (BN(currentAllowance).comparedTo(ALLOWANCE_THRESHOLD) === -1) {
       console.log(
         'Approve UniswapAdapter',
         (
@@ -1519,7 +1523,10 @@ async function execute(network, action, ...params) {
       kit.addAccount(pk);
     }
 
-    if ((await debtToken.methods.allowance(user, lendingPool.options.address).call()).length < 30) {
+    const currentAllowance = await debtToken.methods
+      .allowance(user, lendingPool.options.address)
+      .call();
+    if (BN(currentAllowance).comparedTo(ALLOWANCE_THRESHOLD) === -1) {
       console.log(
         'Approve Moola',
         (
