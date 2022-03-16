@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
@@ -11,7 +12,7 @@ contract UBEConfiguratorAlfajores is Ownable {
 
   LendingPoolConfigurator public lendingPoolConfigurator =
     LendingPoolConfigurator(lendingPoolConfiguratorAddress);
-  address constant assetAddress = 0x692A3Fe6cbe2588D64d7081bAF2F479424cCb2C3; // FIXME-- check the address
+  address constant assetAddress = 0x00Be915B9dCf56a3CBE739D9B9c202ca692409EC; // FIXME-- check the address
 
   bytes constant params = '0x10';
   bool constant stableBorrowRateEnabled = true;
@@ -23,13 +24,14 @@ contract UBEConfiguratorAlfajores is Ownable {
   address constant treasury = 0x643C574128c7C56A1835e021Ad0EcC2592E72624;
   address constant incentivesController = 0x0000000000000000000000000000000000000000;
   string constant underlyingAssetName = 'Ubeswap';
-  string constant aTokenName = 'Ubeswap interest bearing MOO';
+  string constant aTokenName = 'Moola interest bearing UBE';
   string constant aTokenSymbol = 'mUBE';
-  string constant variableDebtTokenName = 'Ubeswap variable debt bearing mUBE';
+  string constant variableDebtTokenName = 'Moola variable debt bearing mUBE';
   string constant variableDebtTokenSymbol = 'variableDebtmUBE';
-  string constant stableDebtTokenName = 'Ubeswap stable debt bearing mUBE';
+  string constant stableDebtTokenName = 'Moola stable debt bearing mUBE';
   string constant stableDebtTokenSymbol = 'stableDebtmUBE';
-  uint256 constant baseLTV = 5000;
+  uint256 constant baseLTV = 5000; // TODO-- wait for params
+  uint256 constant liquidationThreshold = 6500;
   uint256 constant liquidationThreshold = 6500;
   uint256 constant liquidationBonus = 11000;
   uint256 constant reserveFactor = 1000;

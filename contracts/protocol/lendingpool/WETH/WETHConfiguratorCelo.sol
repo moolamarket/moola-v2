@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
@@ -6,30 +7,30 @@ import {Ownable} from '../../../dependencies/openzeppelin/contracts/Ownable.sol'
 import '../../../protocol/lendingpool/LendingPoolConfigurator.sol';
 import '../../../interfaces/ILendingPoolConfigurator.sol';
 
-contract MOBIConfiguratorAlfajores is Ownable {
-  address constant lendingPoolConfiguratorAddress = 0x39fe2A4a4174bB5cAC5568ce0715a0b320bcB231;
+contract WETHConfiguratorCelo is Ownable {
+  address constant lendingPoolConfiguratorAddress = 0x928F63a83217e427A84504950206834CBDa4Aa65;
 
   LendingPoolConfigurator public lendingPoolConfigurator =
     LendingPoolConfigurator(lendingPoolConfiguratorAddress);
-  address constant assetAddress = 0x17700282592D6917F6A73D0bF8AcCf4D578c131e;
+  address constant assetAddress = 0x122013fd7dF1C6F636a5bb8f03108E876548b455;
 
   bytes constant params = '0x10';
   bool constant stableBorrowRateEnabled = true;
   uint8 constant underlyingAssetDecimals = 18;
-  address constant aTokenImpl = 0xe8B286649713447D8d5fBeBC28c731830d19B6C9;
-  address constant stableDebtTokenImpl = 0xB6a5059A228a16Fa2827E28E52ceC96BBC63D639;
-  address constant variableDebtTokenImpl = 0xB65b6a6a6F78E4daABF259c756567ae346699687;
-  address constant interestRateStrategyAddress = 0x3C06Fb2f5Ab65b0e35F91073d88afE2b017D04b8;
-  address constant treasury = 0x643C574128c7C56A1835e021Ad0EcC2592E72624;
+  address constant aTokenImpl = 0x55bFCED2451b2154e06604D4269c9349F31141e6;
+  address constant stableDebtTokenImpl = 0xaCdb7B3e2b0a038F1f4eF04736728E0065b689DA;
+  address constant variableDebtTokenImpl = 0x0301Cf8F1FCD9255BD32FB7e0fE5B3494f445C2C;
+  address constant interestRateStrategyAddress = 0xb3072f5F0d5e8B9036aEC29F37baB70E86EA0018;
+  address constant treasury = 0x313bc86D3D6e86ba164B2B451cB0D9CfA7943e5c;
   address constant incentivesController = 0x0000000000000000000000000000000000000000;
-  string constant underlyingAssetName = 'Mobius DAO';
-  string constant aTokenName = 'Mobius DAO interest bearing MOO';
-  string constant aTokenSymbol = 'mMOBI';
-  string constant variableDebtTokenName = 'Mobius DAO variable debt bearing mMOBI';
-  string constant variableDebtTokenSymbol = 'variableDebtmMOBI';
-  string constant stableDebtTokenName = 'Mobius DAO stable debt bearing mMOBI';
-  string constant stableDebtTokenSymbol = 'stableDebtmMOBI';
-  uint256 constant baseLTV = 5000;
+  string constant underlyingAssetName = 'Wrapped Ether';
+  string constant aTokenName = 'Moola interest bearing WETH';
+  string constant aTokenSymbol = 'mWETH';
+  string constant variableDebtTokenName = 'Moola variable debt bearing mWETH';
+  string constant variableDebtTokenSymbol = 'variableDebtmWETH';
+  string constant stableDebtTokenName = 'Moola stable debt bearing mWETH';
+  string constant stableDebtTokenSymbol = 'stableDebtmWETH';
+  uint256 constant baseLTV = 5000; // TODO-- wait for params
   uint256 constant liquidationThreshold = 6500;
   uint256 constant liquidationBonus = 11000;
   uint256 constant reserveFactor = 1000;
