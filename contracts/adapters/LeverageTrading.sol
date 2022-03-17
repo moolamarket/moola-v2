@@ -5,11 +5,13 @@ pragma experimental ABIEncoderV2;
 import {BaseUniswapAdapter} from './BaseUniswapAdapter.sol';
 import {IUniswapV2Router02} from '../interfaces/IUniswapV2Router02.sol';
 import {IERC20} from '../dependencies/openzeppelin/contracts/IERC20.sol';
+import {PercentageMath} from '../protocol/libraries/math/PercentageMath.sol';
 import {SafeERC20} from '../dependencies/openzeppelin/contracts/SafeERC20.sol';
 import {ILendingPoolAddressesProvider} from '../interfaces/ILendingPoolAddressesProvider.sol';
 
 contract LeverageTrading is BaseUniswapAdapter {
   using SafeERC20 for IERC20;
+  using PercentageMath for uint256;
 
   constructor(
     ILendingPoolAddressesProvider addressesProvider,
@@ -17,13 +19,25 @@ contract LeverageTrading is BaseUniswapAdapter {
     address wethAddress
   ) public BaseUniswapAdapter(addressesProvider, uniswapRouter, wethAddress) {}
 
+  // Max slippage percent allowed
+  uint256 public constant SLIPPAGE_PERCENT = 300; // 3%
   struct LeverageVars {
-    uint256 i;
-    address[] path;
+    uint8 i;
+    bool aTokenExist;
     address asset;
+    address[] path;
     uint256 amount;
     uint256 minAmountOut;
-    uint256 wethAmount;
+    uint256 fromAssetDecimals;
+    uint256 toAssetDecimals;
+    uint256 fromAssetPrice;
+    uint256 toAssetPrice;
+  }
+
+  struct LeverageParams {
+    bool useATokenAsFrom;
+    bool useATokenAsTo;
+    address toAsset;
   }
 
   /**
@@ -33,7 +47,7 @@ contract LeverageTrading is BaseUniswapAdapter {
    * @param amounts Amount of the debt to be repaid
    * @param initiator Address of the flashloan caller
    * @param params Additional variadic field to include extra params. Expected parameters:
-   *   bool[] - array of useATokenAsFrom booleans
+   *   LeverageParams[] - array of LeverageParams struct
    */
   function executeOperation(
     address[] calldata assets,
@@ -43,48 +57,64 @@ contract LeverageTrading is BaseUniswapAdapter {
     bytes calldata params
   ) external override returns (bool) {
     require(msg.sender == address(LENDING_POOL), 'CALLER_MUST_BE_LENDING_POOL');
-    bool[] memory useATokenAsFrom = abi.decode(params, (bool[]));
+    LeverageParams[] memory leverageParamsArr = abi.decode(params, (LeverageParams[]));
     require(
-      useATokenAsFrom.length == assets.length,
-      'useATokensAsFrom length does not match to assets length'
+      leverageParamsArr.length == assets.length,
+      'leverageParams length does not match to assets length'
     );
 
     LeverageVars memory vars;
     vars.path = new address[](2);
 
-    vars.path[1] = WETH_ADDRESS;
     for (; vars.i < assets.length; vars.i++) {
+      LeverageParams memory leverageParams = leverageParamsArr[vars.i];
       vars.asset = assets[vars.i];
       vars.amount = amounts[vars.i];
-      uint256 fromAssetDecimals = _getDecimals(vars.asset);
-      uint256 fromAssetPrice = _getPrice(vars.asset);
-      // minAmountOut with 2% slippage
-      vars.minAmountOut = vars.amount.mul(fromAssetPrice).div(10**fromAssetDecimals).mul(98).div(
-        100
-      );
-      if (useATokenAsFrom[vars.i]) {
-        vars.path[0] = _getReserveData(vars.asset).aTokenAddress;
-        IERC20(vars.asset).safeApprove(address(LENDING_POOL), 0);
-        IERC20(vars.asset).safeApprove(address(LENDING_POOL), vars.amount);
-        LENDING_POOL.deposit(vars.asset, vars.amount, address(this), 0);
-        uint256 balanceBefore = IERC20(vars.path[1]).balanceOf(address(this));
+      vars.fromAssetDecimals = _getDecimals(vars.asset);
+      vars.fromAssetPrice = _getPrice(vars.asset);
+
+      vars.toAssetDecimals = _getDecimals(leverageParams.toAsset);
+      vars.toAssetPrice = _getPrice(leverageParams.toAsset);
+
+      vars.minAmountOut = vars
+        .amount
+        .mul(vars.fromAssetPrice.mul(10**vars.toAssetDecimals))
+        .div(vars.toAssetPrice.mul(10**vars.fromAssetDecimals))
+        .percentMul(PercentageMath.PERCENTAGE_FACTOR.sub(SLIPPAGE_PERCENT));
+
+      vars.path[0] = leverageParams.useATokenAsFrom
+        ? _getReserveData(vars.asset).aTokenAddress
+        : vars.asset;
+      vars.path[1] = leverageParams.useATokenAsTo
+        ? _getReserveData(leverageParams.toAsset).aTokenAddress
+        : leverageParams.toAsset;
+
+      if (leverageParams.useATokenAsFrom) {
+        _deposit(vars.asset, vars.amount, address(this));
+      }
+
+      if (leverageParams.useATokenAsFrom || leverageParams.useATokenAsTo) {
+        address receiverAddress = leverageParams.useATokenAsTo ? initiator : address(this);
+
+        uint256 balanceBefore = IERC20(vars.path[1]).balanceOf(receiverAddress);
         IERC20(vars.path[0]).safeApprove(address(UNISWAP_ROUTER), 0);
-        IERC20(vars.path[0]).safeApprove(address(UNISWAP_ROUTER), uint256(-1));
+        IERC20(vars.path[0]).safeApprove(address(UNISWAP_ROUTER), vars.amount);
         UNISWAP_ROUTER.swapExactTokensForTokensSupportingFeeOnTransferTokens(
           vars.amount,
           vars.minAmountOut,
           vars.path,
-          address(this),
+          receiverAddress,
           block.timestamp
         );
-        uint256 swappedAmount = IERC20(vars.path[1]).balanceOf(address(this)) - balanceBefore;
-
-        vars.wethAmount += swappedAmount;
+        uint256 swappedAmount = IERC20(vars.path[1]).balanceOf(receiverAddress).sub(balanceBefore);
         emit Swapped(vars.path[0], vars.path[1], vars.amount, swappedAmount);
+
+        if (!leverageParams.useATokenAsTo) {
+          _deposit(vars.path[1], swappedAmount, initiator);
+        }
       } else {
-        vars.path[0] = vars.asset;
         IERC20(vars.path[0]).safeApprove(address(UNISWAP_ROUTER), 0);
-        IERC20(vars.path[0]).safeApprove(address(UNISWAP_ROUTER), uint256(-1));
+        IERC20(vars.path[0]).safeApprove(address(UNISWAP_ROUTER), vars.amount);
         uint256[] memory swappedAmounts = UNISWAP_ROUTER.swapExactTokensForTokens(
           vars.amount,
           vars.minAmountOut,
@@ -92,14 +122,21 @@ contract LeverageTrading is BaseUniswapAdapter {
           address(this),
           block.timestamp
         );
-        vars.wethAmount += swappedAmounts[1];
         emit Swapped(vars.path[0], vars.path[1], swappedAmounts[0], swappedAmounts[1]);
+
+        _deposit(vars.path[1], swappedAmounts[1], initiator);
       }
     }
-    // Approves the transfer for the swap. Approves for 0 first to comply with tokens that implement the anti frontrunning approval fix.
-    IERC20(WETH_ADDRESS).safeApprove(address(LENDING_POOL), 0);
-    IERC20(WETH_ADDRESS).safeApprove(address(LENDING_POOL), vars.wethAmount);
-    LENDING_POOL.deposit(WETH_ADDRESS, vars.wethAmount, initiator, 0);
     return true;
+  }
+
+  function _deposit(
+    address asset,
+    uint256 amount,
+    address onBehalfOf
+  ) internal {
+    IERC20(asset).safeApprove(address(LENDING_POOL), 0);
+    IERC20(asset).safeApprove(address(LENDING_POOL), amount);
+    LENDING_POOL.deposit(asset, amount, onBehalfOf, 0);
   }
 }
