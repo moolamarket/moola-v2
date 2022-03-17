@@ -2,8 +2,8 @@ pragma solidity 0.6.12;
 
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '../interfaces/IPriceOracleGetter.sol';
-import "../interfaces/IRegistry.sol";
-import "../interfaces/ISortedOracles.sol";
+import '../interfaces/IRegistry.sol';
+import '../interfaces/ISortedOracles.sol';
 
 contract PriceFeed {
   using SafeMath for uint256;
@@ -20,14 +20,16 @@ contract PriceFeed {
   function consult() external view returns (uint256) {
     uint256 _price;
     uint256 _divisor;
+    bool _expired;
     ISortedOracles _oracles = getSortedOracles();
     (_price, _divisor) = _oracles.medianRate(asset);
     require(_price > 0, 'Reported price is 0');
-    uint256 _reportTime = _oracles.medianTimestamp(asset);
-    require(
-      block.timestamp.sub(_reportTime) < 10 minutes,
-      'Reported price is older than 10 minutes'
-    );
+
+    (_expired, ) = _oracles.isOldestReportExpired(asset);
+    if (_expired) {
+      // return 0 to trigger fallback
+      return 0;
+    }
     return _divisor.mul(1 ether).div(_price);
   }
 

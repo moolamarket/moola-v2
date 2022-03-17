@@ -10,6 +10,7 @@ describe("PriceFeed", function () {
     let user;
 
     let priceFeed;
+    let sortedOracles;
 
     before("setup", async () => {
         let accounts = await ethers.getSigners();
@@ -21,7 +22,7 @@ describe("PriceFeed", function () {
         const emptyAddress = ethers.utils.getAddress("0x0000000000000000000000000000000000000000");
 
         const SortedOracles = await ethers.getContractFactory("MockSortedOracles");
-        const sortedOracles = await SortedOracles.deploy();
+        sortedOracles = await SortedOracles.deploy();
         await sortedOracles.deployed();
 
         const Registry = await ethers.getContractFactory("MockRegistry");
@@ -44,5 +45,12 @@ describe("PriceFeed", function () {
         const result = await priceFeed.connect(user).consult();
 
         expect(result).to.equal("1000000000000000000");
+    });
+
+    it("should return 0 when price is stale", async () => {
+        await sortedOracles.setExpired(true);
+        const result = await priceFeed.connect(user).consult();
+
+        expect(result).to.equal("0");
     });
 });
