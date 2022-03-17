@@ -353,9 +353,17 @@ export const buildRepayAdapterParams = (
     ]
   );
 };
+interface LeverageTrading {
+  useATokenAsFrom: boolean;
+  useATokenAsTo: boolean;
+  toAsset: string;
+}
 
-export const buildLeverageTradingParams = (useATokenAsFroms: boolean[]) => {
-  return ethers.utils.defaultAbiCoder.encode(['bool[]'], [useATokenAsFroms]);
+export const buildLeverageTradingParams = (leverageParamsArr: LeverageTrading[]) => {
+  return ethers.utils.defaultAbiCoder.encode(
+    ['tuple(bool useATokenAsFrom, bool useATokenAsTo, address toAsset)[]'],
+    [leverageParamsArr]
+  );
 };
 
 export const buildFlashLiquidationAdapterParams = (
