@@ -182,8 +182,9 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
         block.timestamp
       );
 
-      uint256 swappedAmount = IERC20(path[path.length - 1]).balanceOf(address(this)) -
-        balanceBefore;
+      uint256 swappedAmount = IERC20(path[path.length - 1]).balanceOf(address(this)).sub(
+        balanceBefore
+      );
 
       emit Swapped(assetToSwapFrom, assetToSwapTo, amountToSwap, swappedAmount);
 
