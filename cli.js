@@ -198,7 +198,7 @@ function printActions() {
   console.info(
     'liquidationCall collateral-asset debt-asset risk-user debt-to-cover receive-AToken(true|false) address [privateKey]'
   );
-  console.info('repayDelegation delegator asset amount rateMode address [privateKey]');
+  console.info('repayDelegation delegator asset amount stable|variable address [privateKey]');
 }
 
 const retry = async (fun, tries = 5) => {
