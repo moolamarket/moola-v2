@@ -15,15 +15,6 @@ const Promise = require('bluebird');
 const ethers = require('ethers');
 let pk;
 
-const INTEREST_RATE = {
-  NONE: 0,
-  STABLE: 1,
-  VARIABLE: 2,
-  1: 'STABLE',
-  2: 'VARIABLE',
-  0: 'NONE',
-};
-
 const DEBT_TOKENS = {
   1: 'stableDebtTokenAddress',
   2: 'variableDebtTokenAddress',
@@ -141,16 +132,26 @@ function buildSwapAndRepayParams(
   );
 }
 
+const INTEREST_RATE = {
+  NONE: 0,
+  STABLE: 1,
+  VARIABLE: 2,
+  1: 'STABLE',
+  2: 'VARIABLE',
+  0: 'NONE',
+};
+
 function isValidRateMode(rateMode) {
-  if (rateMode !== 'stable' && rateMode !== 'variable') {
+  if (!rateMode || !INTEREST_RATE[rateMode.toUpperCase()]) {
     console.error('rateMode can be only "stable|variable"');
     return false;
   }
+
   return true;
 }
 
 function getRateModeNumber(rateMode) {
-  return rateMode === 'stable' ? 1 : 2;
+  return INTEREST_RATE[rateMode.toUpperCase()];
 }
 
 function isNumeric(num) {
@@ -501,7 +502,7 @@ async function execute(network, action, ...params) {
     const reserve = reserves[params[0]];
     const user = params[1];
     const amount = web3.utils.toWei(params[2]);
-    const rate = INTEREST_RATE[params[3].toUpperCase()];
+    const rate = getRateModeNumber(params[3]);
     if (privateKeyRequired) {
       pk = params[4];
       if (!pk) {
@@ -530,7 +531,7 @@ async function execute(network, action, ...params) {
     const token = tokens[params[0]];
     const user = params[1];
     const amount = params[2] === 'all' ? maxUint256 : web3.utils.toWei(params[2]);
-    const rate = INTEREST_RATE[params[3].toUpperCase()];
+    const rate = getRateModeNumber(params[3]);
     if (privateKeyRequired) {
       pk = params[4];
       if (!pk) {
@@ -606,7 +607,7 @@ async function execute(network, action, ...params) {
     const to = params[1];
     const user = params[2];
     const amount = web3.utils.toWei(params[3]);
-    const rate = INTEREST_RATE[params[4].toUpperCase()];
+    const rate = getRateModeNumber(params[4]);
     if (privateKeyRequired) {
       pk = params[5];
       if (!pk) {
@@ -629,7 +630,7 @@ async function execute(network, action, ...params) {
     const from = params[1];
     const user = params[2];
     const amount = web3.utils.toWei(params[3]);
-    const rate = INTEREST_RATE[params[4].toUpperCase()];
+    const rate = getRateModeNumber(params[4]);
     if (privateKeyRequired) {
       pk = params[5];
       if (!pk) {
@@ -664,7 +665,7 @@ async function execute(network, action, ...params) {
     const repayfor = params[1];
     const user = params[2];
     const amount = web3.utils.toWei(params[3]);
-    const rate = INTEREST_RATE[params[4].toUpperCase()];
+    const rate = getRateModeNumber(params[4]);
     if (privateKeyRequired) {
       pk = params[5];
       if (!pk) {
