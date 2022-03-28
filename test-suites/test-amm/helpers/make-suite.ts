@@ -21,7 +21,6 @@ import { AaveProtocolDataProvider } from '../../../types/AaveProtocolDataProvide
 import { MintableERC20 } from '../../../types/MintableERC20';
 import { AToken } from '../../../types/AToken';
 import { LendingPoolConfigurator } from '../../../types/LendingPoolConfigurator';
-import { RepayDelegationHelper } from '../../../types/RepayDelegationHelper';
 
 import chai from 'chai';
 // @ts-ignore
@@ -69,7 +68,6 @@ export interface TestEnv {
   registry: LendingPoolAddressesProviderRegistry;
   wethGateway: WETHGateway;
   flashLiquidationAdapter: FlashLiquidationAdapter;
-  repayHelper: RepayDelegationHelper;
 }
 
 let buidlerevmSnapshotId: string = '0x1';
