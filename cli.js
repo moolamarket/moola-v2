@@ -1544,8 +1544,7 @@ async function execute(network, action, ...params) {
     return;
   }
 
-  if (action === 'repayDelegation') {
-    // delegator asset amount rateMode address [privateKey]
+  if (action === 'repaydelegation') {
     const delegator = params[0];
     const asset = tokens[params[1].toLowerCase()];
     const assetAddr = asset.options.address;
@@ -1553,11 +1552,11 @@ async function execute(network, action, ...params) {
     const rateModeInput = params[3];
     const user = params[4];
 
-    if (!isValidRateMode(rateMode)) return;
+    if (!isValidRateMode(rateModeInput)) return;
     const rateMode = getRateModeNumber(rateModeInput);
 
     if (privateKeyRequired) {
-      pk = process.env.CELO_BOT_PK || params[6];
+      pk = process.env.CELO_BOT_PK || params[5];
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1573,6 +1572,8 @@ async function execute(network, action, ...params) {
     } catch (err) {
       console.log('Error when calling repayDelegationCall: ', err.message);
     }
+
+    return;
   }
 
   console.error(`Unknown action: ${action}`);
