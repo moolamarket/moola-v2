@@ -1603,7 +1603,7 @@ async function execute(network, action, ...params) {
       const currentAllowance = await asset.methods
         .allowance(user, repayDelegationHelperAddress)
         .call();
-      if (currentAllowance < amount) {
+      if (BN(currentAllowance).isLessThan(BN(amount))) {
         console.log(
           'Approve RepayDelegationHelper: ',
           (
