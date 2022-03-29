@@ -9,19 +9,11 @@ const DataProvider = require('./abi/MoolaProtocolDataProvider.json');
 const MToken = require('./abi/MToken.json');
 const MoolaMigratorV1V2 = require('./abi/MoolaMigratorV1V2.json');
 const DebtToken = require('./abi/DebtToken.json');
+const RepayDelegationHelper = require('./abi/RepayDelegationHelper.json');
 const BigNumber = require('bignumber.js');
 const Promise = require('bluebird');
 const ethers = require('ethers');
 let pk;
-
-const INTEREST_RATE = {
-  NONE: 0,
-  STABLE: 1,
-  VARIABLE: 2,
-  1: 'STABLE',
-  2: 'VARIABLE',
-  0: 'NONE',
-};
 
 const DEBT_TOKENS = {
   1: 'stableDebtTokenAddress',
@@ -32,6 +24,7 @@ const ether = '1000000000000000000';
 const ray = '1000000000000000000000000000';
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 const ALLOWANCE_THRESHOLD = BN('1e+30');
+const DEFAULT_GAS = 2000000;
 
 function BN(num) {
   return new BigNumber(num);
@@ -139,12 +132,26 @@ function buildSwapAndRepayParams(
   );
 }
 
+const INTEREST_RATE = {
+  NONE: 0,
+  STABLE: 1,
+  VARIABLE: 2,
+  1: 'STABLE',
+  2: 'VARIABLE',
+  0: 'NONE',
+};
+
 function isValidRateMode(rateMode) {
-  if (rateMode !== 'stable' && rateMode !== 'variable') {
+  if (!rateMode || !INTEREST_RATE[rateMode.toUpperCase()]) {
     console.error('rateMode can be only "stable|variable"');
     return false;
   }
+
   return true;
+}
+
+function getRateModeNumber(rateMode) {
+  return INTEREST_RATE[rateMode.toUpperCase()];
 }
 
 function isNumeric(num) {
@@ -192,6 +199,7 @@ function printActions() {
   console.info(
     'liquidationCall collateral-asset debt-asset risk-user debt-to-cover receive-AToken(true|false) address [privateKey]'
   );
+  console.info('repayDelegation delegator asset amount stable|variable address [privateKey]');
 }
 
 const retry = async (fun, tries = 5) => {
@@ -224,6 +232,7 @@ async function execute(network, action, ...params) {
   let repayAdapter;
   let autoRepay;
   let ubeswap;
+  let repayDelegationHelper;
   switch (network) {
     case 'test':
       kit = newKit('https://alfajores-forno.celo-testnet.org');
@@ -254,6 +263,10 @@ async function execute(network, action, ...params) {
         '0x19F8322CaC86623432e9142a349504DE6754f12A'
       );
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
+      repayDelegationHelper = new kit.web3.eth.Contract(
+        RepayDelegationHelper,
+        '0x954234d95900AD58fAB116EcF6a454b4C3255913'
+      );
       break;
     case 'main':
       kit = newKit('https://forno.celo.org');
@@ -465,14 +478,14 @@ async function execute(network, action, ...params) {
       (
         await token.methods
           .approve(lendingPool.options.address, amount)
-          .send({ from: user, gas: 2000000 })
+          .send({ from: user, gas: DEFAULT_GAS })
       ).transactionHash
     );
     try {
       await retry(() =>
         lendingPool.methods
           .deposit(reserve, amount, user, 0)
-          .estimateGas({ from: user, gas: 2000000 })
+          .estimateGas({ from: user, gas: DEFAULT_GAS })
       );
     } catch (err) {
       console.log(
@@ -480,7 +493,7 @@ async function execute(network, action, ...params) {
         (
           await token.methods
             .approve(lendingPool.options.address, 0)
-            .send({ from: user, gas: 2000000 })
+            .send({ from: user, gas: DEFAULT_GAS })
         ).transactionHash
       );
       console.log('Cannot deposit', err.message);
@@ -491,7 +504,7 @@ async function execute(network, action, ...params) {
       (
         await lendingPool.methods
           .deposit(reserve, amount, user, 0)
-          .send({ from: user, gas: 2000000 })
+          .send({ from: user, gas: DEFAULT_GAS })
       ).transactionHash
     );
     return;
@@ -500,7 +513,7 @@ async function execute(network, action, ...params) {
     const reserve = reserves[params[0]];
     const user = params[1];
     const amount = web3.utils.toWei(params[2]);
-    const rate = INTEREST_RATE[params[3].toUpperCase()];
+    const rate = getRateModeNumber(params[3]);
     if (privateKeyRequired) {
       pk = params[4];
       if (!pk) {
@@ -513,7 +526,7 @@ async function execute(network, action, ...params) {
       await retry(() =>
         lendingPool.methods
           .borrow(reserve, amount, rate, 0, user)
-          .estimateGas({ from: user, gas: 2000000 })
+          .estimateGas({ from: user, gas: DEFAULT_GAS })
       );
     } catch (err) {
       console.log('Cannot borrow', err.message);
@@ -524,7 +537,7 @@ async function execute(network, action, ...params) {
       (
         await lendingPool.methods
           .borrow(reserve, amount, rate, 0, user)
-          .send({ from: user, gas: 2000000 })
+          .send({ from: user, gas: DEFAULT_GAS })
       ).transactionHash
     );
     return;
@@ -534,7 +547,7 @@ async function execute(network, action, ...params) {
     const token = tokens[params[0]];
     const user = params[1];
     const amount = params[2] === 'all' ? maxUint256 : web3.utils.toWei(params[2]);
-    const rate = INTEREST_RATE[params[3].toUpperCase()];
+    const rate = getRateModeNumber(params[3]);
     if (privateKeyRequired) {
       pk = params[4];
       if (!pk) {
@@ -548,14 +561,14 @@ async function execute(network, action, ...params) {
       (
         await token.methods
           .approve(lendingPool.options.address, amount)
-          .send({ from: user, gas: 2000000 })
+          .send({ from: user, gas: DEFAULT_GAS })
       ).transactionHash
     );
     try {
       await retry(() =>
         lendingPool.methods
           .repay(reserve, amount, rate, user)
-          .estimateGas({ from: user, gas: 2000000 })
+          .estimateGas({ from: user, gas: DEFAULT_GAS })
       );
     } catch (err) {
       console.log(
@@ -563,7 +576,7 @@ async function execute(network, action, ...params) {
         (
           await token.methods
             .approve(lendingPool.options.address, 0)
-            .send({ from: user, gas: 2000000 })
+            .send({ from: user, gas: DEFAULT_GAS })
         ).transactionHash
       );
       console.log('Cannot repay', err.message);
@@ -575,7 +588,7 @@ async function execute(network, action, ...params) {
       (
         await lendingPool.methods
           .repay(reserve, amount, rate, user)
-          .send({ from: user, gas: 2000000 })
+          .send({ from: user, gas: DEFAULT_GAS })
       ).transactionHash
     );
     console.log(
@@ -583,7 +596,7 @@ async function execute(network, action, ...params) {
       (
         await token.methods
           .approve(lendingPool.options.address, 0)
-          .send({ from: user, gas: 2000000 })
+          .send({ from: user, gas: DEFAULT_GAS })
       ).transactionHash
     );
     return;
@@ -604,7 +617,7 @@ async function execute(network, action, ...params) {
       await retry(() =>
         lendingPool.methods
           .withdraw(reserve, amount, user)
-          .estimateGas({ from: user, gas: 2000000 })
+          .estimateGas({ from: user, gas: DEFAULT_GAS })
       );
     } catch (err) {
       console.log('Cannot redeem', err.message);
@@ -612,8 +625,11 @@ async function execute(network, action, ...params) {
     }
     console.log(
       'Redeem',
-      (await lendingPool.methods.withdraw(reserve, amount, user).send({ from: user, gas: 2000000 }))
-        .transactionHash
+      (
+        await lendingPool.methods
+          .withdraw(reserve, amount, user)
+          .send({ from: user, gas: DEFAULT_GAS })
+      ).transactionHash
     );
     return;
   }
@@ -623,7 +639,7 @@ async function execute(network, action, ...params) {
     const to = params[1];
     const user = params[2];
     const amount = web3.utils.toWei(params[3]);
-    const rate = INTEREST_RATE[params[4].toUpperCase()];
+    const rate = getRateModeNumber(params[4]);
     if (privateKeyRequired) {
       pk = params[5];
       if (!pk) {
@@ -636,7 +652,7 @@ async function execute(network, action, ...params) {
     const debtToken = new eth.Contract(DebtToken, reserveTokens[DEBT_TOKENS[rate]]);
     console.log(
       'Approve credit delegation',
-      (await debtToken.methods.approveDelegation(to, amount).send({ from: user, gas: 2000000 }))
+      (await debtToken.methods.approveDelegation(to, amount).send({ from: user, gas: DEFAULT_GAS }))
         .transactionHash
     );
     return;
@@ -646,7 +662,7 @@ async function execute(network, action, ...params) {
     const from = params[1];
     const user = params[2];
     const amount = web3.utils.toWei(params[3]);
-    const rate = INTEREST_RATE[params[4].toUpperCase()];
+    const rate = getRateModeNumber(params[4]);
     if (privateKeyRequired) {
       pk = params[5];
       if (!pk) {
@@ -659,7 +675,7 @@ async function execute(network, action, ...params) {
       await retry(() =>
         lendingPool.methods
           .borrow(reserve, amount, rate, 0, from)
-          .estimateGas({ from: user, gas: 2000000 })
+          .estimateGas({ from: user, gas: DEFAULT_GAS })
       );
     } catch (err) {
       console.log('Cannot borrow', err.message);
@@ -670,7 +686,7 @@ async function execute(network, action, ...params) {
       (
         await lendingPool.methods
           .borrow(reserve, amount, rate, 0, from)
-          .send({ from: user, gas: 2000000 })
+          .send({ from: user, gas: DEFAULT_GAS })
       ).transactionHash
     );
     return;
@@ -681,7 +697,7 @@ async function execute(network, action, ...params) {
     const repayfor = params[1];
     const user = params[2];
     const amount = web3.utils.toWei(params[3]);
-    const rate = INTEREST_RATE[params[4].toUpperCase()];
+    const rate = getRateModeNumber(params[4]);
     if (privateKeyRequired) {
       pk = params[5];
       if (!pk) {
@@ -695,14 +711,14 @@ async function execute(network, action, ...params) {
       (
         await token.methods
           .approve(lendingPool.options.address, amount)
-          .send({ from: user, gas: 2000000 })
+          .send({ from: user, gas: DEFAULT_GAS })
       ).transactionHash
     );
     try {
       await retry(() =>
         lendingPool.methods
           .repay(reserve, amount, rate, repayfor)
-          .estimateGas({ from: user, gas: 2000000 })
+          .estimateGas({ from: user, gas: DEFAULT_GAS })
       );
     } catch (err) {
       console.log(
@@ -710,7 +726,7 @@ async function execute(network, action, ...params) {
         (
           await token.methods
             .approve(lendingPool.options.address, 0)
-            .send({ from: user, gas: 2000000 })
+            .send({ from: user, gas: DEFAULT_GAS })
         ).transactionHash
       );
       console.log('Cannot repay', err.message);
@@ -722,7 +738,7 @@ async function execute(network, action, ...params) {
       (
         await lendingPool.methods
           .repay(reserve, amount, rate, repayfor)
-          .send({ from: user, gas: 2000000 })
+          .send({ from: user, gas: DEFAULT_GAS })
       ).transactionHash
     );
     console.log(
@@ -730,7 +746,7 @@ async function execute(network, action, ...params) {
       (
         await token.methods
           .approve(lendingPool.options.address, 0)
-          .send({ from: user, gas: 2000000 })
+          .send({ from: user, gas: DEFAULT_GAS })
       ).transactionHash
     );
     return;
@@ -762,7 +778,7 @@ async function execute(network, action, ...params) {
       (
         await debtTokenMCUSD.methods
           .approveDelegation(migrator.options.address, maxUint256)
-          .send({ from: user, gas: 2000000 })
+          .send({ from: user, gas: DEFAULT_GAS })
       ).transactionHash
     );
     console.log(
@@ -770,7 +786,7 @@ async function execute(network, action, ...params) {
       (
         await debtTokenMCEUR.methods
           .approveDelegation(migrator.options.address, maxUint256)
-          .send({ from: user, gas: 2000000 })
+          .send({ from: user, gas: DEFAULT_GAS })
       ).transactionHash
     );
     console.log(
@@ -778,7 +794,7 @@ async function execute(network, action, ...params) {
       (
         await debtTokenMCELO.methods
           .approveDelegation(migrator.options.address, maxUint256)
-          .send({ from: user, gas: 2000000 })
+          .send({ from: user, gas: DEFAULT_GAS })
       ).transactionHash
     );
     try {
@@ -795,7 +811,7 @@ async function execute(network, action, ...params) {
       (
         await debtTokenMCUSD.methods
           .approveDelegation(migrator.options.address, 0)
-          .send({ from: user, gas: 2000000 })
+          .send({ from: user, gas: DEFAULT_GAS })
       ).transactionHash
     );
     console.log(
@@ -803,7 +819,7 @@ async function execute(network, action, ...params) {
       (
         await debtTokenMCEUR.methods
           .approveDelegation(migrator.options.address, 0)
-          .send({ from: user, gas: 2000000 })
+          .send({ from: user, gas: DEFAULT_GAS })
       ).transactionHash
     );
     console.log(
@@ -811,7 +827,7 @@ async function execute(network, action, ...params) {
       (
         await debtTokenMCELO.methods
           .approveDelegation(migrator.options.address, 0)
-          .send({ from: user, gas: 2000000 })
+          .send({ from: user, gas: DEFAULT_GAS })
       ).transactionHash
     );
     console.log('Now proceed to moola-v1 migrate-step-3');
@@ -852,7 +868,7 @@ async function execute(network, action, ...params) {
           (
             await tokens[token].methods
               .approve(lendingPool.options.address, maxUint256)
-              .send({ from: user, gas: 2000000 })
+              .send({ from: user, gas: DEFAULT_GAS })
           ).transactionHash
         );
       }
@@ -866,7 +882,7 @@ async function execute(network, action, ...params) {
           (
             await tokens[token].methods
               .approve(uniswap.options.address, maxUint256)
-              .send({ from: user, gas: 2000000 })
+              .send({ from: user, gas: DEFAULT_GAS })
           ).transactionHash
         );
       }
@@ -1013,7 +1029,7 @@ async function execute(network, action, ...params) {
                   await tokens[borrowToken].methods.balanceOf(user).call(),
                   false
                 )
-                .estimateGas({ from: user, gas: 2000000 });
+                .estimateGas({ from: user, gas: DEFAULT_GAS });
             } catch (err) {
               console.log(
                 `[${riskUser}] Cannot estimate liquidate ${collateralToken}->${borrowToken}`,
@@ -1037,7 +1053,7 @@ async function execute(network, action, ...params) {
                 await tokens[borrowToken].methods.balanceOf(user).call(),
                 false
               )
-              .send({ from: user, gas: 2000000 });
+              .send({ from: user, gas: DEFAULT_GAS });
 
             // calculating profit
             const profit = BN(await tokens[collateralToken].methods.balanceOf(user).call()).minus(
@@ -1087,7 +1103,7 @@ async function execute(network, action, ...params) {
                       user,
                       nowSeconds() + 300
                     )
-                    .estimateGas({ from: user, gas: 2000000 });
+                    .estimateGas({ from: user, gas: DEFAULT_GAS });
                 } catch (err) {
                   console.log(
                     `[${riskUser}] Cannot estimate swap ${collateralToken}->${borrowToken}`,
@@ -1105,7 +1121,7 @@ async function execute(network, action, ...params) {
                     user,
                     nowSeconds() + 300
                   )
-                  .send({ from: user, gas: 2000000 });
+                  .send({ from: user, gas: DEFAULT_GAS });
                 if (!receipt.status) {
                   throw Error('Swap failed');
                 }
@@ -1175,7 +1191,7 @@ async function execute(network, action, ...params) {
         (
           await mToken.methods
             .approve(liquiditySwapAdapter, maxUint256)
-            .send({ from: user, gas: 2000000 })
+            .send({ from: user, gas: DEFAULT_GAS })
         ).transactionHash
       );
     }
@@ -1206,7 +1222,7 @@ async function execute(network, action, ...params) {
             callParams,
             0
           )
-          .estimateGas({ from: user, gas: 2000000 })
+          .estimateGas({ from: user, gas: DEFAULT_GAS })
       );
     } catch (err) {
       console.log('Cannot swap liquidity', err.message);
@@ -1225,7 +1241,7 @@ async function execute(network, action, ...params) {
             callParams,
             0
           )
-          .send({ from: user, gas: 2000000 })
+          .send({ from: user, gas: DEFAULT_GAS })
       ).transactionHash
     );
     return;
@@ -1256,7 +1272,7 @@ async function execute(network, action, ...params) {
     const user = params[0];
     const collateralAsset = tokens[params[1]];
     const debtAsset = tokens[params[2]];
-    const rateMode = params[3] === 'stable' ? 1 : 2;
+    const rateMode = getRateModeNumber(params[3]);
     const repayAmount = BN(web3.utils.toWei(params[4]));
     const useFlashLoan = params[5] == 'true' ? true : false;
     const useATokenAsFrom = params[1] != 'celo';
@@ -1300,7 +1316,7 @@ async function execute(network, action, ...params) {
         (
           await mToken.methods
             .approve(repayAdapter.options.address, maxCollateralAmount)
-            .send({ from: user, gas: 2000000 })
+            .send({ from: user, gas: DEFAULT_GAS })
         ).transactionHash
       );
     }
@@ -1345,14 +1361,14 @@ async function execute(network, action, ...params) {
     }
 
     try {
-      await retry(() => method.estimateGas({ from: user, gas: 2000000 }));
+      await retry(() => method.estimateGas({ from: user, gas: DEFAULT_GAS }));
     } catch (err) {
       console.log('Cannot repay', err.message);
       return;
     }
     console.log(
       'Swap and repay',
-      (await method.send({ from: user, gas: 2000000 })).transactionHash
+      (await method.send({ from: user, gas: DEFAULT_GAS })).transactionHash
     );
     return;
   }
@@ -1383,7 +1399,7 @@ async function execute(network, action, ...params) {
     const user = params[1];
     const collateralAsset = tokens[params[2]];
     const debtAsset = tokens[params[3]];
-    const rateMode = params[4] === 'stable' ? 1 : 2;
+    const rateMode = getRateModeNumber(params[4]);
     const repayAmount = BN(web3.utils.toWei(params[5]));
     const useFlashloan = params[6] == 'true' ? true : false;
     const useATokenAsFrom = params[2] != 'celo';
@@ -1441,12 +1457,15 @@ async function execute(network, action, ...params) {
     );
 
     try {
-      await retry(() => method.estimateGas({ from: caller, gas: 2000000 }));
+      await retry(() => method.estimateGas({ from: caller, gas: DEFAULT_GAS }));
     } catch (err) {
       console.log('Cannot auto repay', err.message);
       return;
     }
-    console.log('auto repay', (await method.send({ from: caller, gas: 2000000 })).transactionHash);
+    console.log(
+      'auto repay',
+      (await method.send({ from: caller, gas: DEFAULT_GAS })).transactionHash
+    );
     return;
   }
 
@@ -1493,14 +1512,14 @@ async function execute(network, action, ...params) {
     const method = autoRepay.methods.setMinMaxHealthFactor(minHealthFactor, maxHealthFactor);
 
     try {
-      await retry(() => method.estimateGas({ from: user, gas: 2000000 }));
+      await retry(() => method.estimateGas({ from: user, gas: DEFAULT_GAS }));
     } catch (err) {
       console.log('Cannot set', err.message);
       return;
     }
     console.log(
       'User info setted',
-      (await method.send({ from: user, gas: 2000000 })).transactionHash
+      (await method.send({ from: user, gas: DEFAULT_GAS })).transactionHash
     );
     return;
   }
@@ -1532,7 +1551,7 @@ async function execute(network, action, ...params) {
         (
           await debtAsset.methods
             .approve(lendingPool.options.address, maxUint256)
-            .send({ from: user, gas: 2000000 })
+            .send({ from: user, gas: DEFAULT_GAS })
         ).transactionHash
       );
     }
@@ -1549,10 +1568,68 @@ async function execute(network, action, ...params) {
     try {
       const liquidationCallTx = await lendingPool.methods
         .liquidationCall(collateralAssetAddr, debtAssetAddr, riskUser, debtToCover, receiveAToken)
-        .send({ from: user, gas: 2000000 });
+        .send({ from: user, gas: DEFAULT_GAS });
       console.log('liquidationCall: ', liquidationCallTx.transactionHash);
     } catch (err) {
-      console.log(`Cannot liquidate user ${riskUser}: `, err.message);
+      console.error(`Cannot liquidate user ${riskUser}: `, err.message);
+    }
+
+    return;
+  }
+
+  if (action === 'repaydelegation') {
+    const delegator = params[0];
+    const asset = tokens[params[1].toLowerCase()];
+    const assetAddr = asset.options.address;
+    const amount = web3.utils.toWei(params[2]);
+    const rateModeInput = params[3];
+    const user = params[4];
+
+    if (!isValidRateMode(rateModeInput)) return;
+    const rateMode = getRateModeNumber(rateModeInput);
+
+    if (privateKeyRequired) {
+      pk = params[5];
+      if (!pk) {
+        console.error('Missing private key');
+        return;
+      }
+      kit.addAccount(pk);
+    }
+
+    const repayDelegationHelperAddress = repayDelegationHelper.options.address;
+    try {
+      // check and approve spend of the tokens
+      const currentAllowance = await asset.methods
+        .allowance(user, repayDelegationHelperAddress)
+        .call();
+      if (BN(currentAllowance).isLessThan(BN(amount))) {
+        console.log(
+          'Approve RepayDelegationHelper: ',
+          (
+            await asset.methods
+              .approve(repayDelegationHelperAddress, amount)
+              .send({ from: user, gas: DEFAULT_GAS })
+          ).transactionHash
+        );
+      }
+
+      const repayDelegationCallTx = await repayDelegationHelper.methods
+        .repayDelegation(delegator, assetAddr, amount, rateMode)
+        .send({ from: user, gas: DEFAULT_GAS });
+      console.log('repayDelegationCall: ', repayDelegationCallTx.transactionHash);
+    } catch (err) {
+      // revoke approve
+      console.log(
+        'Revoke approve RepayDelegationHelper: ',
+        (
+          await asset.methods
+            .approve(repayDelegationHelperAddress, 0)
+            .send({ from: user, gas: DEFAULT_GAS })
+        ).transactionHash
+      );
+
+      console.error('Error when calling repayDelegation: ', err.message);
     }
 
     return;
