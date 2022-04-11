@@ -33,7 +33,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
     await evmRevert(evmSnapshotId);
   });
 
-  describe.only('Leverage Borrow', () => {
+  describe('Leverage Borrow', () => {
     beforeEach(async () => {
       const { users, weth, dai, usdc, aave, pool, deployer } = testEnv;
       const userAddress = users[0].address;
