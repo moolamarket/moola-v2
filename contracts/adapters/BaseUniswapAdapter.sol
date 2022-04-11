@@ -140,21 +140,38 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     uint256 amountToSwap,
     uint256 minAmountOut,
     bool useEthPath,
-    bool aTokenExist
+    bool aTokenExist,
+    address swapTo
   ) internal returns (uint256) {
-    uint256 fromAssetDecimals = _getDecimals(assetToSwapFromPrice);
-    uint256 toAssetDecimals = _getDecimals(assetToSwapToPrice);
-
-    uint256 fromAssetPrice = _getPrice(assetToSwapFromPrice);
-    uint256 toAssetPrice = _getPrice(assetToSwapToPrice);
-
+    {
     uint256 expectedMinAmountOut = amountToSwap
-      .mul(fromAssetPrice.mul(10**toAssetDecimals))
-      .div(toAssetPrice.mul(10**fromAssetDecimals))
+      .mul(_getPrice(assetToSwapFromPrice).mul(10**_getDecimals(assetToSwapToPrice)))
+      .div(_getPrice(assetToSwapToPrice).mul(10**_getDecimals(assetToSwapFromPrice)))
       .percentMul(PercentageMath.PERCENTAGE_FACTOR.sub(MAX_SLIPPAGE_PERCENT));
 
     require(expectedMinAmountOut < minAmountOut, 'minAmountOut exceed max slippage');
+    }
 
+    return _swapExactTokensForTokensNoPriceCheck(
+      assetToSwapFrom,
+      assetToSwapTo,
+      amountToSwap,
+      minAmountOut,
+      useEthPath,
+      aTokenExist,
+      swapTo
+    );
+  }
+
+  function _swapExactTokensForTokensNoPriceCheck(
+    address assetToSwapFrom,
+    address assetToSwapTo,
+    uint256 amountToSwap,
+    uint256 minAmountOut,
+    bool useEthPath,
+    bool aTokenExist,
+    address swapTo
+  ) internal returns (uint256) {
     // Approves the transfer for the swap. Approves for 0 first to comply with tokens that implement the anti frontrunning approval fix.
     IERC20(assetToSwapFrom).safeApprove(address(UNISWAP_ROUTER), 0);
     IERC20(assetToSwapFrom).safeApprove(address(UNISWAP_ROUTER), amountToSwap);
@@ -178,7 +195,7 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
         amountToSwap,
         minAmountOut,
         path,
-        address(this),
+        swapTo,
         block.timestamp
       );
 
@@ -194,7 +211,7 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
         amountToSwap,
         minAmountOut,
         path,
-        address(this),
+        swapTo,
         block.timestamp
       );
 

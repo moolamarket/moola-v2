@@ -45,7 +45,7 @@ import {
   UniswapLiquiditySwapAdapterFactory,
   UniswapRepayAdapterFactory,
   AutoRepayFactory,
-  LeverageTradingFactory,
+  LeverageBorrowAdapterFactory,
   VariableDebtTokenFactory,
   WalletBalanceProviderFactory,
   WETH9MockedFactory,
@@ -622,13 +622,13 @@ export const deployAutoRepay = async (
     verify
   );
 
-export const deployLeverageTrading = async (
+export const deployLeverageBorrowAdapter = async (
   args: [tEthereumAddress, tEthereumAddress, tEthereumAddress],
   verify?: boolean
 ) =>
   withSaveAndVerify(
-    await new LeverageTradingFactory(await getFirstSigner()).deploy(...args),
-    eContractid.LeverageTrading,
+    await new LeverageBorrowAdapterFactory(await getFirstSigner()).deploy(...args),
+    eContractid.LeverageBorrowAdapter,
     args,
     verify
   );

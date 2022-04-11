@@ -2,10 +2,10 @@ import { makeSuite, TestEnv } from './helpers/make-suite';
 import {
   convertToCurrencyDecimals,
   getContract,
-  buildLeverageTradingParams,
+  buildLeverageBorrowAdapterParams,
 } from '../../helpers/contracts-helpers';
 import { getMockUniswapRouter } from '../../helpers/contracts-getters';
-import { deployLeverageTrading } from '../../helpers/contracts-deployments';
+import { deployLeverageBorrowAdapter } from '../../helpers/contracts-deployments';
 import { MockUniswapV2Router02 } from '../../types/MockUniswapV2Router02';
 import { Zero } from '@ethersproject/constants';
 import { evmRevert, evmSnapshot } from '../../helpers/misc-utils';
@@ -33,7 +33,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
     await evmRevert(evmSnapshotId);
   });
 
-  describe('Leverage Trading', () => {
+  describe.only('Leverage Borrow', () => {
     beforeEach(async () => {
       const { users, weth, dai, usdc, aave, pool, deployer } = testEnv;
       const userAddress = users[0].address;
@@ -73,7 +73,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
     describe('constructor', () => {
       it('should deploy with correct parameters', async () => {
         const { addressesProvider, weth } = testEnv;
-        await deployLeverageTrading([
+        await deployLeverageBorrowAdapter([
           addressesProvider.address,
           mockUniswapRouter.address,
           weth.address,
@@ -83,7 +83,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
       it('should revert if not valid addresses provider', async () => {
         const { weth } = testEnv;
         expect(
-          deployLeverageTrading([
+          deployLeverageBorrowAdapter([
             mockUniswapRouter.address,
             mockUniswapRouter.address,
             weth.address,
@@ -96,7 +96,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
       const ten = ethers.BigNumber.from(10);
 
       it('should correctly swap token and deposit', async () => {
-        const { users, pool, weth, aWETH, dai, oracle, leverageTrading, helpersContract } = testEnv;
+        const { users, pool, weth, aWETH, dai, oracle, leverageBorrowAdapter, helpersContract } = testEnv;
         const user = users[0].signer;
         const userAddress = users[0].address;
 
@@ -122,15 +122,15 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
 
         await mockUniswapRouter.connect(user).setAmountToReturn(dai.address, liquidityToSwap);
 
-        const params = buildLeverageTradingParams([
-          { useATokenAsFrom: false, useATokenAsTo: false, toAsset: weth.address },
+        const params = buildLeverageBorrowAdapterParams([
+          { useATokenAsFrom: false, useATokenAsTo: false, useEthPath: false, toAsset: weth.address, minAmountOut: liquidityToSwap },
         ]);
 
         await expect(
           pool
             .connect(user)
             .flashLoan(
-              leverageTrading.address,
+              leverageBorrowAdapter.address,
               [dai.address],
               [amountDaiToSwap],
               [1],
@@ -139,11 +139,11 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               0
             )
         )
-          .to.emit(leverageTrading, 'Swapped')
+          .to.emit(leverageBorrowAdapter, 'Swapped')
           .withArgs(dai.address, weth.address, amountDaiToSwap, expectedWETHAmount);
 
-        const leverageWethBalance = await weth.balanceOf(leverageTrading.address);
-        const leverageDaiBalance = await dai.balanceOf(leverageTrading.address);
+        const leverageWethBalance = await weth.balanceOf(leverageBorrowAdapter.address);
+        const leverageDaiBalance = await dai.balanceOf(leverageBorrowAdapter.address);
         const userDaiStableDebtAmount = await daiStableDebtContract.balanceOf(userAddress);
         const userAEthBalance = await aWETH.balanceOf(userAddress);
 
@@ -156,7 +156,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
       });
 
       it('should correctly swap tokens(2 or more) and deposit', async () => {
-        const { users, pool, weth, aWETH, dai, oracle, leverageTrading, helpersContract } = testEnv;
+        const { users, pool, weth, aWETH, dai, oracle, leverageBorrowAdapter, helpersContract } = testEnv;
         const user = users[0].signer;
         const userAddress = users[0].address;
 
@@ -182,23 +182,27 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
 
         await mockUniswapRouter.connect(user).setAmountToReturn(dai.address, liquidityToSwap);
 
-        const params = buildLeverageTradingParams([
+        const params = buildLeverageBorrowAdapterParams([
           {
             useATokenAsFrom: false,
             useATokenAsTo: false,
+            useEthPath: false,
             toAsset: weth.address,
+            minAmountOut: liquidityToSwap,
           },
           {
             useATokenAsFrom: false,
             useATokenAsTo: false,
+            useEthPath: false,
             toAsset: weth.address,
+            minAmountOut: liquidityToSwap,
           },
         ]);
 
         await pool
           .connect(user)
           .flashLoan(
-            leverageTrading.address,
+            leverageBorrowAdapter.address,
             [dai.address, dai.address],
             [amountDaiToSwap, amountDaiToSwap],
             [1, 1],
@@ -207,8 +211,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             0
           );
 
-        const leverageWethBalance = await weth.balanceOf(leverageTrading.address);
-        const leverageDaiBalance = await dai.balanceOf(leverageTrading.address);
+        const leverageWethBalance = await weth.balanceOf(leverageBorrowAdapter.address);
+        const leverageDaiBalance = await dai.balanceOf(leverageBorrowAdapter.address);
         const userDaiStableDebtAmount = await daiStableDebtContract.balanceOf(userAddress);
         const userAEthBalance = await aWETH.balanceOf(userAddress);
 
@@ -221,7 +225,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
       });
 
       it('should correctly swap token and deposit with variable mode', async () => {
-        const { users, pool, weth, aWETH, dai, oracle, leverageTrading, helpersContract } = testEnv;
+        const { users, pool, weth, aWETH, dai, oracle, leverageBorrowAdapter, helpersContract } = testEnv;
         const user = users[0].signer;
         const userAddress = users[0].address;
 
@@ -249,11 +253,13 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
 
         await mockUniswapRouter.connect(user).setAmountToReturn(dai.address, liquidityToSwap);
 
-        const params = buildLeverageTradingParams([
+        const params = buildLeverageBorrowAdapterParams([
           {
             useATokenAsFrom: false,
             useATokenAsTo: false,
+            useEthPath: false,
             toAsset: weth.address,
+            minAmountOut: liquidityToSwap,
           },
         ]);
 
@@ -261,7 +267,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           pool
             .connect(user)
             .flashLoan(
-              leverageTrading.address,
+              leverageBorrowAdapter.address,
               [dai.address],
               [amountDaiToSwap],
               [2],
@@ -270,11 +276,11 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               0
             )
         )
-          .to.emit(leverageTrading, 'Swapped')
+          .to.emit(leverageBorrowAdapter, 'Swapped')
           .withArgs(dai.address, weth.address, amountDaiToSwap, expectedWETHAmount);
 
-        const leverageWethBalance = await weth.balanceOf(leverageTrading.address);
-        const leverageDaiBalance = await dai.balanceOf(leverageTrading.address);
+        const leverageWethBalance = await weth.balanceOf(leverageBorrowAdapter.address);
+        const leverageDaiBalance = await dai.balanceOf(leverageBorrowAdapter.address);
         const userDaiVariableDebtAmount = await daiVariableDebtContract.balanceOf(userAddress);
         const userAEthBalance = await aWETH.balanceOf(userAddress);
 
@@ -287,7 +293,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
       });
 
       it('should revert if caller not lending pool', async () => {
-        const { users, dai, weth, oracle, leverageTrading } = testEnv;
+        const { users, dai, weth, oracle, leverageBorrowAdapter } = testEnv;
         const user = users[0].signer;
         const userAddress = users[0].address;
 
@@ -301,16 +307,18 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
 
         await mockUniswapRouter.connect(user).setAmountToReturn(dai.address, liquidityToSwap);
 
-        const params = buildLeverageTradingParams([
+        const params = buildLeverageBorrowAdapterParams([
           {
             useATokenAsFrom: false,
             useATokenAsTo: false,
+            useEthPath: false,
             toAsset: weth.address,
+            minAmountOut: liquidityToSwap,
           },
         ]);
 
         await expect(
-          leverageTrading
+          leverageBorrowAdapter
             .connect(user)
             .executeOperation([dai.address], [amountDaiToSwap], [1], userAddress, params)
         ).to.be.revertedWith('CALLER_MUST_BE_LENDING_POOL');
@@ -320,7 +328,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         'should revert if useATokensAsFrom(decoded params) length is' +
           'more or less than borrowed assets length',
         async () => {
-          const { users, dai, weth, oracle, leverageTrading, pool } = testEnv;
+          const { users, dai, weth, oracle, leverageBorrowAdapter, pool } = testEnv;
           const user = users[0].signer;
           const userAddress = users[0].address;
 
@@ -335,12 +343,12 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           await mockUniswapRouter.connect(user).setAmountToReturn(dai.address, liquidityToSwap);
 
           // less
-          let params = buildLeverageTradingParams([]);
+          let params = buildLeverageBorrowAdapterParams([]);
           await expect(
             pool
               .connect(user)
               .flashLoan(
-                leverageTrading.address,
+                leverageBorrowAdapter.address,
                 [dai.address],
                 [amountDaiToSwap],
                 [1],
@@ -350,23 +358,27 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               )
           ).to.be.revertedWith('leverageParams length does not match to assets length');
           // more
-          params = buildLeverageTradingParams([
+          params = buildLeverageBorrowAdapterParams([
             {
               useATokenAsFrom: false,
               useATokenAsTo: false,
+              useEthPath: false,
               toAsset: weth.address,
+              minAmountOut: liquidityToSwap,
             },
             {
               useATokenAsFrom: false,
               useATokenAsTo: false,
+              useEthPath: false,
               toAsset: weth.address,
+              minAmountOut: liquidityToSwap,
             },
           ]);
           await expect(
             pool
               .connect(user)
               .flashLoan(
-                leverageTrading.address,
+                leverageBorrowAdapter.address,
                 [dai.address],
                 [amountDaiToSwap],
                 [1],
@@ -379,7 +391,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
       );
 
       it('should revert if debt price is more than user totalCollateralPrice', async () => {
-        const { users, pool, dai, weth, oracle, leverageTrading } = testEnv;
+        const { users, pool, dai, weth, oracle, leverageBorrowAdapter } = testEnv;
         const anotherUser = users[1].signer;
         const anotherUserAddress = users[1].address;
 
@@ -395,11 +407,13 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           .connect(anotherUser)
           .setAmountToReturn(dai.address, liquidityToSwap);
 
-        const params = buildLeverageTradingParams([
+        const params = buildLeverageBorrowAdapterParams([
           {
             useATokenAsFrom: false,
             useATokenAsTo: false,
+            useEthPath: false,
             toAsset: weth.address,
+            minAmountOut: liquidityToSwap,
           },
         ]);
 
@@ -407,7 +421,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           pool
             .connect(anotherUser)
             .flashLoan(
-              leverageTrading.address,
+              leverageBorrowAdapter.address,
               [dai.address],
               [amountDaiToSwap],
               [1],

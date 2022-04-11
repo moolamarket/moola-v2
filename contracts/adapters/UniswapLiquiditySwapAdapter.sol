@@ -167,15 +167,14 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
         permitParams[vars.i]
       );
 
-      vars.receivedAmount = _swapExactTokensForTokens(
-        assetToSwapFromList[vars.i],
-        assetToSwapToList[vars.i],
+      vars.receivedAmount = _swapExactTokensForTokensNoPriceCheck(
         assetToSwapFromList[vars.i],
         assetToSwapToList[vars.i],
         vars.amountToSwap,
         minAmountsToReceive[vars.i],
         useEthPath[vars.i],
-        false
+        false,
+        address(this)
       );
 
       // Deposit new reserve
@@ -234,15 +233,14 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
       LENDING_POOL.deposit(assetFrom, vars.amountToSwap, address(this), 0);
     }
 
-    vars.receivedAmount = _swapExactTokensForTokens(
-      assetFrom,
-      assetTo,
+    vars.receivedAmount = _swapExactTokensForTokensNoPriceCheck(
       useATokenAsFrom ? vars.aToken : assetFrom,
       useATokenAsTo ? _getReserveData(assetTo).aTokenAddress : assetTo,
       vars.amountToSwap,
       minAmountToReceive,
       useEthPath,
-      useATokenAsFrom || useATokenAsTo
+      useATokenAsFrom || useATokenAsTo,
+      address(this)
     );
 
     if (useATokenAsTo) {
