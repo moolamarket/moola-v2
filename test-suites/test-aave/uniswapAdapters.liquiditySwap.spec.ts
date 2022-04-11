@@ -915,7 +915,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         expect(aDaiBalance).to.be.eq(expectedDaiAmount);
       });
 
-      it('should revert when min amount to receive exceeds the max slippage amount', async () => {
+      it('should not revert when min amount to receive exceeds the max slippage amount', async () => {
         const { users, weth, oracle, dai, aWETH, pool, uniswapLiquiditySwapAdapter } = testEnv;
         const user = users[0].signer;
         const userAddress = users[0].address;
@@ -952,19 +952,17 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           [false]
         );
 
-        await expect(
-          pool
-            .connect(user)
-            .flashLoan(
-              uniswapLiquiditySwapAdapter.address,
-              [weth.address],
-              [flashloanAmount.toString()],
-              [0],
-              userAddress,
-              params,
-              0
-            )
-        ).to.be.revertedWith('minAmountOut exceed max slippage');
+        await pool
+          .connect(user)
+          .flashLoan(
+            uniswapLiquiditySwapAdapter.address,
+            [weth.address],
+            [flashloanAmount.toString()],
+            [0],
+            userAddress,
+            params,
+            0
+          );
       });
 
       it('should correctly swap tokens all the balance', async () => {
@@ -1396,7 +1394,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         ).to.be.revertedWith('INCONSISTENT_PARAMS');
       });
 
-      it('should revert when min amount to receive exceeds the max slippage amount', async () => {
+      it('should not revert when min amount to receive exceeds the max slippage amount', async () => {
         const { users, weth, oracle, dai, aWETH, uniswapLiquiditySwapAdapter } = testEnv;
         const user = users[0].signer;
 
@@ -1415,24 +1413,22 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const liquidityToSwap = parseEther('10');
         await aWETH.connect(user).approve(uniswapLiquiditySwapAdapter.address, liquidityToSwap);
 
-        await expect(
-          uniswapLiquiditySwapAdapter.connect(user).swapAndDeposit(
-            [weth.address],
-            [dai.address],
-            [amountWETHtoSwap],
-            [smallExpectedDaiAmount],
-            [
-              {
-                amount: 0,
-                deadline: 0,
-                v: 0,
-                r: '0x0000000000000000000000000000000000000000000000000000000000000000',
-                s: '0x0000000000000000000000000000000000000000000000000000000000000000',
-              },
-            ],
-            [false]
-          )
-        ).to.be.revertedWith('minAmountOut exceed max slippage');
+        await uniswapLiquiditySwapAdapter.connect(user).swapAndDeposit(
+          [weth.address],
+          [dai.address],
+          [amountWETHtoSwap],
+          [smallExpectedDaiAmount],
+          [
+            {
+              amount: 0,
+              deadline: 0,
+              v: 0,
+              r: '0x0000000000000000000000000000000000000000000000000000000000000000',
+              s: '0x0000000000000000000000000000000000000000000000000000000000000000',
+            },
+          ],
+          [false]
+        );
       });
 
       it('should correctly swap tokens and deposit multiple tokens', async () => {

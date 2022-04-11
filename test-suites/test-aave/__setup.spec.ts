@@ -26,6 +26,7 @@ import {
   deployUniswapLiquiditySwapAdapter,
   deployUniswapRepayAdapter,
   deployAutoRepay,
+  deployLeverageBorrowAdapter,
   deployFlashLiquidationAdapter,
   authorizeWETHGateway,
 } from '../../helpers/contracts-deployments';
@@ -286,6 +287,7 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
   await deployUniswapLiquiditySwapAdapter(adapterParams);
   await deployUniswapRepayAdapter(adapterParams);
   await deployAutoRepay(adapterParams);
+  await deployLeverageBorrowAdapter(adapterParams);
   await deployFlashLiquidationAdapter(adapterParams);
 
   await deployWalletBalancerProvider();
