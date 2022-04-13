@@ -4,7 +4,7 @@ const LendingPool = require('./abi/LendingPool.json');
 const PriceOracle = require('./abi/PriceOracle.json');
 const UniswapRepayAdapter = require('./abi/UniswapRepayAdapter.json');
 const AutoRepay = require('./abi/AutoRepay.json');
-const LeverageBorrowAdapter = require('./abi/LeverageBorrowAdapter.json')
+const LeverageBorrowAdapter = require('./abi/LeverageBorrowAdapter.json');
 const Uniswap = require('./abi/Uniswap.json');
 const DataProvider = require('./abi/MoolaProtocolDataProvider.json');
 const MToken = require('./abi/MToken.json');
@@ -138,11 +138,13 @@ function buildLeverageBorrowParams(
   useATokenAsTo,
   useEthPath,
   toAsset,
-  minAmountOut,
+  minAmountOut
 ) {
   return ethers.utils.defaultAbiCoder.encode(
-    ['tuple(bool useATokenAsFrom, bool useATokenAsTo, bool useEthPath, address toAsset, uint256 minAmountOut)[]'],
-    [[{useATokenAsFrom, useATokenAsTo, useEthPath, toAsset, minAmountOut}]]
+    [
+      'tuple(bool useATokenAsFrom, bool useATokenAsTo, bool useEthPath, address toAsset, uint256 minAmountOut)[]',
+    ],
+    [[{ useATokenAsFrom, useATokenAsTo, useEthPath, toAsset, minAmountOut }]]
   );
 }
 
@@ -214,7 +216,9 @@ function printActions() {
     'liquidationCall collateral-asset debt-asset risk-user debt-to-cover receive-AToken(true|false) address [privateKey]'
   );
   console.info('repayDelegation delegator asset amount stable|variable address [privateKey]');
-  console.info('leverage-borrow address collateral-asset debt-asset stable|variable debt-amount [privateKey]');
+  console.info(
+    'leverage-borrow address collateral-asset debt-asset stable|variable debt-amount [privateKey]'
+  );
 }
 
 const retry = async (fun, tries = 5) => {
@@ -314,7 +318,14 @@ async function execute(network, action, ...params) {
         '0xCC321F48CF7bFeFe100D1Ce13585dcfF7627f754'
       );
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
-      leverageBorrowAdapter = new kit.web3.eth.Contract(LeverageBorrowAdapter, '0x7e7D2f9Ef635EC83DF06838eA4dc8053055a9F29');
+      leverageBorrowAdapter = new kit.web3.eth.Contract(
+        LeverageBorrowAdapter,
+        '0x7e7D2f9Ef635EC83DF06838eA4dc8053055a9F29'
+      );
+      repayDelegationHelper = new kit.web3.eth.Contract(
+        RepayDelegationHelper,
+        '0xf69ABB98879B95F49FEa8162F9c23e8466005A05'
+      );
       break;
     default:
       try {
@@ -352,7 +363,10 @@ async function execute(network, action, ...params) {
         '0xCC321F48CF7bFeFe100D1Ce13585dcfF7627f754'
       );
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
-      leverageBorrowAdapter = new kit.web3.eth.Contract(LeverageBorrowAdapter, '0x7e7D2f9Ef635EC83DF06838eA4dc8053055a9F29');
+      leverageBorrowAdapter = new kit.web3.eth.Contract(
+        LeverageBorrowAdapter,
+        '0x7e7D2f9Ef635EC83DF06838eA4dc8053055a9F29'
+      );
   }
   const web3 = kit.web3;
   const eth = web3.eth;
@@ -398,12 +412,18 @@ async function execute(network, action, ...params) {
   const getUseMTokenFromTo = async (tokenFrom, tokenTo, amount) => {
     const mFrom = await getMTokenAddress(tokenFrom);
     const mTo = await getMTokenAddress(tokenTo);
-    const result = await Promise.reduce([[tokenFrom, tokenTo], [tokenFrom, mTo], [mFrom, mTo], [mFrom, tokenTo]],
+    const result = await Promise.reduce(
+      [
+        [tokenFrom, tokenTo],
+        [tokenFrom, mTo],
+        [mFrom, mTo],
+        [mFrom, tokenTo],
+      ],
       async (res, [tFrom, tTo]) => {
         let amountOut = BN(0);
         try {
           amountOut = BN((await ubeswap.methods.getAmountsOut(amount, [tFrom, tTo]).call())[1]);
-        } catch(err) {
+        } catch (err) {
           return res;
         }
         if (amountOut.gt(res.amountOut)) {
@@ -412,7 +432,9 @@ async function execute(network, action, ...params) {
           res.amountOut = amountOut;
         }
         return res;
-      }, {tokenFrom: '', tokenTo: '', amountOut: BN(0)});
+      },
+      { tokenFrom: '', tokenTo: '', amountOut: BN(0) }
+    );
     result.useMTokenAsFrom = mFrom === result.tokenFrom;
     result.useMTokenAsTo = mTo === result.tokenTo;
     return result;
@@ -1682,9 +1704,7 @@ async function execute(network, action, ...params) {
 
   if (action === 'leverage-borrow') {
     if (network == 'test') {
-      throw new Error(
-        'leverage-borrow only works on the mainnet due to low liquidity in pools'
-      );
+      throw new Error('leverage-borrow only works on the mainnet due to low liquidity in pools');
     }
 
     if (privateKeyRequired) {
@@ -1711,7 +1731,11 @@ async function execute(network, action, ...params) {
     const rateMode = params[3] === 'stable' ? 1 : 2;
     const debtAmount = BN(web3.utils.toWei(params[4]));
 
-    const {useMTokenAsFrom, useMTokenAsTo, amountOut} = await getUseMTokenFromTo(debtAsset, collateralAsset, debtAmount);
+    const { useMTokenAsFrom, useMTokenAsTo, amountOut } = await getUseMTokenFromTo(
+      debtAsset,
+      collateralAsset,
+      debtAmount
+    );
 
     const callParams = buildLeverageBorrowParams(
       useMTokenAsFrom,
