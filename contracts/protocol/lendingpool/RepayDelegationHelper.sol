@@ -62,7 +62,9 @@ contract RepayDelegationHelper {
 
       remaining -= otherRateModePaybackAmount;
 
-      ILendingPool(lendingPoolAddress).deposit(_asset, remaining, _delegator, 0);
+      if (remaining > 0) {
+        ILendingPool(lendingPoolAddress).deposit(_asset, remaining, _delegator, 0);
+      }
     }
 
     emit DelegatedRepayment(_delegator, msg.sender, _asset, _amount, _rateMode);
