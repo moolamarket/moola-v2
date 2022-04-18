@@ -26,6 +26,31 @@
       {
         "indexed": true,
         "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "min",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "max",
+        "type": "uint256"
+      }
+    ],
+    "name": "HealthFactorSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
         "name": "previousOwner",
         "type": "address"
       },
@@ -370,6 +395,11 @@
             "type": "address"
           },
           {
+            "internalType": "address[]",
+            "name": "path",
+            "type": "address[]"
+          },
+          {
             "internalType": "uint256",
             "name": "collateralAmount",
             "type": "uint256"
@@ -383,11 +413,6 @@
             "internalType": "uint256",
             "name": "rateMode",
             "type": "uint256"
-          },
-          {
-            "internalType": "bool",
-            "name": "useEthPath",
-            "type": "bool"
           },
           {
             "internalType": "bool",
