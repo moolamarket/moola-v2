@@ -27,7 +27,7 @@ contract RepayDelegationHelper {
    * @param _delegator The wallet address to repay debt of
    * @param _asset The asset address to repay
    * @param _amount The amount to repay
-   * @param _rateMode The rateMode to use for repayment
+   * @param _rateMode The rateMode to use for repayment: 1 for Stable, 2 for Variable
    */
   function repayDelegation(
     address _delegator,
@@ -50,7 +50,18 @@ contract RepayDelegationHelper {
     );
 
     uint256 remaining = _amount - paybackAmount;
+
     if (remaining > 0) {
+      uint256 otherRateMode = _rateMode == 1 ? 2 : 1;
+      uint256 otherRateModePaybackAmount = ILendingPool(lendingPoolAddress).repay(
+        _asset,
+        remaining,
+        otherRateMode,
+        _delegator
+      );
+
+      remaining -= otherRateModePaybackAmount;
+
       ILendingPool(lendingPoolAddress).deposit(_asset, remaining, _delegator, 0);
     }
 
