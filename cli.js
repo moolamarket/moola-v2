@@ -322,6 +322,10 @@ async function execute(network, action, ...params) {
         LeverageBorrowAdapter,
         '0x7e7D2f9Ef635EC83DF06838eA4dc8053055a9F29'
       );
+      repayDelegationHelper = new kit.web3.eth.Contract(
+        RepayDelegationHelper,
+        '0x4768028b351a65d266074881cCf6D16E7796f8F9'
+      );
       break;
     default:
       try {
