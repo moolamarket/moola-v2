@@ -13,6 +13,7 @@ const BigNumber = require('bignumber.js');
 const Promise = require('bluebird');
 const eventsCollector = require('events-collector');
 const ethers = require('ethers');
+const path = require('path');
 
 const CELO_BOT_KEY = process.env.CELO_BOT_KEY;
 
@@ -58,13 +59,58 @@ const ubeswapRouter = '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121';
 const wrappedEth = '0xE919F65739c26a42616b7b8eedC6b5524d1e3aC4';
 const uniswap = new kit.web3.eth.Contract(Uniswap, ubeswapRouter);
 
+const mcusdAddress = '0x918146359264C492BD6934071c6Bd31C854EDBc3';
+const mceurAddress = '0xE273Ad7ee11dCfAA87383aD5977EE1504aC07568';
+const mceloAddress = '0x7D00cd74FF385c955EA3d79e47BF06bD7386387D';
+
 const tokens = {
   celo: CELO,
   cusd: cUSD,
   ceur: cEUR,
-  creal: cREAL, // NOT exist in sushi or celo-cUSD-cREAL on Ubeswap?? 27k usd
-  moo: MOO, //Exist only on ubeswap with low liquidity ubeswap mcelo-moo
+  creal: cREAL,
+  moo: MOO,
 };
+
+const celo_cusd = [CELO.options.address, mcusdAddress]; // celo-mcusd
+const celo_ceur = [CELO.options.address, mceurAddress]; // celo-mceur
+const celo_creal = [CELO.options.address, cUSD.options.address, cREAL.options.address]; // celo-cusd, cusd-creal pair
+const celo_moo = [MOO.options.address, mceloAddress]; // mcelo-moo
+
+const cusd_ceur = [mcusdAddress, mceurAddress]; // mcusd-mceur
+const cusd_creal = [cUSD.options.address, cREAL.options.address]; // cusd-creal
+const cusd_moo = [cUSD.options.address, CELO.options.address, MOO.options.address]; // cusd-celo, celo-moo pair
+
+const ceur_creal = [cEUR.options.address, CELO.options.address, cUSD.options.address, cREAL.options.address]; // ceur-celo, celo-cusd, cusd-creal - only 3k usd in pools
+const ceur_moo = [mceurAddress, CELO.options.address, MOO.options.address]; // mceur-celo, celo-moo
+
+const creal_moo = [cREAL.options.address, cUSD.options.address, CELO.options.address, MOO.options.address]; // creal-cusd, cusd-celo, celo-moo
+
+const paths = {};
+
+// todo add useATokenAsFrom, useATokenAsTo
+paths[`${CELO.options.address}_${cUSD.options.address}`] = celo_cusd;
+paths[`${CELO.options.address}_${cEUR.options.address}`] = celo_ceur;
+paths[`${CELO.options.address}_${cREAL.options.address}`] = celo_creal;
+paths[`${CELO.options.address}_${MOO.options.address}`] = celo_moo;
+paths[`${cUSD.options.address}_${cEUR.options.address}`] = cusd_ceur;
+paths[`${cUSD.options.address}_${cREAL.options.address}`] = cusd_creal;
+paths[`${cUSD.options.address}_${MOO.options.address}`] = cusd_moo;
+paths[`${cEUR.options.address}_${cREAL.options.address}`] = ceur_creal;
+paths[`${cEUR.options.address}_${MOO.options.address}`] = ceur_moo;
+paths[`${cREAL.options.address}_${MOO.options.address}`] = creal_moo;
+
+paths[`${cUSD.options.address}_${CELO.options.address}`] = [...celo_cusd].reverse();
+paths[`${cEUR.options.address}_${CELO.options.address}`] = [...celo_ceur].reverse();
+paths[`${cREAL.options.address}_${CELO.options.address}`] = [...celo_creal].reverse();
+paths[`${MOO.options.address}_${CELO.options.address}`] = [...celo_moo].reverse();
+paths[`${cEUR.options.address}_${cUSD.options.address}`] = [...cusd_ceur].reverse();
+paths[`${cREAL.options.address}_${cUSD.options.address}`] = [...cusd_creal].reverse();
+paths[`${MOO.options.address}_${cUSD.options.address}`] = [...cusd_moo].reverse();
+paths[`${cREAL.options.address}_${cEUR.options.address}`] = [...ceur_creal].reverse();
+paths[`${MOO.options.address}_${cEUR.options.address}`] = [...ceur_moo].reverse();
+paths[`${MOO.options.address}_${cREAL.options.address}`] = [...creal_moo].reverse();
+
+console.log(paths)
 
 const web3 = kit.web3;
 const eth = web3.eth;
