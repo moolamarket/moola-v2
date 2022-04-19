@@ -19,11 +19,9 @@ contract RepayDelegationHelper {
   );
 
   ILendingPoolAddressesProvider public immutable ADDRESSES_PROVIDER;
-  address public immutable DATA_PROVIDER_ADDRESS;
 
   constructor(ILendingPoolAddressesProvider addressesProvider, address dataProviderAddress) public {
     ADDRESSES_PROVIDER = addressesProvider;
-    DATA_PROVIDER_ADDRESS = dataProviderAddress;
   }
 
   /**
@@ -46,39 +44,25 @@ contract RepayDelegationHelper {
     IERC20(_asset).safeApprove(lendingPoolAddress, 0);
     IERC20(_asset).safeApprove(lendingPoolAddress, _amount);
 
-    uint256 paybackAmount = ILendingPool(lendingPoolAddress).repay(
-      _asset,
-      _amount,
-      _rateMode,
-      _delegator
-    );
+    uint256 paybackAmount = 0;
+    try ILendingPool(lendingPoolAddress).repay(_asset, _amount, _rateMode, _delegator) returns (
+      uint256 _paybackAmount
+    ) {
+      paybackAmount = _paybackAmount;
+    } catch {}
 
     uint256 remaining = _amount - paybackAmount;
 
     if (remaining > 0) {
       uint256 otherRateMode = _rateMode == 1 ? 2 : 1;
 
-      address otherDebtTokenAddress;
-      if (otherRateMode == 1) {
-        (, otherDebtTokenAddress, ) = AaveProtocolDataProvider(DATA_PROVIDER_ADDRESS)
-          .getReserveTokensAddresses(_asset);
-      } else {
-        (, , otherDebtTokenAddress) = AaveProtocolDataProvider(DATA_PROVIDER_ADDRESS)
-          .getReserveTokensAddresses(_asset);
-      }
-
-      uint256 otherDebtAmount = IERC20(otherDebtTokenAddress).balanceOf(_delegator);
-
-      if (otherDebtAmount > 0) {
-        uint256 otherRateModePaybackAmount = ILendingPool(lendingPoolAddress).repay(
-          _asset,
-          remaining,
-          otherRateMode,
-          _delegator
-        );
-
+      uint256 otherRateModePaybackAmount = 0;
+      try
+        ILendingPool(lendingPoolAddress).repay(_asset, remaining, otherRateMode, _delegator)
+      returns (uint256 _otherRateModePaybackAmount) {
+        otherRateModePaybackAmount = _otherRateModePaybackAmount;
         remaining -= otherRateModePaybackAmount;
-      }
+      } catch {}
 
       if (remaining > 0) {
         ILendingPool(lendingPoolAddress).deposit(_asset, remaining, _delegator, 0);
