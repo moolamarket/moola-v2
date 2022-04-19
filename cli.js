@@ -285,7 +285,7 @@ async function execute(network, action, ...params) {
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
       repayDelegationHelper = new kit.web3.eth.Contract(
         RepayDelegationHelper,
-        '0x70ff7BC486BFAE2F1ED11C966Fe49d2681dE991e'
+        '0xfc3F43C83ec585480e542aD552E187eCA4737940'
       );
       // leverageBorrowAdapter = new kit.web3.eth.Contract(LeverageBorrowAdapter, '0x7e7D2f9Ef635EC83DF06838eA4dc8053055a9F29');
       break;
@@ -324,7 +324,7 @@ async function execute(network, action, ...params) {
       );
       repayDelegationHelper = new kit.web3.eth.Contract(
         RepayDelegationHelper,
-        '0x4768028b351a65d266074881cCf6D16E7796f8F9'
+        '0x480bB7669e15F96a85cf0CD4E766C368702b79Aa'
       );
       break;
     default:

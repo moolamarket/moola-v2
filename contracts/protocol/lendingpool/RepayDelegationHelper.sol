@@ -43,6 +43,7 @@ contract RepayDelegationHelper {
     IERC20(_asset).safeApprove(lendingPoolAddress, _amount);
 
     uint256 remaining = _amount;
+
     try ILendingPool(lendingPoolAddress).repay(_asset, _amount, _rateMode, _delegator) returns (
       uint256 _paybackAmount
     ) {
