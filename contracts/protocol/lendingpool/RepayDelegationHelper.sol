@@ -1,9 +1,11 @@
 pragma solidity 0.6.12;
 
 import {ILendingPoolAddressesProvider} from '../../interfaces/ILendingPoolAddressesProvider.sol';
+import {AaveProtocolDataProvider} from '../../misc/AaveProtocolDataProvider.sol';
 import {ILendingPool} from '../../interfaces/ILendingPool.sol';
 import {IERC20} from '../../dependencies/openzeppelin/contracts/IERC20.sol';
 import {SafeERC20} from '../../dependencies/openzeppelin/contracts/SafeERC20.sol';
+import {DataTypes} from '../libraries/types/DataTypes.sol';
 
 contract RepayDelegationHelper {
   using SafeERC20 for IERC20;
@@ -17,9 +19,11 @@ contract RepayDelegationHelper {
   );
 
   ILendingPoolAddressesProvider public immutable ADDRESSES_PROVIDER;
+  address public immutable DATA_PROVIDER_ADDRESS;
 
-  constructor(ILendingPoolAddressesProvider addressesProvider) public {
+  constructor(ILendingPoolAddressesProvider addressesProvider, address dataProviderAddress) public {
     ADDRESSES_PROVIDER = addressesProvider;
+    DATA_PROVIDER_ADDRESS = dataProviderAddress;
   }
 
   /**
@@ -53,14 +57,28 @@ contract RepayDelegationHelper {
 
     if (remaining > 0) {
       uint256 otherRateMode = _rateMode == 1 ? 2 : 1;
-      uint256 otherRateModePaybackAmount = ILendingPool(lendingPoolAddress).repay(
-        _asset,
-        remaining,
-        otherRateMode,
-        _delegator
-      );
 
-      remaining -= otherRateModePaybackAmount;
+      address otherDebtTokenAddress;
+      if (otherRateMode == 1) {
+        (, otherDebtTokenAddress, ) = AaveProtocolDataProvider(DATA_PROVIDER_ADDRESS)
+          .getReserveTokensAddresses(_asset);
+      } else {
+        (, , otherDebtTokenAddress) = AaveProtocolDataProvider(DATA_PROVIDER_ADDRESS)
+          .getReserveTokensAddresses(_asset);
+      }
+
+      uint256 otherDebtAmount = IERC20(otherDebtTokenAddress).balanceOf(_delegator);
+
+      if (otherDebtAmount > 0) {
+        uint256 otherRateModePaybackAmount = ILendingPool(lendingPoolAddress).repay(
+          _asset,
+          remaining,
+          otherRateMode,
+          _delegator
+        );
+
+        remaining -= otherRateModePaybackAmount;
+      }
 
       if (remaining > 0) {
         ILendingPool(lendingPoolAddress).deposit(_asset, remaining, _delegator, 0);
