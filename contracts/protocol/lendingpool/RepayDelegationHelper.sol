@@ -1,7 +1,6 @@
 pragma solidity 0.6.12;
 
 import {ILendingPoolAddressesProvider} from '../../interfaces/ILendingPoolAddressesProvider.sol';
-import {AaveProtocolDataProvider} from '../../misc/AaveProtocolDataProvider.sol';
 import {ILendingPool} from '../../interfaces/ILendingPool.sol';
 import {IERC20} from '../../dependencies/openzeppelin/contracts/IERC20.sol';
 import {SafeERC20} from '../../dependencies/openzeppelin/contracts/SafeERC20.sol';
