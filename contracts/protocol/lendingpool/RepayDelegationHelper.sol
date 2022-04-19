@@ -5,7 +5,6 @@ import {AaveProtocolDataProvider} from '../../misc/AaveProtocolDataProvider.sol'
 import {ILendingPool} from '../../interfaces/ILendingPool.sol';
 import {IERC20} from '../../dependencies/openzeppelin/contracts/IERC20.sol';
 import {SafeERC20} from '../../dependencies/openzeppelin/contracts/SafeERC20.sol';
-import {DataTypes} from '../libraries/types/DataTypes.sol';
 
 contract RepayDelegationHelper {
   using SafeERC20 for IERC20;
@@ -20,7 +19,7 @@ contract RepayDelegationHelper {
 
   ILendingPoolAddressesProvider public immutable ADDRESSES_PROVIDER;
 
-  constructor(ILendingPoolAddressesProvider addressesProvider, address dataProviderAddress) public {
+  constructor(ILendingPoolAddressesProvider addressesProvider) public {
     ADDRESSES_PROVIDER = addressesProvider;
   }
 
@@ -56,12 +55,10 @@ contract RepayDelegationHelper {
     if (remaining > 0) {
       uint256 otherRateMode = _rateMode == 1 ? 2 : 1;
 
-      uint256 otherRateModePaybackAmount = 0;
       try
         ILendingPool(lendingPoolAddress).repay(_asset, remaining, otherRateMode, _delegator)
       returns (uint256 _otherRateModePaybackAmount) {
-        otherRateModePaybackAmount = _otherRateModePaybackAmount;
-        remaining -= otherRateModePaybackAmount;
+        remaining -= _otherRateModePaybackAmount;
       } catch {}
 
       if (remaining > 0) {
