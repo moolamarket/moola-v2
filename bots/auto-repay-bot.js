@@ -59,9 +59,9 @@ const ubeswapRouter = '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121';
 const wrappedEth = '0xE919F65739c26a42616b7b8eedC6b5524d1e3aC4';
 const uniswap = new kit.web3.eth.Contract(Uniswap, ubeswapRouter);
 
-const mcusdAddress = '0x918146359264C492BD6934071c6Bd31C854EDBc3';
-const mceurAddress = '0xE273Ad7ee11dCfAA87383aD5977EE1504aC07568';
-const mceloAddress = '0x7D00cd74FF385c955EA3d79e47BF06bD7386387D';
+const mcusdAddress = '0x918146359264c492bd6934071c6bd31c854edbc3';
+const mceurAddress = '0xe273ad7ee11dcfaa87383ad5977ee1504ac07568';
+const mceloAddress = '0x7d00cd74ff385c955ea3d79e47bf06bd7386387d';
 
 const tokens = {
   celo: CELO,
@@ -87,29 +87,27 @@ const creal_moo = [cREAL.options.address, cUSD.options.address, CELO.options.add
 
 const paths = {};
 
-paths[`${CELO.options.address}_${cUSD.options.address}`] = { path: celo_cusd, useATokenAsFrom: false, useATokenAsTo: true };
-paths[`${CELO.options.address}_${cEUR.options.address}`] = { path: celo_ceur, useATokenAsFrom: false, useATokenAsTo: true };
-paths[`${CELO.options.address}_${cREAL.options.address}`] = { path: celo_creal, useATokenAsFrom: false, useATokenAsTo: false };
-paths[`${CELO.options.address}_${MOO.options.address}`] = { path: celo_moo, useATokenAsFrom: false, useATokenAsTo: true };
-paths[`${cUSD.options.address}_${cEUR.options.address}`] = { path: cusd_ceur, useATokenAsFrom: true, useATokenAsTo: true };
-paths[`${cUSD.options.address}_${cREAL.options.address}`] = { path: cusd_creal, useATokenAsFrom: false, useATokenAsTo: false };
-paths[`${cUSD.options.address}_${MOO.options.address}`] = { path: cusd_moo, useATokenAsFrom: false, useATokenAsTo: false };
-paths[`${cEUR.options.address}_${cREAL.options.address}`] = { path: ceur_creal, useATokenAsFrom: false, useATokenAsTo: false };
-paths[`${cEUR.options.address}_${MOO.options.address}`] = { path: ceur_moo, useATokenAsFrom: true, useATokenAsTo: true };
-paths[`${cREAL.options.address}_${MOO.options.address}`] = { path: creal_moo, useATokenAsFrom: false, useATokenAsTo: true };
+paths[`${CELO.options.address}_${cUSD.options.address}`.toLowerCase()] = { path: celo_cusd, useATokenAsFrom: false, useATokenAsTo: true };
+paths[`${CELO.options.address}_${cEUR.options.address}`.toLowerCase()] = { path: celo_ceur, useATokenAsFrom: false, useATokenAsTo: true };
+paths[`${CELO.options.address}_${cREAL.options.address}`.toLowerCase()] = { path: celo_creal, useATokenAsFrom: false, useATokenAsTo: false };
+paths[`${CELO.options.address}_${MOO.options.address}`.toLowerCase()] = { path: celo_moo, useATokenAsFrom: false, useATokenAsTo: true };
+paths[`${cUSD.options.address}_${cEUR.options.address}`.toLowerCase()] = { path: cusd_ceur, useATokenAsFrom: true, useATokenAsTo: true };
+paths[`${cUSD.options.address}_${cREAL.options.address}`.toLowerCase()] = { path: cusd_creal, useATokenAsFrom: false, useATokenAsTo: false };
+paths[`${cUSD.options.address}_${MOO.options.address}`.toLowerCase()] = { path: cusd_moo, useATokenAsFrom: false, useATokenAsTo: false };
+paths[`${cEUR.options.address}_${cREAL.options.address}`.toLowerCase()] = { path: ceur_creal, useATokenAsFrom: false, useATokenAsTo: false };
+paths[`${cEUR.options.address}_${MOO.options.address}`.toLowerCase()] = { path: ceur_moo, useATokenAsFrom: true, useATokenAsTo: true };
+paths[`${cREAL.options.address}_${MOO.options.address}`.toLowerCase()] = { path: creal_moo, useATokenAsFrom: false, useATokenAsTo: true };
 
-paths[`${cUSD.options.address}_${CELO.options.address}`] = { path: [...celo_cusd].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
-paths[`${cEUR.options.address}_${CELO.options.address}`] = { path: [...celo_ceur].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
-paths[`${cREAL.options.address}_${CELO.options.address}`] = { path: [...celo_creal].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
-paths[`${MOO.options.address}_${CELO.options.address}`] = { path: [...celo_moo].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
-paths[`${cEUR.options.address}_${cUSD.options.address}`] = { path: [...cusd_ceur].reverse(), useATokenAsFrom: true, useATokenAsTo: true };
-paths[`${cREAL.options.address}_${cUSD.options.address}`] = { path: [...cusd_creal].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
-paths[`${MOO.options.address}_${cUSD.options.address}`] = { path: [...cusd_moo].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
-paths[`${cREAL.options.address}_${cEUR.options.address}`] = { path: [...celo_creal].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
-paths[`${MOO.options.address}_${cEUR.options.address}`] = { path: [...ceur_moo].reverse(), useATokenAsFrom: true, useATokenAsTo: true };
-paths[`${MOO.options.address}_${cREAL.options.address}`] = { path: [...creal_moo].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
-
-console.log(paths)
+paths[`${cUSD.options.address}_${CELO.options.address}`.toLowerCase()] = { path: [...celo_cusd].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
+paths[`${cEUR.options.address}_${CELO.options.address}`.toLowerCase()] = { path: [...celo_ceur].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
+paths[`${cREAL.options.address}_${CELO.options.address}`.toLowerCase()] = { path: [...celo_creal].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
+paths[`${MOO.options.address}_${CELO.options.address}`.toLowerCase()] = { path: [...celo_moo].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
+paths[`${cEUR.options.address}_${cUSD.options.address}`.toLowerCase()] = { path: [...cusd_ceur].reverse(), useATokenAsFrom: true, useATokenAsTo: true };
+paths[`${cREAL.options.address}_${cUSD.options.address}`.toLowerCase()] = { path: [...cusd_creal].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
+paths[`${MOO.options.address}_${cUSD.options.address}`.toLowerCase()] = { path: [...cusd_moo].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
+paths[`${cREAL.options.address}_${cEUR.options.address}`.toLowerCase()] = { path: [...celo_creal].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
+paths[`${MOO.options.address}_${cEUR.options.address}`.toLowerCase()] = { path: [...ceur_moo].reverse(), useATokenAsFrom: true, useATokenAsTo: true };
+paths[`${MOO.options.address}_${cREAL.options.address}`.toLowerCase()] = { path: [...creal_moo].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
 
 const web3 = kit.web3;
 const eth = web3.eth;
@@ -208,14 +206,17 @@ async function execute() {
           )[0];
 
         const collateralToken = biggestCollateral[0].toLowerCase();
+        const collateralAddress = tokens[biggestCollateral[0]].options.address.toLowerCase();
         const borrowToken = biggestBorrow[0].toLowerCase();
+        const borrowlAddress = tokens[biggestBorrow[0]].options.address.toLowerCase();
 
-        const swapPath = [] // TODO prepare path for each collateral - debt token
+        const swapPath = paths[`${collateralAddress}_${borrowlAddress}`];
 
-        // set path for swap as new parameter in increaseHealthFactor
-        // try ... increaseHealthFactor for different collateralAmount
-        // after increaseHealthFactor check that healthfactor is more DONE
-        // check that allowance for for collateralAsset is ok on autorepay.address TODO
+        console.log(swapPath)
+        // DONE set path for swap as new parameter in increaseHealthFactor
+        // TODO check that allowance for for collateralAsset is ok on autorepay.address TODO
+        // TODO try ... increaseHealthFactor for different collateralAmount
+        // DONE after increaseHealthFactor check that healthfactor is more DONE
 
         // const method = autoRepay.methods.increaseHealthFactor(
         //   {
