@@ -87,28 +87,27 @@ const creal_moo = [cREAL.options.address, cUSD.options.address, CELO.options.add
 
 const paths = {};
 
-// todo add useATokenAsFrom, useATokenAsTo
-paths[`${CELO.options.address}_${cUSD.options.address}`] = celo_cusd;
-paths[`${CELO.options.address}_${cEUR.options.address}`] = celo_ceur;
-paths[`${CELO.options.address}_${cREAL.options.address}`] = celo_creal;
-paths[`${CELO.options.address}_${MOO.options.address}`] = celo_moo;
-paths[`${cUSD.options.address}_${cEUR.options.address}`] = cusd_ceur;
-paths[`${cUSD.options.address}_${cREAL.options.address}`] = cusd_creal;
-paths[`${cUSD.options.address}_${MOO.options.address}`] = cusd_moo;
-paths[`${cEUR.options.address}_${cREAL.options.address}`] = ceur_creal;
-paths[`${cEUR.options.address}_${MOO.options.address}`] = ceur_moo;
-paths[`${cREAL.options.address}_${MOO.options.address}`] = creal_moo;
+paths[`${CELO.options.address}_${cUSD.options.address}`] = { path: celo_cusd, useATokenAsFrom: false, useATokenAsTo: true };
+paths[`${CELO.options.address}_${cEUR.options.address}`] = { path: celo_ceur, useATokenAsFrom: false, useATokenAsTo: true };
+paths[`${CELO.options.address}_${cREAL.options.address}`] = { path: celo_creal, useATokenAsFrom: false, useATokenAsTo: false };
+paths[`${CELO.options.address}_${MOO.options.address}`] = { path: celo_moo, useATokenAsFrom: false, useATokenAsTo: true };
+paths[`${cUSD.options.address}_${cEUR.options.address}`] = { path: cusd_ceur, useATokenAsFrom: true, useATokenAsTo: true };
+paths[`${cUSD.options.address}_${cREAL.options.address}`] = { path: cusd_creal, useATokenAsFrom: false, useATokenAsTo: false };
+paths[`${cUSD.options.address}_${MOO.options.address}`] = { path: cusd_moo, useATokenAsFrom: false, useATokenAsTo: false };
+paths[`${cEUR.options.address}_${cREAL.options.address}`] = { path: ceur_creal, useATokenAsFrom: false, useATokenAsTo: false };
+paths[`${cEUR.options.address}_${MOO.options.address}`] = { path: ceur_moo, useATokenAsFrom: true, useATokenAsTo: true };
+paths[`${cREAL.options.address}_${MOO.options.address}`] = { path: creal_moo, useATokenAsFrom: false, useATokenAsTo: true };
 
-paths[`${cUSD.options.address}_${CELO.options.address}`] = [...celo_cusd].reverse();
-paths[`${cEUR.options.address}_${CELO.options.address}`] = [...celo_ceur].reverse();
-paths[`${cREAL.options.address}_${CELO.options.address}`] = [...celo_creal].reverse();
-paths[`${MOO.options.address}_${CELO.options.address}`] = [...celo_moo].reverse();
-paths[`${cEUR.options.address}_${cUSD.options.address}`] = [...cusd_ceur].reverse();
-paths[`${cREAL.options.address}_${cUSD.options.address}`] = [...cusd_creal].reverse();
-paths[`${MOO.options.address}_${cUSD.options.address}`] = [...cusd_moo].reverse();
-paths[`${cREAL.options.address}_${cEUR.options.address}`] = [...ceur_creal].reverse();
-paths[`${MOO.options.address}_${cEUR.options.address}`] = [...ceur_moo].reverse();
-paths[`${MOO.options.address}_${cREAL.options.address}`] = [...creal_moo].reverse();
+paths[`${cUSD.options.address}_${CELO.options.address}`] = { path: [...celo_cusd].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
+paths[`${cEUR.options.address}_${CELO.options.address}`] = { path: [...celo_ceur].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
+paths[`${cREAL.options.address}_${CELO.options.address}`] = { path: [...celo_creal].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
+paths[`${MOO.options.address}_${CELO.options.address}`] = { path: [...celo_moo].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
+paths[`${cEUR.options.address}_${cUSD.options.address}`] = { path: [...cusd_ceur].reverse(), useATokenAsFrom: true, useATokenAsTo: true };
+paths[`${cREAL.options.address}_${cUSD.options.address}`] = { path: [...cusd_creal].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
+paths[`${MOO.options.address}_${cUSD.options.address}`] = { path: [...cusd_moo].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
+paths[`${cREAL.options.address}_${cEUR.options.address}`] = { path: [...celo_creal].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
+paths[`${MOO.options.address}_${cEUR.options.address}`] = { path: [...ceur_moo].reverse(), useATokenAsFrom: true, useATokenAsTo: true };
+paths[`${MOO.options.address}_${cREAL.options.address}`] = { path: [...creal_moo].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
 
 console.log(paths)
 
