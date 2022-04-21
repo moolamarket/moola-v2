@@ -53,7 +53,8 @@ contract AutoRepay is BaseUniswapAdapter {
   mapping(address => UserInfo) public userInfos;
 
   uint256 public constant FEE = 10;
-  uint256 public constant FEE_DECIMALS = 10000;
+  uint256 public constant SLIPPAGE = 200;
+  uint256 public constant HUNDRED_PERCENT = 10000;
 
   constructor(
     ILendingPoolAddressesProvider addressesProvider,
@@ -106,8 +107,8 @@ contract AutoRepay is BaseUniswapAdapter {
   function _checkHealthFactorIncreased(address user, uint256 healthFactorBefore) internal view {
     (, , , , , uint256 healthFactor) = LENDING_POOL.getUserAccountData(user);
     require(
-      healthFactor > healthFactorBefore,
-      'User health factor was not increased'
+      healthFactor > healthFactorBefore && healthFactor <= userInfos[user].maxHealthFactor,
+      'User health factor was not increased or more than maxHealthFactor'
     );
   }
 
@@ -140,7 +141,6 @@ contract AutoRepay is BaseUniswapAdapter {
       PermitSignature memory permitSignature,
       address caller
     ) = _decodeParams(params);
-    repayParams.collateralAsset = repayParams.path[0];
     repayParams.debtAsset = assets[0];
     repayParams.debtRepayAmount = amounts[0];
 
@@ -256,8 +256,10 @@ contract AutoRepay is BaseUniswapAdapter {
         repayParams.path,
         repayParams.debtRepayAmount.add(premium)
       )[0];
-      require(amounts0 <= repayParams.collateralAmount, 'slippage too high');
-      uint256 feeAmount = amounts0.mul(FEE).div(FEE_DECIMALS);
+
+      uint256 slippage = amounts0 * SLIPPAGE / HUNDRED_PERCENT; // 2% slippage max
+      require(amounts0 + slippage <= repayParams.collateralAmount, 'collateralAmount exceed max slippage');
+      uint256 feeAmount = amounts0.mul(FEE).div(HUNDRED_PERCENT);
 
       _transferATokenToContractAddress(
         collateralATokenAddress,
@@ -289,7 +291,7 @@ contract AutoRepay is BaseUniswapAdapter {
         );
       }
     } else {
-      uint256 feeAmount = repayParams.debtRepayAmount.mul(FEE).div(FEE_DECIMALS);
+      uint256 feeAmount = repayParams.debtRepayAmount.mul(FEE).div(HUNDRED_PERCENT);
       uint256 aTokenTransferAmount = repayParams.debtRepayAmount.add(premium).add(feeAmount);
       _transferATokenToContractAddress(
         collateralATokenAddress,
