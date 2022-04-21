@@ -43,7 +43,7 @@ addressProvider = new kit.web3.eth.Contract(
 autoRepay = new kit.web3.eth.Contract(
   AutoRepay,
   // OLD '0xCC321F48CF7bFeFe100D1Ce13585dcfF7627f754'
-  '0x268dbf33ebf61ea2706f070e348fdbe994d7db40'
+  '0x0fb22c6164eed82d4ad9ef470774bb6f878b7da6'
 );
 dataProvider = new kit.web3.eth.Contract(
   DataProvider,
@@ -114,6 +114,16 @@ const web3 = kit.web3;
 const eth = web3.eth;
 kit.addAccount(CELO_BOT_KEY);
 const caller = kit.connection.wallet.accountSigners.keys().next().value;
+
+const retry = async (fun, tries = 5) => {
+  try {
+    return await fun();
+  } catch (err) {
+    if (tries == 0) throw err;
+    await Promise.delay(1000);
+    return retry(fun, tries - 1);
+  }
+};
 
 async function execute() {
   const lendingPool = new eth.Contract(
@@ -237,6 +247,7 @@ async function execute() {
 
 
       async function repaySimulation(repAmount, attempt) {
+        console.log(`attempt: ${attempt}`)
         const amountOut = repAmount.plus(repAmount.multipliedBy(9).dividedBy(10000)).toFixed(0);
         const amounts = await ubeswap.methods
           .getAmountsIn(amountOut, swapPath)
@@ -261,6 +272,7 @@ async function execute() {
           },
           { amount: 0, deadline: 0, v: 0, r: ethers.constants.HashZero, s: ethers.constants.HashZero }
         );
+
 
         if (
           BN(await mToken.methods.allowance(user, autoRepay.options.address).call()).lt(
@@ -311,7 +323,7 @@ async function execute() {
             console.log('Could not repay');
             return;
           }
-          await repaySimulation(repAmount.multipliedBy(100 - attempt * 25).dividedBy(100), attempt++);
+          await repaySimulation(repAmount.multipliedBy(100 - attempt * 25).dividedBy(100), ++attempt);
           return;
         }
         console.log(
