@@ -2,6 +2,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import {PercentageMath} from '../protocol/libraries/math/PercentageMath.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/EnumerableSet.sol';
 
 import {BaseUniswapAdapter} from './BaseUniswapAdapter.sol';
@@ -13,6 +14,7 @@ import {SafeERC20} from '../dependencies/openzeppelin/contracts/SafeERC20.sol';
 
 contract AutoRepay is BaseUniswapAdapter {
   using SafeERC20 for IERC20;
+  using PercentageMath for uint256;
   using EnumerableSet for EnumerableSet.AddressSet;
 
   event HealthFactorSet(address indexed user, uint256 min, uint256 max);
@@ -257,8 +259,15 @@ contract AutoRepay is BaseUniswapAdapter {
         repayParams.debtRepayAmount.add(premium)
       )[0];
 
-      uint256 slippage = amounts0 * SLIPPAGE / HUNDRED_PERCENT; // 2% slippage max
-      require(amounts0 + slippage <= repayParams.collateralAmount, 'collateralAmount exceed max slippage');
+      require(amounts0 <= repayParams.collateralAmount, 'slippage too high');
+
+      uint256 expectedMaxAmountToSwap = repayParams.debtRepayAmount.add(premium)
+        .mul(_getPrice(repayParams.debtAsset).mul(10**_getDecimals(repayParams.collateralAsset)))
+        .div(_getPrice(repayParams.collateralAsset).mul(10**_getDecimals(repayParams.debtAsset)))
+        .percentMul(HUNDRED_PERCENT.add(SLIPPAGE));
+
+      require(amounts0 < expectedMaxAmountToSwap, 'maxAmountToSwap exceed 2% max slippage');
+
       uint256 feeAmount = amounts0.mul(FEE).div(HUNDRED_PERCENT);
 
       _transferATokenToContractAddress(

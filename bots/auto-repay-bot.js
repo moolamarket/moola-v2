@@ -42,8 +42,7 @@ addressProvider = new kit.web3.eth.Contract(
 );
 autoRepay = new kit.web3.eth.Contract(
   AutoRepay,
-  // OLD '0xCC321F48CF7bFeFe100D1Ce13585dcfF7627f754'
-  '0x0fb22c6164eed82d4ad9ef470774bb6f878b7da6'
+  '0xeb1549caebf24dd83e1b5e48abedd81be240e408'
 );
 dataProvider = new kit.web3.eth.Contract(
   DataProvider,
