@@ -245,7 +245,7 @@ async function execute() {
         .call();
 
 
-      async function repaySimulation(repAmount, attempt) {
+      const repaySimulation = async (repAmount, attempt) => {
         console.log(`attempt: ${attempt}`)
         const amountOut = repAmount.plus(repAmount.multipliedBy(9).dividedBy(10000)).toFixed(0);
         const amounts = await ubeswap.methods
