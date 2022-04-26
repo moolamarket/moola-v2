@@ -322,7 +322,7 @@ async function execute() {
             console.log('Could not repay');
             return;
           }
-          await repaySimulation(repAmount.multipliedBy(100 - attempt * 25).dividedBy(100), ++attempt);
+          await repaySimulation(repAmount.multipliedBy(100 - attempt * 25).dividedBy(100), attempt + 1);
           return;
         }
         console.log(
