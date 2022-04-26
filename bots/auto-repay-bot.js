@@ -219,7 +219,7 @@ async function execute() {
         const collateralToken = biggestCollateral[0].toLowerCase();
         const collateralAddress = tokens[biggestCollateral[0]].options.address.toLowerCase();
         const borrowToken = biggestBorrow[0].toLowerCase();
-        const borrowlAddress = tokens[biggestBorrow[0]].options.address.toLowerCase();
+        const borrowAddress = tokens[biggestBorrow[0]].options.address.toLowerCase();
 
         const swapPath = paths[`${collateralAddress}_${borrowlAddress}`].path;
         const useATokenAsFrom = paths[`${collateralAddress}_${borrowlAddress}`].useATokenAsFrom;
