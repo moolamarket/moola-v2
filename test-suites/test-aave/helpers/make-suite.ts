@@ -14,6 +14,7 @@ import {
   getUniswapLiquiditySwapAdapter,
   getUniswapRepayAdapter,
   getAutoRepay,
+  getLeverageBorrowAdapter,
   getFlashLiquidationAdapter,
 } from '../../../helpers/contracts-getters';
 import { eEthereumNetwork, tEthereumAddress } from '../../../helpers/types';
@@ -34,6 +35,7 @@ import { getEthersSigners } from '../../../helpers/contracts-helpers';
 import { UniswapLiquiditySwapAdapter } from '../../../types/UniswapLiquiditySwapAdapter';
 import { UniswapRepayAdapter } from '../../../types/UniswapRepayAdapter';
 import { AutoRepay } from '../../../types/AutoRepay';
+import { LeverageBorrowAdapter } from '../../../types/LeverageBorrowAdapter';
 import { getParamPerNetwork } from '../../../helpers/contracts-helpers';
 import { WETH9Mocked } from '../../../types/WETH9Mocked';
 import { WETHGateway } from '../../../types/WETHGateway';
@@ -68,6 +70,7 @@ export interface TestEnv {
   uniswapLiquiditySwapAdapter: UniswapLiquiditySwapAdapter;
   uniswapRepayAdapter: UniswapRepayAdapter;
   autoRepay: AutoRepay;
+  leverageBorrowAdapter: LeverageBorrowAdapter;
   registry: LendingPoolAddressesProviderRegistry;
   wethGateway: WETHGateway;
   flashLiquidationAdapter: FlashLiquidationAdapter;
@@ -95,6 +98,7 @@ const testEnv: TestEnv = {
   uniswapLiquiditySwapAdapter: {} as UniswapLiquiditySwapAdapter,
   uniswapRepayAdapter: {} as UniswapRepayAdapter,
   autoRepay: {} as AutoRepay,
+  leverageBorrowAdapter: {} as LeverageBorrowAdapter,
   flashLiquidationAdapter: {} as FlashLiquidationAdapter,
   registry: {} as LendingPoolAddressesProviderRegistry,
   wethGateway: {} as WETHGateway,
@@ -162,11 +166,12 @@ export async function initializeMakeSuite() {
   testEnv.uniswapLiquiditySwapAdapter = await getUniswapLiquiditySwapAdapter();
   testEnv.uniswapRepayAdapter = await getUniswapRepayAdapter();
   testEnv.autoRepay = await getAutoRepay();
+  testEnv.leverageBorrowAdapter = await getLeverageBorrowAdapter();
   testEnv.flashLiquidationAdapter = await getFlashLiquidationAdapter();
 }
 
 const setSnapshot = async () => {
-  const hre = DRE as HardhatRuntimeEnvironment;
+  const hre = DRE as any;
   if (usingTenderly()) {
     setBuidlerevmSnapshotId((await hre.tenderlyRPC.getHead()) || '0x1');
     return;
@@ -175,7 +180,7 @@ const setSnapshot = async () => {
 };
 
 const revertHead = async () => {
-  const hre = DRE as HardhatRuntimeEnvironment;
+  const hre = DRE as any;
   if (usingTenderly()) {
     await hre.tenderlyRPC.setHead(buidlerevmSnapshotId);
     return;
