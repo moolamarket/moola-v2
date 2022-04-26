@@ -144,7 +144,7 @@ async function execute() {
         log: console.log,
         abi: AutoRepay.filter((el) => el.name == 'HealthFactorSet'),
         address: autoRepay.options.address,
-        blockStep: 5000,
+        blockStep: 100000,
         fromBlock,
         toBlock: 'latest',
         blocksExclude: 0,
@@ -153,9 +153,7 @@ async function execute() {
       fromBlock = parsedToBlock;
 
       for (let event of newEvents) {
-        if (event.args.user) {
-          users[event.args.user] = {min: BN(event.args.min), max: BN(event.args.max)};
-        }
+        users[event.args.user] = {min: BN(event.args.min), max: BN(event.args.max)};
       }
 
       const usersData = await Promise.map(
@@ -216,10 +214,7 @@ async function execute() {
               )
           )[0];
 
-        const collateralToken = biggestCollateral[0].toLowerCase();
         const collateralAddress = tokens[biggestCollateral[0]].options.address.toLowerCase();
-        const borrowToken = biggestBorrow[0].toLowerCase();
-        const borrowAddress = tokens[biggestBorrow[0]].options.address.toLowerCase();
 
         const swapPath = paths[`${collateralAddress}_${borrowlAddress}`].path;
         const useATokenAsFrom = paths[`${collateralAddress}_${borrowlAddress}`].useATokenAsFrom;
@@ -251,7 +246,7 @@ async function execute() {
         const amounts = await ubeswap.methods
           .getAmountsIn(amountOut, swapPath)
           .call();
-  
+
         const maxCollateralAmount = BN(amounts[0])
           .plus(BN(amounts[0]).multipliedBy(1).dividedBy(1000))
           .toFixed(0); // 0.1% slippage
@@ -290,7 +285,7 @@ async function execute() {
             const amounts = await ubeswap.methods
               .getAmountsIn(amountOut, swapPath)
               .call();
-      
+
             const maxCollateralAmount = BN(amounts[0])
               .plus(BN(amounts[0]).multipliedBy(1).dividedBy(1000))
               .toFixed(0); // 0.1% slippage
@@ -331,7 +326,6 @@ async function execute() {
         );
       }
 
-      const attempt = 1;
       await repaySimulation(repayAmount, 1);
 
       }
