@@ -12,7 +12,7 @@ contract UBEConfiguratorAlfajores is Ownable {
 
   LendingPoolConfigurator public lendingPoolConfigurator =
     LendingPoolConfigurator(lendingPoolConfiguratorAddress);
-  address constant assetAddress = 0x00Be915B9dCf56a3CBE739D9B9c202ca692409EC; // FIXME-- check the address
+  address constant assetAddress = 0x00Be915B9dCf56a3CBE739D9B9c202ca692409EC;
 
   bytes constant params = '0x10';
   bool constant stableBorrowRateEnabled = true;
@@ -30,8 +30,7 @@ contract UBEConfiguratorAlfajores is Ownable {
   string constant variableDebtTokenSymbol = 'variableDebtmUBE';
   string constant stableDebtTokenName = 'Moola stable debt bearing mUBE';
   string constant stableDebtTokenSymbol = 'stableDebtmUBE';
-  uint256 constant baseLTV = 5000; // TODO-- wait for params
-  uint256 constant liquidationThreshold = 6500;
+  uint256 constant baseLTV = 5000;
   uint256 constant liquidationThreshold = 6500;
   uint256 constant liquidationBonus = 11000;
   uint256 constant reserveFactor = 1000;

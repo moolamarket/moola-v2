@@ -654,7 +654,8 @@ async function execute(network, action, ...params) {
     const from = params[1];
     const user = params[2];
     const amount = web3.utils.toWei(params[3]);
-    const rate = INTEREST_RATE[params[4].toUpperCase()];
+    // const rate = INTEREST_RATE[params[4].toUpperCase()];
+    const rate = parseInt(params[4]);
     if (privateKeyRequired) {
       pk = params[5];
       if (!pk) {
