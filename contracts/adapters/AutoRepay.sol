@@ -55,7 +55,6 @@ contract AutoRepay is BaseUniswapAdapter {
   mapping(address => UserInfo) public userInfos;
 
   uint256 public constant FEE = 10;
-  uint256 public constant SLIPPAGE = 200;
   uint256 public constant HUNDRED_PERCENT = 10000;
 
   constructor(
@@ -63,6 +62,10 @@ contract AutoRepay is BaseUniswapAdapter {
     IUniswapV2Router02 uniswapRouter,
     address wethAddress
   ) public BaseUniswapAdapter(addressesProvider, uniswapRouter, wethAddress) {}
+
+  function MAX_SLIPPAGE() public override pure returns (uint256) {
+    return 200; //2%
+  }
 
   function whitelistAddress(address userAddress) external onlyOwner returns (bool) {
     return _whitelistedAddresses.add(userAddress);
@@ -260,13 +263,6 @@ contract AutoRepay is BaseUniswapAdapter {
       )[0];
 
       require(amounts0 <= repayParams.collateralAmount, 'slippage too high');
-
-      uint256 expectedMaxAmountToSwap = repayParams.debtRepayAmount.add(premium)
-        .mul(_getPrice(repayParams.debtAsset).mul(10**_getDecimals(repayParams.collateralAsset)))
-        .div(_getPrice(repayParams.collateralAsset).mul(10**_getDecimals(repayParams.debtAsset)))
-        .percentMul(HUNDRED_PERCENT.add(SLIPPAGE));
-
-      require(amounts0 < expectedMaxAmountToSwap, 'maxAmountToSwap exceed 2% max slippage');
 
       uint256 feeAmount = amounts0.mul(FEE).div(HUNDRED_PERCENT);
 

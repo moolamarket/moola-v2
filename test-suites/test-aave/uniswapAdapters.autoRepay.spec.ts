@@ -668,7 +668,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             },
             zeroPermitSignature
           )
-        ).to.be.revertedWith('maxAmountToSwap exceed 2% max slippage');
+        ).to.be.revertedWith('maxAmountToSwap exceed max slippage');
       });
 
       it('should swap, repay debt and pull the needed ATokens leaving no leftovers', async () => {
@@ -1390,7 +1390,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             },
             zeroPermitSignature
           )
-        ).to.be.revertedWith('maxAmountToSwap exceed 2% max slippage');
+        ).to.be.revertedWith('maxAmountToSwap exceed max slippage');
       });
 
       it('should swap, repay debt and pull the needed ATokens leaving no leftovers', async () => {

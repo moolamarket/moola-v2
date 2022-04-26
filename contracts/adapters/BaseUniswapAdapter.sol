@@ -47,6 +47,10 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     WETH_ADDRESS = wethAddress;
   }
 
+  function MAX_SLIPPAGE() public virtual pure returns (uint256) {
+    return MAX_SLIPPAGE_PERCENT;
+  }
+
   /**
    * @dev Given an input asset amount, returns the maximum output amount of the other asset and the prices
    * @param amountIn Amount of reserveIn
@@ -147,7 +151,7 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     uint256 expectedMinAmountOut = amountToSwap
       .mul(_getPrice(assetToSwapFromPrice).mul(10**_getDecimals(assetToSwapToPrice)))
       .div(_getPrice(assetToSwapToPrice).mul(10**_getDecimals(assetToSwapFromPrice)))
-      .percentMul(PercentageMath.PERCENTAGE_FACTOR.sub(MAX_SLIPPAGE_PERCENT));
+      .percentMul(PercentageMath.PERCENTAGE_FACTOR.sub(MAX_SLIPPAGE()));
 
     require(expectedMinAmountOut < minAmountOut, 'minAmountOut exceed max slippage');
     }
@@ -250,7 +254,7 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     uint256 expectedMaxAmountToSwap = amountToReceive
       .mul(toAssetPrice.mul(10**fromAssetDecimals))
       .div(fromAssetPrice.mul(10**toAssetDecimals))
-      .percentMul(PercentageMath.PERCENTAGE_FACTOR.add(MAX_SLIPPAGE_PERCENT));
+      .percentMul(PercentageMath.PERCENTAGE_FACTOR.add(MAX_SLIPPAGE()));
 
     require(maxAmountToSwap < expectedMaxAmountToSwap, 'maxAmountToSwap exceed max slippage');
 
@@ -310,7 +314,7 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     uint256 expectedMaxAmountToSwap = amountToReceive
       .mul(toAssetPrice.mul(10**fromAssetDecimals))
       .div(fromAssetPrice.mul(10**toAssetDecimals))
-      .percentMul(PercentageMath.PERCENTAGE_FACTOR.add(MAX_SLIPPAGE_PERCENT));
+      .percentMul(PercentageMath.PERCENTAGE_FACTOR.add(MAX_SLIPPAGE()));
 
     require(maxAmountToSwap < expectedMaxAmountToSwap, 'maxAmountToSwap exceed max slippage');
 
