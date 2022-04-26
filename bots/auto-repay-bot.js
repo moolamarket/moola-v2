@@ -332,7 +332,7 @@ async function execute() {
       }
 
       const attempt = 1;
-      await repaySimulation(repayAmount, attempt);
+      await repaySimulation(repayAmount, 1);
 
       }
 
