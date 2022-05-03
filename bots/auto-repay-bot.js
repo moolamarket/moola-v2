@@ -232,102 +232,99 @@ async function execute() {
           repayAmount = BN(biggestBorrow[1].currentVariableDebt);
         }
 
-      const reserveCollateralToken = await dataProvider.methods
-        .getReserveTokensAddresses(collateralAddress)
-        .call();
-      const mToken = new kit.web3.eth.Contract(MToken, reserveCollateralToken.aTokenAddress);
-      const reserveDebtToken = await dataProvider.methods
-        .getReserveTokensAddresses(borrowAddress)
-        .call();
-
-
-      const repaySimulation = async (repAmount, attempt) => {
-        console.log(`attempt: ${attempt}`)
-        const amountOut = repAmount.plus(repAmount.multipliedBy(9).dividedBy(10000)).toFixed(0);
-        const amounts = await ubeswap.methods
-          .getAmountsIn(amountOut, swapPath)
+        const reserveCollateralToken = await dataProvider.methods
+          .getReserveTokensAddresses(collateralAddress)
           .call();
-
-        const maxCollateralAmount = BN(amounts[0])
-          .plus(BN(amounts[0]).multipliedBy(1).dividedBy(1000))
-          .toFixed(0); // 0.1% slippage
-        const feeAmount = BN(maxCollateralAmount).multipliedBy(10).dividedBy(10000);
-        let method = autoRepay.methods.increaseHealthFactor(
-          {
-            user,
-            collateralAsset: collateralAddress,
-            debtAsset: borrowAddress,
-            collateralAmount: maxCollateralAmount.toString(0),
-            debtRepayAmount: repAmount.toFixed(0),
-            rateMode,
-            path: swapPath,
-            useATokenAsFrom,
-            useATokenAsTo,
-            useFlashloan: true,
-          },
-          { amount: 0, deadline: 0, v: 0, r: ethers.constants.HashZero, s: ethers.constants.HashZero }
-        );
+        const mToken = new kit.web3.eth.Contract(MToken, reserveCollateralToken.aTokenAddress);
 
 
-        if (
-          BN(await mToken.methods.allowance(user, autoRepay.options.address).call()).lt(
-            BN(maxCollateralAmount).plus(feeAmount)
-          )
-        ) {
-          console.log(`user ${user} not approved ${mToken.options.address} tokens ${BN(maxCollateralAmount).plus(feeAmount).toFixed(0)} on autoRepay contract`);
-          return;
-        }
+        const repaySimulation = async (repAmount, attempt) => {
+          console.log(`attempt: ${attempt}`)
+          const amountOut = repAmount.plus(repAmount.multipliedBy(9).dividedBy(10000)).toFixed(0);
+          const amounts = await ubeswap.methods
+            .getAmountsIn(amountOut, swapPath)
+            .call();
 
-        try {
-          await retry(() => method.estimateGas({ from: caller, gas: DEFAULT_GAS }));
-          // if success simulation, trying to simulate without flashloan
-          try {
-            const amountOut = repAmount.toFixed(0);
-            const amounts = await ubeswap.methods
-              .getAmountsIn(amountOut, swapPath)
-              .call();
+          const maxCollateralAmount = BN(amounts[0])
+            .plus(BN(amounts[0]).multipliedBy(1).dividedBy(1000))
+            .toFixed(0); // 0.1% slippage
+          const feeAmount = BN(maxCollateralAmount).multipliedBy(10).dividedBy(10000);
+          let method = autoRepay.methods.increaseHealthFactor(
+            {
+              user,
+              collateralAsset: collateralAddress,
+              debtAsset: borrowAddress,
+              collateralAmount: maxCollateralAmount.toString(0),
+              debtRepayAmount: repAmount.toFixed(0),
+              rateMode,
+              path: swapPath,
+              useATokenAsFrom,
+              useATokenAsTo,
+              useFlashloan: true,
+            },
+            { amount: 0, deadline: 0, v: 0, r: ethers.constants.HashZero, s: ethers.constants.HashZero }
+          );
 
-            const maxCollateralAmount = BN(amounts[0])
-              .plus(BN(amounts[0]).multipliedBy(1).dividedBy(1000))
-              .toFixed(0); // 0.1% slippage
-            const methodNoFlashloan = autoRepay.methods.increaseHealthFactor(
-              {
-                user,
-                collateralAsset: collateralAddress,
-                debtAsset: borrowAddress,
-                collateralAmount: maxCollateralAmount.toString(0),
-                debtRepayAmount: repAmount.toString(0),
-                rateMode,
-                path: swapPath,
-                useATokenAsFrom,
-                useATokenAsTo,
-                useFlashloan: false,
-              },
-              { amount: 0, deadline: 0, v: 0, r: ethers.constants.HashZero, s: ethers.constants.HashZero }
-            );
-            await retry(() => methodNoFlashloan.estimateGas({ from: caller, gas: DEFAULT_GAS }));
-            method = methodNoFlashloan;
 
-          } catch (error) {
-            console.log('Could not repay without flashloan, flashloan will be used');
-          }
-        } catch (err) {
-          console.log(`Cannot auto repay ${100 - (attempt - 1) * 25 } %`, err.message);
-
-          if (attempt == 4) {
-            console.log('Could not repay');
+          if (
+            BN(await mToken.methods.allowance(user, autoRepay.options.address).call()).lt(
+              BN(maxCollateralAmount).plus(feeAmount)
+            )
+          ) {
+            console.log(`user ${user} not approved ${mToken.options.address} tokens ${BN(maxCollateralAmount).plus(feeAmount).toFixed(0)} on autoRepay contract`);
             return;
           }
-          await repaySimulation(repAmount.multipliedBy(100 - attempt * 25).dividedBy(100), attempt + 1);
-          return;
-        }
-        console.log(
-          'auto repay',
-          (await method.send({ from: caller, gas: DEFAULT_GAS })).transactionHash
-        );
-      }
 
-      await repaySimulation(repayAmount, 1);
+          try {
+            await retry(() => method.estimateGas({ from: caller, gas: DEFAULT_GAS }));
+            // if success simulation, trying to simulate without flashloan
+            try {
+              const amountOut = repAmount.toFixed(0);
+              const amounts = await ubeswap.methods
+                .getAmountsIn(amountOut, swapPath)
+                .call();
+
+              const maxCollateralAmount = BN(amounts[0])
+                .plus(BN(amounts[0]).multipliedBy(1).dividedBy(1000))
+                .toFixed(0); // 0.1% slippage
+              const methodNoFlashloan = autoRepay.methods.increaseHealthFactor(
+                {
+                  user,
+                  collateralAsset: collateralAddress,
+                  debtAsset: borrowAddress,
+                  collateralAmount: maxCollateralAmount.toString(0),
+                  debtRepayAmount: repAmount.toString(0),
+                  rateMode,
+                  path: swapPath,
+                  useATokenAsFrom,
+                  useATokenAsTo,
+                  useFlashloan: false,
+                },
+                { amount: 0, deadline: 0, v: 0, r: ethers.constants.HashZero, s: ethers.constants.HashZero }
+              );
+              await retry(() => methodNoFlashloan.estimateGas({ from: caller, gas: DEFAULT_GAS }));
+              method = methodNoFlashloan;
+
+            } catch (error) {
+              console.log('Could not repay without flashloan, flashloan will be used');
+            }
+          } catch (err) {
+            console.log(`Cannot auto repay ${100 - (attempt - 1) * 25 } %`, err.message);
+
+            if (attempt == 4) {
+              console.log('Could not repay');
+              return;
+            }
+            await repaySimulation(repAmount.multipliedBy(100 - attempt * 25).dividedBy(100), attempt + 1);
+            return;
+          }
+          console.log(
+            'auto repay',
+            (await method.send({ from: caller, gas: DEFAULT_GAS })).transactionHash
+          );
+        }
+
+        await repaySimulation(repayAmount, 1);
 
       }
 
