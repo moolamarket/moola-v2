@@ -237,9 +237,7 @@ async function execute() {
           .call();
         const mToken = new kit.web3.eth.Contract(MToken, reserveCollateralToken.aTokenAddress);
 
-
-        const repaySimulation = async (repAmount, attempt) => {
-          console.log(`attempt: ${attempt}`)
+        const increaseHealthFactorMethod = async (repAmount, useFlashloan) => {
           const amountOut = repAmount.plus(repAmount.multipliedBy(9).dividedBy(10000)).toFixed(0);
           const amounts = await ubeswap.methods
             .getAmountsIn(amountOut, swapPath)
@@ -260,18 +258,22 @@ async function execute() {
               path: swapPath,
               useATokenAsFrom,
               useATokenAsTo,
-              useFlashloan: true,
+              useFlashloan,
             },
             { amount: 0, deadline: 0, v: 0, r: ethers.constants.HashZero, s: ethers.constants.HashZero }
           );
+          return { method, total: BN(maxCollateralAmount).plus(feeAmount) };
+        }
 
+
+        const repaySimulation = async (repAmount, attempt) => {
+          console.log(`attempt: ${attempt}`)
+          let { method, total } = await increaseHealthFactorMethod(repAmount, true);
 
           if (
-            BN(await mToken.methods.allowance(user, autoRepay.options.address).call()).lt(
-              BN(maxCollateralAmount).plus(feeAmount)
-            )
+            BN(await mToken.methods.allowance(user, autoRepay.options.address).call()).lt(total)
           ) {
-            console.log(`user ${user} not approved ${mToken.options.address} tokens ${BN(maxCollateralAmount).plus(feeAmount).toFixed(0)} on autoRepay contract`);
+            console.log(`user ${user} not approved ${mToken.options.address} tokens ${total.toFixed(0)} on autoRepay contract`);
             return;
           }
 
@@ -287,21 +289,7 @@ async function execute() {
               const maxCollateralAmount = BN(amounts[0])
                 .plus(BN(amounts[0]).multipliedBy(1).dividedBy(1000))
                 .toFixed(0); // 0.1% slippage
-              const methodNoFlashloan = autoRepay.methods.increaseHealthFactor(
-                {
-                  user,
-                  collateralAsset: collateralAddress,
-                  debtAsset: borrowAddress,
-                  collateralAmount: maxCollateralAmount.toString(0),
-                  debtRepayAmount: repAmount.toString(0),
-                  rateMode,
-                  path: swapPath,
-                  useATokenAsFrom,
-                  useATokenAsTo,
-                  useFlashloan: false,
-                },
-                { amount: 0, deadline: 0, v: 0, r: ethers.constants.HashZero, s: ethers.constants.HashZero }
-              );
+              const { method: methodNoFlashloan, } = await increaseHealthFactorMethod(repAmount, false);
               await retry(() => methodNoFlashloan.estimateGas({ from: caller, gas: DEFAULT_GAS }));
               method = methodNoFlashloan;
 
@@ -334,5 +322,7 @@ async function execute() {
     await Promise.delay(60000);
   }
 }
+
+
 
 execute();
