@@ -215,10 +215,11 @@ async function execute() {
           )[0];
 
         const collateralAddress = tokens[biggestCollateral[0]].options.address.toLowerCase();
+        const borrowAddress = tokens[biggestBorrow[0]].options.address.toLowerCase();
 
-        const swapPath = paths[`${collateralAddress}_${borrowlAddress}`].path;
-        const useATokenAsFrom = paths[`${collateralAddress}_${borrowlAddress}`].useATokenAsFrom;
-        const useATokenAsTo = paths[`${collateralAddress}_${borrowlAddress}`].useATokenAsTo;
+        const swapPath = paths[`${collateralAddress}_${borrowAddress}`].path;
+        const useATokenAsFrom = paths[`${collateralAddress}_${borrowAddress}`].useATokenAsFrom;
+        const useATokenAsTo = paths[`${collateralAddress}_${borrowAddress}`].useATokenAsTo;
 
         let rateMode; // 1 for Stable, 2 for Variable
         let repayAmount;
@@ -236,7 +237,7 @@ async function execute() {
         .call();
       const mToken = new kit.web3.eth.Contract(MToken, reserveCollateralToken.aTokenAddress);
       const reserveDebtToken = await dataProvider.methods
-        .getReserveTokensAddresses(borrowlAddress)
+        .getReserveTokensAddresses(borrowAddress)
         .call();
 
 
@@ -255,7 +256,7 @@ async function execute() {
           {
             user,
             collateralAsset: collateralAddress,
-            debtAsset: borrowlAddress,
+            debtAsset: borrowAddress,
             collateralAmount: maxCollateralAmount.toString(0),
             debtRepayAmount: repAmount.toFixed(0),
             rateMode,
@@ -293,7 +294,7 @@ async function execute() {
               {
                 user,
                 collateralAsset: collateralAddress,
-                debtAsset: borrowlAddress,
+                debtAsset: borrowAddress,
                 collateralAmount: maxCollateralAmount.toString(0),
                 debtRepayAmount: repAmount.toString(0),
                 rateMode,
