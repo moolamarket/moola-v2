@@ -47,6 +47,10 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     WETH_ADDRESS = wethAddress;
   }
 
+  function MAX_SLIPPAGE() public virtual pure returns (uint256) {
+    return MAX_SLIPPAGE_PERCENT;
+  }
+
   /**
    * @dev Given an input asset amount, returns the maximum output amount of the other asset and the prices
    * @param amountIn Amount of reserveIn
@@ -147,7 +151,7 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     uint256 expectedMinAmountOut = amountToSwap
       .mul(_getPrice(assetToSwapFromPrice).mul(10**_getDecimals(assetToSwapToPrice)))
       .div(_getPrice(assetToSwapToPrice).mul(10**_getDecimals(assetToSwapFromPrice)))
-      .percentMul(PercentageMath.PERCENTAGE_FACTOR.sub(MAX_SLIPPAGE_PERCENT));
+      .percentMul(PercentageMath.PERCENTAGE_FACTOR.sub(MAX_SLIPPAGE()));
 
     require(expectedMinAmountOut < minAmountOut, 'minAmountOut exceed max slippage');
     }
@@ -225,7 +229,7 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
    * @dev Receive an exact amount `amountToReceive` of `assetToSwapTo` tokens for as few `assetToSwapFrom` tokens as
    * possible.
    * @param assetToSwapFromPrice Origin asset to get price
-   * @param assetToSwapToPrice Destination asset to get pricce
+   * @param assetToSwapToPrice Destination asset to get price
    * @param assetToSwapFrom Origin asset
    * @param assetToSwapTo Destination asset
    * @param maxAmountToSwap Max amount of `assetToSwapFrom` allowed to be swapped
@@ -250,7 +254,7 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     uint256 expectedMaxAmountToSwap = amountToReceive
       .mul(toAssetPrice.mul(10**fromAssetDecimals))
       .div(fromAssetPrice.mul(10**toAssetDecimals))
-      .percentMul(PercentageMath.PERCENTAGE_FACTOR.add(MAX_SLIPPAGE_PERCENT));
+      .percentMul(PercentageMath.PERCENTAGE_FACTOR.add(MAX_SLIPPAGE()));
 
     require(maxAmountToSwap < expectedMaxAmountToSwap, 'maxAmountToSwap exceed max slippage');
 
@@ -279,6 +283,54 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     );
 
     emit Swapped(assetToSwapFrom, assetToSwapTo, amounts[0], amounts[amounts.length - 1]);
+
+    return amounts[0];
+  }
+
+  /**
+   * @dev Receive an exact amount `amountToReceive` of `assetToSwapTo` tokens for as few `path[0]` tokens as
+   * possible.
+   * @param path Swap path
+   * @param assetToSwapFromPrice Origin asset to get price
+   * @param assetToSwapToPrice Destination asset to get price
+   * @param maxAmountToSwap Max amount of `assetToSwapFrom` allowed to be swapped
+   * @param amountToReceive Exact amount of `assetToSwapTo` to receive
+   * @return the amount swapped
+   */
+  function _swapTokensForExactTokensWithPath(
+    address assetToSwapFromPrice,
+    address assetToSwapToPrice,
+    address[] memory path,
+    uint256 maxAmountToSwap,
+    uint256 amountToReceive
+  ) internal returns (uint256) {
+    require(path.length >= 2, 'Wrong path provided');
+    uint256 fromAssetDecimals = _getDecimals(assetToSwapFromPrice);
+    uint256 toAssetDecimals = _getDecimals(assetToSwapToPrice);
+
+    uint256 fromAssetPrice = _getPrice(assetToSwapFromPrice);
+    uint256 toAssetPrice = _getPrice(assetToSwapToPrice);
+
+    uint256 expectedMaxAmountToSwap = amountToReceive
+      .mul(toAssetPrice.mul(10**fromAssetDecimals))
+      .div(fromAssetPrice.mul(10**toAssetDecimals))
+      .percentMul(PercentageMath.PERCENTAGE_FACTOR.add(MAX_SLIPPAGE()));
+
+    require(maxAmountToSwap < expectedMaxAmountToSwap, 'maxAmountToSwap exceed max slippage');
+
+    // Approves the transfer for the swap. Approves for 0 first to comply with tokens that implement the anti frontrunning approval fix.
+    IERC20(path[0]).safeApprove(address(UNISWAP_ROUTER), 0);
+    IERC20(path[0]).safeApprove(address(UNISWAP_ROUTER), maxAmountToSwap);
+
+    uint256[] memory amounts = UNISWAP_ROUTER.swapTokensForExactTokens(
+      amountToReceive,
+      maxAmountToSwap,
+      path,
+      address(this),
+      block.timestamp
+    );
+
+    emit Swapped(path[0], path[path.length - 1], amounts[0], amounts[amounts.length - 1]);
 
     return amounts[0];
   }
@@ -613,6 +665,19 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
       path[1] = reserveOut;
     }
 
+    return UNISWAP_ROUTER.getAmountsIn(amountOut, path);
+  }
+
+  /**
+   * @dev Calculates the input asset amount required to buy the given output asset amount
+   * @param path Swap path
+   * @param amountOut Amount of reserveOut
+   * @return uint256[] amounts Array containing the amountIn and amountOut for a swap
+   */
+  function _getAmountsInWIthPath(
+    address[] memory path,
+    uint256 amountOut
+  ) internal view returns (uint256[] memory) {
     return UNISWAP_ROUTER.getAmountsIn(amountOut, path);
   }
 

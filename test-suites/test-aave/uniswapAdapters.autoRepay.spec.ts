@@ -116,7 +116,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const liquidityToSwap = amountWETHtoSwap;
         const callerFee = liquidityToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.whitelistAddress(callerAddress);
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
@@ -143,7 +143,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               collateralAmount: liquidityToSwap,
               debtRepayAmount: expectedDaiAmount,
               rateMode: 1,
-              useEthPath: false,
+              path: [weth.address, dai.address],
               useATokenAsFrom: false,
               useATokenAsTo: false,
               useFlashloan: true,
@@ -195,7 +195,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userAEthBalanceBefore = await aWETH.balanceOf(userAddress);
         const callerFee = liquidityToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.whitelistAddress(callerAddress);
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
@@ -245,7 +245,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               collateralAmount: liquidityToSwap,
               debtRepayAmount: expectedDaiAmount,
               rateMode: 1,
-              useEthPath: false,
+              path: [weth.address, dai.address],
               useATokenAsFrom: false,
               useATokenAsTo: false,
               useFlashloan: true,
@@ -293,7 +293,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const liquidityToSwap = amountWETHtoSwap;
         const callerFee = liquidityToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
@@ -318,7 +318,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               collateralAmount: liquidityToSwap,
               debtRepayAmount: expectedDaiAmount,
               rateMode: 1,
-              useEthPath: false,
+              path: [weth.address, dai.address],
               useATokenAsFrom: false,
               useATokenAsTo: false,
               useFlashloan: true,
@@ -345,7 +345,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const liquidityToSwap = amountWETHtoSwap;
         const callerFee = liquidityToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.whitelistAddress(callerAddress);
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
@@ -375,7 +375,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               collateralAmount: liquidityToSwap,
               debtRepayAmount: expectedDaiAmount,
               rateMode: 1,
-              useEthPath: false,
+              path: [weth.address, dai.address],
               useATokenAsFrom: false,
               useATokenAsTo: false,
               useFlashloan: true,
@@ -404,7 +404,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           const liquidityToSwap = amountWETHtoSwap;
           const callerFee = liquidityToSwap
             .mul(await autoRepay.FEE())
-            .div(await autoRepay.FEE_DECIMALS());
+            .div(await autoRepay.HUNDRED_PERCENT());
           await autoRepay.whitelistAddress(callerAddress);
           const userData = await pool.getUserAccountData(userAddress);
           await autoRepay
@@ -430,7 +430,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
                 collateralAmount: liquidityToSwap,
                 debtRepayAmount: expectedDaiAmount,
                 rateMode: 1,
-                useEthPath: false,
+                path: [weth.address, dai.address],
                 useATokenAsFrom: false,
                 useATokenAsTo: false,
                 useFlashloan: true,
@@ -438,7 +438,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               zeroPermitSignature
             )
           ).to.be.revertedWith(
-            'User health factor must be in range {from minHealthFactor to maxHealthFactor}'
+            'User health factor was not increased or more than maxHealthFactor'
           );
         }
       );
@@ -533,7 +533,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const liquidityToSwap = amountWETHtoSwap;
         const callerFee = liquidityToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.whitelistAddress(callerAddress);
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
@@ -559,7 +559,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               collateralAmount: liquidityToSwap,
               debtRepayAmount: expectedDaiAmount,
               rateMode: 1,
-              useEthPath: false,
+              path: [weth.address, dai.address],
               useATokenAsFrom: false,
               useATokenAsTo: false,
               useFlashloan: true,
@@ -590,7 +590,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const liquidityToSwap = amountWETHtoSwap;
         const callerFee = liquidityToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.whitelistAddress(callerAddress);
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
@@ -608,7 +608,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               collateralAmount: liquidityToSwap,
               debtRepayAmount: expectedDaiAmount,
               rateMode: 2,
-              useEthPath: false,
+              path: [weth.address, dai.address],
               useATokenAsFrom: false,
               useATokenAsTo: false,
               useFlashloan: true,
@@ -635,7 +635,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const bigMaxAmountToSwap = amountWETHtoSwap.mul(2);
         const callerFee = bigMaxAmountToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.whitelistAddress(callerAddress);
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
@@ -661,7 +661,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               collateralAmount: bigMaxAmountToSwap,
               debtRepayAmount: expectedDaiAmount,
               rateMode: 1,
-              useEthPath: false,
+              path: [weth.address, dai.address],
               useATokenAsFrom: false,
               useATokenAsTo: false,
               useFlashloan: true,
@@ -696,7 +696,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const liquidityToSwap = amountWETHtoSwap;
         const callerFee = liquidityToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.whitelistAddress(callerAddress);
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
@@ -710,7 +710,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           .toFixed(0);
         const actualCallerFee = ethers.BigNumber.from(actualWEthSwapped)
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await mockUniswapRouter.connect(user).setAmountToSwap(weth.address, actualWEthSwapped);
         const flashLoanDebt = new BigNumber(expectedDaiAmount.toString())
           .multipliedBy(1.0009)
@@ -731,7 +731,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               collateralAmount: liquidityToSwap,
               debtRepayAmount: expectedDaiAmount,
               rateMode: 1,
-              useEthPath: false,
+              path: [weth.address, dai.address],
               useATokenAsFrom: false,
               useATokenAsTo: false,
               useFlashloan: true,
@@ -789,7 +789,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         );
         const callerFee = liquidityToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.whitelistAddress(callerAddress);
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
@@ -805,7 +805,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         await mockUniswapRouter.setDefaultMockValue(amountWETHtoSwap);
         const actualCallerFee = amountWETHtoSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.connect(caller).increaseHealthFactor(
           {
             user: userAddress,
@@ -814,7 +814,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             collateralAmount: liquidityToSwap,
             debtRepayAmount: amountToRepay,
             rateMode: 1,
-            useEthPath: false,
+            path: [weth.address, dai.address],
             useATokenAsFrom: false,
             useATokenAsTo: false,
             useFlashloan: true,
@@ -867,7 +867,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         );
         const callerFee = liquidityToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.whitelistAddress(callerAddress);
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
@@ -883,7 +883,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         await mockUniswapRouter.setDefaultMockValue(amountWETHtoSwap);
         const actualCallerFee = amountWETHtoSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.connect(caller).increaseHealthFactor(
           {
             user: userAddress,
@@ -892,7 +892,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             collateralAmount: liquidityToSwap,
             debtRepayAmount: amountToRepay,
             rateMode: 2,
-            useEthPath: false,
+            path: [weth.address, dai.address],
             useATokenAsFrom: false,
             useATokenAsTo: false,
             useFlashloan: true,
@@ -943,7 +943,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           );
           const callerFee = amountCollateralToSwap
             .mul(await autoRepay.FEE())
-            .div(await autoRepay.FEE_DECIMALS());
+            .div(await autoRepay.HUNDRED_PERCENT());
           await autoRepay.whitelistAddress(callerAddress);
           const userData = await pool.getUserAccountData(userAddress);
           await autoRepay
@@ -965,7 +965,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               collateralAmount: amountCollateralToSwap,
               debtRepayAmount: amountCollateralToSwap,
               rateMode: 2,
-              useEthPath: false,
+              path: [dai.address, dai.address],
               useATokenAsFrom: false,
               useATokenAsTo: false,
               useFlashloan: true,
@@ -1028,7 +1028,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const liquidityToSwap = amountWETHtoSwap;
         const callerFee = liquidityToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.whitelistAddress(callerAddress);
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
@@ -1046,7 +1046,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             collateralAmount: liquidityToSwap,
             debtRepayAmount: expectedDaiAmount,
             rateMode: 1,
-            useEthPath: false,
+            path: [weth.address, dai.address],
             useATokenAsFrom: false,
             useATokenAsTo: false,
             useFlashloan: false,
@@ -1098,7 +1098,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         await mockUniswapRouter.setDefaultMockValue(liquidityToSwap);
         const callerFee = liquidityToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.whitelistAddress(callerAddress);
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
@@ -1131,7 +1131,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             collateralAmount: liquidityToSwap,
             debtRepayAmount: expectedDaiAmount,
             rateMode: 1,
-            useEthPath: false,
+            path: [weth.address, dai.address],
             useATokenAsFrom: false,
             useATokenAsTo: false,
             useFlashloan: false,
@@ -1176,7 +1176,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const liquidityToSwap = amountWETHtoSwap;
         const callerFee = liquidityToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
@@ -1193,7 +1193,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               collateralAmount: liquidityToSwap,
               debtRepayAmount: expectedDaiAmount,
               rateMode: 1,
-              useEthPath: false,
+              path: [weth.address, dai.address],
               useATokenAsFrom: false,
               useATokenAsTo: false,
               useFlashloan: false,
@@ -1220,7 +1220,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const liquidityToSwap = amountWETHtoSwap;
         const callerFee = liquidityToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.whitelistAddress(callerAddress);
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
@@ -1241,7 +1241,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               collateralAmount: liquidityToSwap,
               debtRepayAmount: expectedDaiAmount,
               rateMode: 1,
-              useEthPath: false,
+              path: [weth.address, dai.address],
               useATokenAsFrom: false,
               useATokenAsTo: false,
               useFlashloan: false,
@@ -1270,7 +1270,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           const liquidityToSwap = amountWETHtoSwap;
           const callerFee = liquidityToSwap
             .mul(await autoRepay.FEE())
-            .div(await autoRepay.FEE_DECIMALS());
+            .div(await autoRepay.HUNDRED_PERCENT());
           await autoRepay.whitelistAddress(callerAddress);
           const userData = await pool.getUserAccountData(userAddress);
           await autoRepay
@@ -1288,7 +1288,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
                 collateralAmount: liquidityToSwap,
                 debtRepayAmount: expectedDaiAmount,
                 rateMode: 1,
-                useEthPath: false,
+                path: [weth.address, dai.address],
                 useATokenAsFrom: false,
                 useATokenAsTo: false,
                 useFlashloan: false,
@@ -1296,7 +1296,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               zeroPermitSignature
             )
           ).to.be.revertedWith(
-            'User health factor must be in range {from minHealthFactor to maxHealthFactor}'
+            'User health factor was not increased or more than maxHealthFactor'
           );
         }
       );
@@ -1320,7 +1320,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const liquidityToSwap = amountWETHtoSwap;
         const callerFee = liquidityToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.whitelistAddress(callerAddress);
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
@@ -1338,7 +1338,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               collateralAmount: liquidityToSwap,
               debtRepayAmount: expectedDaiAmount,
               rateMode: 2,
-              useEthPath: false,
+              path: [weth.address, dai.address],
               useATokenAsFrom: false,
               useATokenAsTo: false,
               useFlashloan: false,
@@ -1365,7 +1365,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const bigMaxAmountToSwap = amountWETHtoSwap.mul(2);
         const callerFee = bigMaxAmountToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.whitelistAddress(callerAddress);
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
@@ -1383,7 +1383,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               collateralAmount: bigMaxAmountToSwap,
               debtRepayAmount: expectedDaiAmount,
               rateMode: 1,
-              useEthPath: false,
+              path: [weth.address, dai.address],
               useATokenAsFrom: false,
               useATokenAsTo: false,
               useFlashloan: false,
@@ -1418,7 +1418,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const liquidityToSwap = amountWETHtoSwap;
         const callerFee = liquidityToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.whitelistAddress(callerAddress);
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
@@ -1432,7 +1432,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           .toFixed(0);
         const actualCallerFee = ethers.BigNumber.from(actualWEthSwapped)
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await mockUniswapRouter.connect(user).setAmountToSwap(weth.address, actualWEthSwapped);
         await mockUniswapRouter.setDefaultMockValue(actualWEthSwapped);
         await autoRepay.connect(caller).increaseHealthFactor(
@@ -1443,7 +1443,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             collateralAmount: liquidityToSwap,
             debtRepayAmount: expectedDaiAmount,
             rateMode: 1,
-            useEthPath: false,
+            path: [weth.address, dai.address],
             useATokenAsFrom: false,
             useATokenAsTo: false,
             useFlashloan: false,
@@ -1498,7 +1498,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         );
         const callerFee = liquidityToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.whitelistAddress(callerAddress);
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
@@ -1514,7 +1514,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         await mockUniswapRouter.setDefaultMockValue(amountWETHtoSwap);
         const actualCallerFee = amountWETHtoSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.connect(caller).increaseHealthFactor(
           {
             user: userAddress,
@@ -1523,7 +1523,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             collateralAmount: liquidityToSwap,
             debtRepayAmount: amountToRepay,
             rateMode: 1,
-            useEthPath: false,
+            path: [weth.address, dai.address],
             useATokenAsFrom: false,
             useATokenAsTo: false,
             useFlashloan: false,
@@ -1576,7 +1576,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         );
         const callerFee = liquidityToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.whitelistAddress(callerAddress);
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
@@ -1592,7 +1592,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         await mockUniswapRouter.setDefaultMockValue(amountWETHtoSwap);
         const actualCallerFee = amountWETHtoSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.connect(caller).increaseHealthFactor(
           {
             user: userAddress,
@@ -1601,7 +1601,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             collateralAmount: liquidityToSwap,
             debtRepayAmount: amountToRepay,
             rateMode: 2,
-            useEthPath: false,
+            path: [weth.address, dai.address],
             useATokenAsFrom: false,
             useATokenAsTo: false,
             useFlashloan: false,
@@ -1650,7 +1650,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         );
         const callerFee = amountCollateralToSwap
           .mul(await autoRepay.FEE())
-          .div(await autoRepay.FEE_DECIMALS());
+          .div(await autoRepay.HUNDRED_PERCENT());
         await autoRepay.whitelistAddress(callerAddress);
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
@@ -1667,7 +1667,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             collateralAmount: amountCollateralToSwap,
             debtRepayAmount: amountCollateralToSwap,
             rateMode: 2,
-            useEthPath: false,
+            path: [dai.address, dai.address],
             useATokenAsFrom: false,
             useATokenAsTo: false,
             useFlashloan: false,

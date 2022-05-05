@@ -2,6 +2,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import {PercentageMath} from '../protocol/libraries/math/PercentageMath.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/EnumerableSet.sol';
 
 import {BaseUniswapAdapter} from './BaseUniswapAdapter.sol';
@@ -13,7 +14,10 @@ import {SafeERC20} from '../dependencies/openzeppelin/contracts/SafeERC20.sol';
 
 contract AutoRepay is BaseUniswapAdapter {
   using SafeERC20 for IERC20;
+  using PercentageMath for uint256;
   using EnumerableSet for EnumerableSet.AddressSet;
+
+  event HealthFactorSet(address indexed user, uint256 min, uint256 max);
 
   /**
    * @dev struct RepayParams
@@ -24,7 +28,6 @@ contract AutoRepay is BaseUniswapAdapter {
    * @param collateralAmount Amount of the collateral to be swapped
    * @param debtRepayAmount Amount of the debt to be repaid
    * @param rateMode Rate mode of the debt to be repaid
-   * @param useEthPath Use Eth in swap path
    * @param useATokenAsFrom Use aToken as from in swap
    * @param useATokenAsTo Use aToken as to in swap
    * @param useFlashloan Use flahsloan for increasing health factor
@@ -33,10 +36,10 @@ contract AutoRepay is BaseUniswapAdapter {
     address user;
     address collateralAsset;
     address debtAsset;
+    address[] path;
     uint256 collateralAmount;
     uint256 debtRepayAmount;
     uint256 rateMode;
-    bool useEthPath;
     bool useATokenAsFrom;
     bool useATokenAsTo;
     bool useFlashloan;
@@ -52,13 +55,17 @@ contract AutoRepay is BaseUniswapAdapter {
   mapping(address => UserInfo) public userInfos;
 
   uint256 public constant FEE = 10;
-  uint256 public constant FEE_DECIMALS = 10000;
+  uint256 public constant HUNDRED_PERCENT = 10000;
 
   constructor(
     ILendingPoolAddressesProvider addressesProvider,
     IUniswapV2Router02 uniswapRouter,
     address wethAddress
   ) public BaseUniswapAdapter(addressesProvider, uniswapRouter, wethAddress) {}
+
+  function MAX_SLIPPAGE() public override pure returns (uint256) {
+    return 200; //2%
+  }
 
   function whitelistAddress(address userAddress) external onlyOwner returns (bool) {
     return _whitelistedAddresses.add(userAddress);
@@ -90,22 +97,23 @@ contract AutoRepay is BaseUniswapAdapter {
       minHealthFactor: minHealthFactor,
       maxHealthFactor: maxHealthFactor
     });
+    emit HealthFactorSet(msg.sender, minHealthFactor, maxHealthFactor);
   }
 
-  function _checkMinHealthFactor(address user) internal view {
+  function _checkMinHealthFactor(address user) internal view returns (uint256) {
     (, , , , , uint256 healthFactor) = LENDING_POOL.getUserAccountData(user);
     require(
       healthFactor < userInfos[user].minHealthFactor,
       'User health factor must be less than minHealthFactor for user'
     );
+    return healthFactor;
   }
 
-  function _checkHealthFactorInRange(address user) internal view {
+  function _checkHealthFactorIncreased(address user, uint256 healthFactorBefore) internal view {
     (, , , , , uint256 healthFactor) = LENDING_POOL.getUserAccountData(user);
     require(
-      healthFactor >= userInfos[user].minHealthFactor &&
-        healthFactor <= userInfos[user].maxHealthFactor,
-      'User health factor must be in range {from minHealthFactor to maxHealthFactor}'
+      healthFactor > healthFactorBefore && healthFactor <= userInfos[user].maxHealthFactor,
+      'User health factor was not increased or more than maxHealthFactor'
     );
   }
 
@@ -184,7 +192,7 @@ contract AutoRepay is BaseUniswapAdapter {
     PermitSignature calldata permitSignature
   ) external {
     require(isWhitelisted(msg.sender), 'Caller is not whitelisted');
-    _checkMinHealthFactor(repayParams.user);
+    uint256 healthFactorBefore = _checkMinHealthFactor(repayParams.user);
     if (repayParams.useFlashloan) {
       bytes memory params = abi.encode(repayParams, permitSignature, msg.sender);
       address[] memory assets = new address[](1);
@@ -225,7 +233,7 @@ contract AutoRepay is BaseUniswapAdapter {
         repayParams.user
       );
     }
-    _checkHealthFactorInRange(repayParams.user);
+    _checkHealthFactorIncreased(repayParams.user, healthFactorBefore);
   }
 
   /**
@@ -249,14 +257,14 @@ contract AutoRepay is BaseUniswapAdapter {
     address collateralATokenAddress = _getReserveData(repayParams.collateralAsset).aTokenAddress;
     address debtATokenAddress = _getReserveData(repayParams.debtAsset).aTokenAddress;
     if (repayParams.collateralAsset != repayParams.debtAsset) {
-      uint256 amounts0 = _getAmountsIn(
-        repayParams.useATokenAsFrom ? collateralATokenAddress : repayParams.collateralAsset,
-        repayParams.useATokenAsTo ? debtATokenAddress : repayParams.debtAsset,
-        repayParams.debtRepayAmount.add(premium),
-        repayParams.useEthPath
+      uint256 amounts0 = _getAmountsInWIthPath(
+        repayParams.path,
+        repayParams.debtRepayAmount.add(premium)
       )[0];
+
       require(amounts0 <= repayParams.collateralAmount, 'slippage too high');
-      uint256 feeAmount = amounts0.mul(FEE).div(FEE_DECIMALS);
+
+      uint256 feeAmount = amounts0.mul(FEE).div(HUNDRED_PERCENT);
 
       _transferATokenToContractAddress(
         collateralATokenAddress,
@@ -271,14 +279,12 @@ contract AutoRepay is BaseUniswapAdapter {
       }
 
       // Swap collateral asset to the debt asset
-      _swapTokensForExactTokens(
+      _swapTokensForExactTokensWithPath(
         repayParams.collateralAsset,
         repayParams.debtAsset,
-        repayParams.useATokenAsFrom ? collateralATokenAddress : repayParams.collateralAsset,
-        repayParams.useATokenAsTo ? debtATokenAddress : repayParams.debtAsset,
+        repayParams.path,
         amounts0,
-        repayParams.debtRepayAmount.add(premium),
-        repayParams.useEthPath
+        repayParams.debtRepayAmount.add(premium)
       );
 
       if (repayParams.useATokenAsTo) {
@@ -290,7 +296,7 @@ contract AutoRepay is BaseUniswapAdapter {
         );
       }
     } else {
-      uint256 feeAmount = repayParams.debtRepayAmount.mul(FEE).div(FEE_DECIMALS);
+      uint256 feeAmount = repayParams.debtRepayAmount.mul(FEE).div(HUNDRED_PERCENT);
       uint256 aTokenTransferAmount = repayParams.debtRepayAmount.add(premium).add(feeAmount);
       _transferATokenToContractAddress(
         collateralATokenAddress,
