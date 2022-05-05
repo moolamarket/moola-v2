@@ -13,7 +13,6 @@ const BigNumber = require('bignumber.js');
 const Promise = require('bluebird');
 const eventsCollector = require('events-collector');
 const ethers = require('ethers');
-const path = require('path');
 
 const CELO_BOT_KEY = process.env.CELO_BOT_KEY;
 const DEFAULT_GAS = 2000000;
