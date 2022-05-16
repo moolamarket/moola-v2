@@ -13,6 +13,7 @@ const BigNumber = require('bignumber.js');
 const Promise = require('bluebird');
 const eventsCollector = require('events-collector');
 const ethers = require('ethers');
+const SwapPath = require('./helpers/helpers.js');
 
 const CELO_BOT_KEY = process.env.CELO_BOT_KEY;
 const DEFAULT_GAS = 2000000;
@@ -55,12 +56,13 @@ MOO = new kit.web3.eth.Contract(MToken, '0x17700282592D6917F6A73D0bF8AcCf4D578c1
 CELO = new kit.web3.eth.Contract(MToken, '0x471EcE3750Da237f93B8E339c536989b8978a438');
 
 const ubeswapRouter = '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121';
-const wrappedEth = '0xE919F65739c26a42616b7b8eedC6b5524d1e3aC4';
 const ubeswap = new kit.web3.eth.Contract(Uniswap, ubeswapRouter);
 
 const mcusdAddress = '0x918146359264c492bd6934071c6bd31c854edbc3';
 const mceurAddress = '0xe273ad7ee11dcfaa87383ad5977ee1504ac07568';
 const mceloAddress = '0x7d00cd74ff385c955ea3d79e47bf06bd7386387d';
+
+const swapPathHelper = new SwapPath(ubeswap, CELO, mceloAddress, cUSD, mcusdAddress, cEUR, mceurAddress, cREAL, MOO);
 
 const tokens = {
   celo: CELO,
@@ -69,44 +71,6 @@ const tokens = {
   creal: cREAL,
   moo: MOO,
 };
-
-const celo_cusd = [CELO.options.address, mcusdAddress]; // celo-mcusd
-const celo_ceur = [CELO.options.address, mceurAddress]; // celo-mceur
-const celo_creal = [CELO.options.address, cUSD.options.address, cREAL.options.address]; // celo-cusd, cusd-creal pair
-const celo_moo = [MOO.options.address, mceloAddress]; // mcelo-moo
-
-const cusd_ceur = [mcusdAddress, mceurAddress]; // mcusd-mceur
-const cusd_creal = [cUSD.options.address, cREAL.options.address]; // cusd-creal
-const cusd_moo = [cUSD.options.address, CELO.options.address, MOO.options.address]; // cusd-celo, celo-moo pair
-
-const ceur_creal = [cEUR.options.address, CELO.options.address, cUSD.options.address, cREAL.options.address]; // ceur-celo, celo-cusd, cusd-creal - only 3k usd in pools
-const ceur_moo = [mceurAddress, CELO.options.address, MOO.options.address]; // mceur-celo, celo-moo
-
-const creal_moo = [cREAL.options.address, cUSD.options.address, CELO.options.address, MOO.options.address]; // creal-cusd, cusd-celo, celo-moo
-
-const paths = {};
-
-paths[`${CELO.options.address}_${cUSD.options.address}`.toLowerCase()] = { path: celo_cusd, useATokenAsFrom: false, useATokenAsTo: true };
-paths[`${CELO.options.address}_${cEUR.options.address}`.toLowerCase()] = { path: celo_ceur, useATokenAsFrom: false, useATokenAsTo: true };
-paths[`${CELO.options.address}_${cREAL.options.address}`.toLowerCase()] = { path: celo_creal, useATokenAsFrom: false, useATokenAsTo: false };
-paths[`${CELO.options.address}_${MOO.options.address}`.toLowerCase()] = { path: celo_moo, useATokenAsFrom: false, useATokenAsTo: true };
-paths[`${cUSD.options.address}_${cEUR.options.address}`.toLowerCase()] = { path: cusd_ceur, useATokenAsFrom: true, useATokenAsTo: true };
-paths[`${cUSD.options.address}_${cREAL.options.address}`.toLowerCase()] = { path: cusd_creal, useATokenAsFrom: false, useATokenAsTo: false };
-paths[`${cUSD.options.address}_${MOO.options.address}`.toLowerCase()] = { path: cusd_moo, useATokenAsFrom: false, useATokenAsTo: false };
-paths[`${cEUR.options.address}_${cREAL.options.address}`.toLowerCase()] = { path: ceur_creal, useATokenAsFrom: false, useATokenAsTo: false };
-paths[`${cEUR.options.address}_${MOO.options.address}`.toLowerCase()] = { path: ceur_moo, useATokenAsFrom: true, useATokenAsTo: true };
-paths[`${cREAL.options.address}_${MOO.options.address}`.toLowerCase()] = { path: creal_moo, useATokenAsFrom: false, useATokenAsTo: true };
-
-paths[`${cUSD.options.address}_${CELO.options.address}`.toLowerCase()] = { path: [...celo_cusd].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
-paths[`${cEUR.options.address}_${CELO.options.address}`.toLowerCase()] = { path: [...celo_ceur].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
-paths[`${cREAL.options.address}_${CELO.options.address}`.toLowerCase()] = { path: [...celo_creal].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
-paths[`${MOO.options.address}_${CELO.options.address}`.toLowerCase()] = { path: [...celo_moo].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
-paths[`${cEUR.options.address}_${cUSD.options.address}`.toLowerCase()] = { path: [...cusd_ceur].reverse(), useATokenAsFrom: true, useATokenAsTo: true };
-paths[`${cREAL.options.address}_${cUSD.options.address}`.toLowerCase()] = { path: [...cusd_creal].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
-paths[`${MOO.options.address}_${cUSD.options.address}`.toLowerCase()] = { path: [...cusd_moo].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
-paths[`${cREAL.options.address}_${cEUR.options.address}`.toLowerCase()] = { path: [...celo_creal].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
-paths[`${MOO.options.address}_${cEUR.options.address}`.toLowerCase()] = { path: [...ceur_moo].reverse(), useATokenAsFrom: true, useATokenAsTo: true };
-paths[`${MOO.options.address}_${cREAL.options.address}`.toLowerCase()] = { path: [...creal_moo].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
 
 const web3 = kit.web3;
 const eth = web3.eth;
@@ -216,9 +180,6 @@ async function execute() {
         const collateralAddress = tokens[biggestCollateral[0]].options.address.toLowerCase();
         const borrowAddress = tokens[biggestBorrow[0]].options.address.toLowerCase();
 
-        const swapPath = paths[`${collateralAddress}_${borrowAddress}`].path;
-        const useATokenAsFrom = paths[`${collateralAddress}_${borrowAddress}`].useATokenAsFrom;
-        const useATokenAsTo = paths[`${collateralAddress}_${borrowAddress}`].useATokenAsTo;
 
         let rateMode; // 1 for Stable, 2 for Variable
         let repayAmount;
@@ -236,14 +197,16 @@ async function execute() {
           .call();
         const mToken = new kit.web3.eth.Contract(MToken, reserveCollateralToken.aTokenAddress);
 
-        const increaseHealthFactorMethod = async (repAmount, useFlashloan) => {
-          const amountOut = repAmount.plus(repAmount.multipliedBy(9).dividedBy(10000)).toFixed(0);
-          const amounts = await ubeswap.methods
-            .getAmountsIn(amountOut, swapPath)
-            .call();
+        const reserveBorrowToken = await dataProvider.methods
+        .getReserveTokensAddresses(borrowAddress)
+        .call();
 
-          const maxCollateralAmount = BN(amounts[0])
-            .plus(BN(amounts[0]).multipliedBy(1).dividedBy(1000))
+        const increaseHealthFactorMethod = async (repAmount, amountOut, useFlashloan) => {
+          const { amount, path, useATokenAsFrom, useATokenAsTo}  = await swapPathHelper.getBestSwapPath(
+            amountOut, collateralAddress, reserveCollateralToken.aTokenAddress, borrowAddress, reserveBorrowToken.aTokenAddress
+          );
+          const maxCollateralAmount = BN(amount)
+            .plus(BN(amount).multipliedBy(1).dividedBy(1000))
             .toFixed(0); // 0.1% slippage
           const feeAmount = BN(maxCollateralAmount).multipliedBy(10).dividedBy(10000);
           let method = autoRepay.methods.increaseHealthFactor(
@@ -254,7 +217,7 @@ async function execute() {
               collateralAmount: maxCollateralAmount.toString(0),
               debtRepayAmount: repAmount.toFixed(0),
               rateMode,
-              path: swapPath,
+              path,
               useATokenAsFrom,
               useATokenAsTo,
               useFlashloan,
@@ -267,7 +230,8 @@ async function execute() {
 
         const repaySimulation = async (repAmount, attempt) => {
           console.log(`attempt: ${attempt}`)
-          let { method, total } = await increaseHealthFactorMethod(repAmount, true);
+          const amountOut = repAmount.plus(repAmount.multipliedBy(9).dividedBy(10000)).toFixed(0);
+          let { method, total } = await increaseHealthFactorMethod(repAmount, amountOut, true);
 
           if (
             BN(await mToken.methods.allowance(user, autoRepay.options.address).call()).lt(total)
@@ -281,14 +245,7 @@ async function execute() {
             // if success simulation, trying to simulate without flashloan
             try {
               const amountOut = repAmount.toFixed(0);
-              const amounts = await ubeswap.methods
-                .getAmountsIn(amountOut, swapPath)
-                .call();
-
-              const maxCollateralAmount = BN(amounts[0])
-                .plus(BN(amounts[0]).multipliedBy(1).dividedBy(1000))
-                .toFixed(0); // 0.1% slippage
-              const { method: methodNoFlashloan, } = await increaseHealthFactorMethod(repAmount, false);
+              const { method: methodNoFlashloan, } = await increaseHealthFactorMethod(repAmount, amountOut, false);
               await retry(() => methodNoFlashloan.estimateGas({ from: caller, gas: DEFAULT_GAS }));
               method = methodNoFlashloan;
 
