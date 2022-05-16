@@ -13,6 +13,7 @@ const BigNumber = require('bignumber.js');
 const Promise = require('bluebird');
 const eventsCollector = require('events-collector');
 const ethers = require('ethers');
+const SwapPath = require('./helpers/helpers.js');
 
 const CELO_BOT_KEY = process.env.CELO_BOT_KEY;
 const DEFAULT_GAS = 2000000;
@@ -60,6 +61,8 @@ const ubeswap = new kit.web3.eth.Contract(Uniswap, ubeswapRouter);
 const mcusdAddress = '0x918146359264c492bd6934071c6bd31c854edbc3';
 const mceurAddress = '0xe273ad7ee11dcfaa87383ad5977ee1504ac07568';
 const mceloAddress = '0x7d00cd74ff385c955ea3d79e47bf06bd7386387d';
+
+const swapPathHelper = new SwapPath(ubeswap, CELO, mceloAddress, cUSD, mcusdAddress, cEUR, mceurAddress, cREAL, MOO);
 
 const tokens = {
   celo: CELO,
@@ -199,7 +202,9 @@ async function execute() {
         .call();
 
         const increaseHealthFactorMethod = async (repAmount, amountOut, useFlashloan) => {
-          const { amount, path, useATokenAsFrom, useATokenAsTo}  = await getBestSwapPath(amountOut, collateralAddress, reserveCollateralToken.aTokenAddress, borrowAddress, reserveBorrowToken.aTokenAddress);
+          const { amount, path, useATokenAsFrom, useATokenAsTo}  = await swapPathHelper.getBestSwapPath(
+            amountOut, collateralAddress, reserveCollateralToken.aTokenAddress, borrowAddress, reserveBorrowToken.aTokenAddress
+          );
           const maxCollateralAmount = BN(amount)
             .plus(BN(amount).multipliedBy(1).dividedBy(1000))
             .toFixed(0); // 0.1% slippage
@@ -220,89 +225,6 @@ async function execute() {
             { amount: 0, deadline: 0, v: 0, r: ethers.constants.HashZero, s: ethers.constants.HashZero }
           );
           return { method, total: BN(maxCollateralAmount).plus(feeAmount) };
-        }
-
-        const getBestSwapPath = async (amountOut, collateralAddress, reserveCollateralTokenAddress, borrowAddress, reserveBorrowTokenAddress) => {
-          const paths = buildPaths(collateralAddress, reserveCollateralTokenAddress, borrowAddress, reserveBorrowTokenAddress);
-
-          const validPaths = []
-          for (let i = 0; i < paths.length; i++) {
-            const path = paths[i];
-            try {
-              const amounts = await ubeswap.methods
-                .getAmountsIn(amountOut, path.path)
-                .call();
-              validPaths.push({ amount: BN(amounts[0]), ...path })
-            } catch (error) {
-              // not valid path
-            }
-          }
-
-          const bestPath = validPaths.sort(({ amount: amount1 }, { amount: amount2 }) =>
-            BN(amount1).comparedTo(BN(amount2))
-          )[0];
-          return bestPath;
-        }
-
-        const buildPaths = (collateralAddress, reserveCollateralTokenAddress, borrowAddress, reserveBorrowTokenAddress) => {
-          // Get mTokenAddresses
-          let paths = [];
-          //collateral - borrow
-          paths.push({ path: [collateralAddress, borrowAddress], useATokenAsFrom: false, useATokenAsTo: false });
-          //MtokenCollateral - borrow
-          paths.push({ path: [reserveCollateralTokenAddress, borrowAddress], useATokenAsFrom: true, useATokenAsTo: false });
-          //collateral - mBorrow
-          paths.push({ path: [collateralAddress, reserveBorrowTokenAddress], useATokenAsFrom: false, useATokenAsTo: true });
-          //MtokenCollateral - mBorrow
-          paths.push({ path: [reserveCollateralTokenAddress, reserveBorrowTokenAddress], useATokenAsFrom: true, useATokenAsTo: true });
-          // with celo
-          paths.push({ path: [collateralAddress, CELO.options.address, borrowAddress], useATokenAsFrom: false, useATokenAsTo: false });
-          paths.push({ path: [reserveCollateralTokenAddress, CELO.options.address, borrowAddress], useATokenAsFrom: true, useATokenAsTo: false });
-          paths.push({ path: [collateralAddress, CELO.options.address, reserveBorrowTokenAddress], useATokenAsFrom: false, useATokenAsTo: true });
-          paths.push({ path: [reserveCollateralTokenAddress, CELO.options.address, reserveBorrowTokenAddress], useATokenAsFrom: true, useATokenAsTo: true });
-          // with mcelo
-          paths.push({ path: [collateralAddress, mceloAddress, borrowAddress], useATokenAsFrom: false, useATokenAsTo: false });
-          paths.push({ path: [reserveCollateralTokenAddress, mceloAddress, borrowAddress], useATokenAsFrom: true, useATokenAsTo: false });
-          paths.push({ path: [collateralAddress, mceloAddress, reserveBorrowTokenAddress], useATokenAsFrom: false, useATokenAsTo: true });
-          paths.push({ path: [reserveCollateralTokenAddress, mceloAddress, reserveBorrowTokenAddress], useATokenAsFrom: true, useATokenAsTo: true });
-          // with cusd
-          paths.push({ path: [collateralAddress, cUSD.options.address, borrowAddress], useATokenAsFrom: false, useATokenAsTo: false });
-          paths.push({ path: [reserveCollateralTokenAddress, cUSD.options.address, borrowAddress], useATokenAsFrom: true, useATokenAsTo: false });
-          paths.push({ path: [collateralAddress, cUSD.options.address, reserveBorrowTokenAddress], useATokenAsFrom: false, useATokenAsTo: true });
-          paths.push({ path: [reserveCollateralTokenAddress, cUSD.options.address, reserveBorrowTokenAddress], useATokenAsFrom: true, useATokenAsTo: true });
-          // with mcusd
-          paths.push({ path: [collateralAddress, mcusdAddress, borrowAddress], useATokenAsFrom: false, useATokenAsTo: false });
-          paths.push({ path: [reserveCollateralTokenAddress, mcusdAddress, borrowAddress], useATokenAsFrom: true, useATokenAsTo: false });
-          paths.push({ path: [collateralAddress, mcusdAddress, reserveBorrowTokenAddress], useATokenAsFrom: false, useATokenAsTo: true });
-          paths.push({ path: [reserveCollateralTokenAddress, mcusdAddress, reserveBorrowTokenAddress], useATokenAsFrom: true, useATokenAsTo: true });
-          // with ceur
-          paths.push({ path: [collateralAddress, cEUR.options.address, borrowAddress], useATokenAsFrom: false, useATokenAsTo: false });
-          paths.push({ path: [reserveCollateralTokenAddress, cEUR.options.address, borrowAddress], useATokenAsFrom: true, useATokenAsTo: false });
-          paths.push({ path: [collateralAddress, cEUR.options.address, reserveBorrowTokenAddress], useATokenAsFrom: false, useATokenAsTo: true });
-          paths.push({ path: [reserveCollateralTokenAddress, cEUR.options.address, reserveBorrowTokenAddress], useATokenAsFrom: true, useATokenAsTo: true });
-          // with mceur
-          paths.push({ path: [collateralAddress, mceurAddress, borrowAddress], useATokenAsFrom: false, useATokenAsTo: false });
-          paths.push({ path: [reserveCollateralTokenAddress, mceurAddress, borrowAddress], useATokenAsFrom: true, useATokenAsTo: false });
-          paths.push({ path: [collateralAddress, mceurAddress, reserveBorrowTokenAddress], useATokenAsFrom: false, useATokenAsTo: true });
-          paths.push({ path: [reserveCollateralTokenAddress, mceurAddress, reserveBorrowTokenAddress], useATokenAsFrom: true, useATokenAsTo: true });
-          // Add custom paths
-          const ceur_creal = [cEUR.options.address, CELO.options.address, cUSD.options.address, cREAL.options.address]; // ceur-celo, celo-cusd, cusd-creal - only 3k usd in pools
-          if (collateralAddress.toLowerCase() == cEUR.options.address.toLowerCase() && borrowAddress.toLowerCase() == cREAL.options.address.toLowerCase()) {
-            paths = [{ path: ceur_creal, useATokenAsFrom: false, useATokenAsTo: false }];
-          }
-          if (collateralAddress.toLowerCase() == cREAL.options.address.toLowerCase() && borrowAddress.toLowerCase() == cEUR.options.address.toLowerCase()) {
-            paths = [{ path: [...ceur_creal].reverse(), useATokenAsFrom: false, useATokenAsTo: false }]
-          }
-
-          const creal_moo = [cREAL.options.address, cUSD.options.address, CELO.options.address, MOO.options.address]; // creal-cusd, cusd-celo, celo-moo
-          if (collateralAddress.toLowerCase() == cREAL.options.address.toLowerCase() && borrowAddress.toLowerCase() == MOO.options.address.toLowerCase()) {
-            paths = [{ path: creal_moo, useATokenAsFrom: false, useATokenAsTo: true }];
-          }
-          if (collateralAddress.toLowerCase() == MOO.options.address.toLowerCase() && borrowAddress.toLowerCase() == cREAL.options.address.toLowerCase()) {
-            paths = [{ path: [...creal_moo].reverse(), useATokenAsFrom: true, useATokenAsTo: false }];
-          }
-
-          return paths;
         }
 
 
