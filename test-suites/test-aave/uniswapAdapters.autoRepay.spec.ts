@@ -121,7 +121,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
+          .setMinTargetHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
         await aWETH.connect(user).approve(autoRepay.address, liquidityToSwap.add(callerFee));
         const userAEthBalanceBefore = await aWETH.balanceOf(userAddress);
         await mockUniswapRouter.connect(user).setAmountToSwap(weth.address, liquidityToSwap);
@@ -200,7 +200,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
+          .setMinTargetHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
         const chainId = DRE.network.config.chainId || BUIDLEREVM_CHAINID;
         const deadline = MAX_UINT_AMOUNT;
         const nonce = (await aWETH._nonces(userAddress)).toNumber();
@@ -297,7 +297,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
+          .setMinTargetHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
         await aWETH.connect(user).approve(autoRepay.address, liquidityToSwap.add(callerFee));
         await mockUniswapRouter.connect(user).setAmountToSwap(weth.address, liquidityToSwap);
         const flashLoanDebt = new BigNumber(expectedDaiAmount.toString())
@@ -350,7 +350,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(
+          .setMinTargetHealthFactor(
             userData.healthFactor.sub(userData.healthFactor.div(10)),
             MAX_UINT_AMOUNT
           );
@@ -409,7 +409,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           const userData = await pool.getUserAccountData(userAddress);
           await autoRepay
             .connect(user)
-            .setMinMaxHealthFactor(userData.healthFactor.add(1), userData.healthFactor.add(100));
+            .setMinTargetHealthFactor(userData.healthFactor.add(1), userData.healthFactor.add(100));
           await aWETH.connect(user).approve(autoRepay.address, liquidityToSwap.add(callerFee));
           await mockUniswapRouter.connect(user).setAmountToSwap(weth.address, liquidityToSwap);
           const flashLoanDebt = new BigNumber(expectedDaiAmount.toString())
@@ -438,7 +438,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               zeroPermitSignature
             )
           ).to.be.revertedWith(
-            'User health factor was not increased or more than maxHealthFactor'
+            'User health factor was not increased or more than targetHealthFactor'
           );
         }
       );
@@ -538,7 +538,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
+          .setMinTargetHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
         await aWETH.connect(user).approve(autoRepay.address, liquidityToSwap.add(callerFee));
         await mockUniswapRouter.connect(user).setAmountToSwap(weth.address, liquidityToSwap);
         const flashLoanDebt = new BigNumber(expectedDaiAmount.toString())
@@ -595,7 +595,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
+          .setMinTargetHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
         await aWETH.connect(user).approve(autoRepay.address, liquidityToSwap.add(callerFee));
         await mockUniswapRouter.connect(user).setAmountToSwap(weth.address, liquidityToSwap);
 
@@ -640,7 +640,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
+          .setMinTargetHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
         await aWETH.connect(user).approve(autoRepay.address, bigMaxAmountToSwap.add(callerFee));
         await mockUniswapRouter.connect(user).setAmountToSwap(weth.address, bigMaxAmountToSwap);
         const flashLoanDebt = new BigNumber(expectedDaiAmount.toString())
@@ -701,7 +701,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
+          .setMinTargetHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
         await aWETH.connect(user).approve(autoRepay.address, liquidityToSwap.add(callerFee));
         const userAEthBalanceBefore = await aWETH.balanceOf(userAddress);
         const userWethBalanceBefore = await weth.balanceOf(userAddress);
@@ -794,7 +794,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
+          .setMinTargetHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
         await aWETH.connect(user).approve(autoRepay.address, liquidityToSwap.add(callerFee));
         const userAEthBalanceBefore = await aWETH.balanceOf(userAddress);
         // Add a % to repay on top of the debt
@@ -872,7 +872,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
+          .setMinTargetHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
         await aWETH.connect(user).approve(autoRepay.address, liquidityToSwap.add(callerFee));
         const userAEthBalanceBefore = await aWETH.balanceOf(userAddress);
         // Add a % to repay on top of the debt
@@ -948,7 +948,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           const userData = await pool.getUserAccountData(userAddress);
           await autoRepay
             .connect(user)
-            .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
+            .setMinTargetHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
           const flashLoanDebt = new BigNumber(amountCollateralToSwap.toString())
             .multipliedBy(1.0009)
             .toFixed(0);
@@ -1033,7 +1033,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
+          .setMinTargetHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
         await aWETH.connect(user).approve(autoRepay.address, liquidityToSwap.add(callerFee));
         const userAEthBalanceBefore = await aWETH.balanceOf(userAddress);
         await mockUniswapRouter.setAmountToSwap(weth.address, liquidityToSwap);
@@ -1103,7 +1103,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
+          .setMinTargetHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
         const chainId = DRE.network.config.chainId || BUIDLEREVM_CHAINID;
         const deadline = MAX_UINT_AMOUNT;
         const nonce = (await aWETH._nonces(userAddress)).toNumber();
@@ -1180,7 +1180,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
+          .setMinTargetHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
         await aWETH.connect(user).approve(autoRepay.address, liquidityToSwap.add(callerFee));
         await mockUniswapRouter.setAmountToSwap(weth.address, liquidityToSwap);
         await mockUniswapRouter.setDefaultMockValue(liquidityToSwap);
@@ -1225,7 +1225,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(
+          .setMinTargetHealthFactor(
             userData.healthFactor.sub(userData.healthFactor.div(10)),
             MAX_UINT_AMOUNT
           );
@@ -1275,7 +1275,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           const userData = await pool.getUserAccountData(userAddress);
           await autoRepay
             .connect(user)
-            .setMinMaxHealthFactor(userData.healthFactor.add(1), userData.healthFactor.add(100));
+            .setMinTargetHealthFactor(userData.healthFactor.add(1), userData.healthFactor.add(100));
           await aWETH.connect(user).approve(autoRepay.address, liquidityToSwap.add(callerFee));
           await mockUniswapRouter.setAmountToSwap(weth.address, liquidityToSwap);
           await mockUniswapRouter.setDefaultMockValue(liquidityToSwap);
@@ -1296,7 +1296,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               zeroPermitSignature
             )
           ).to.be.revertedWith(
-            'User health factor was not increased or more than maxHealthFactor'
+            'User health factor was not increased or more than targetHealthFactor'
           );
         }
       );
@@ -1325,7 +1325,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
+          .setMinTargetHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
         await aWETH.connect(user).approve(autoRepay.address, liquidityToSwap.add(callerFee));
         await mockUniswapRouter.setAmountToSwap(weth.address, liquidityToSwap);
         await mockUniswapRouter.setDefaultMockValue(liquidityToSwap);
@@ -1370,7 +1370,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
+          .setMinTargetHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
         await aWETH.connect(user).approve(autoRepay.address, bigMaxAmountToSwap.add(callerFee));
         await mockUniswapRouter.connect(user).setAmountToSwap(weth.address, bigMaxAmountToSwap);
         await mockUniswapRouter.setDefaultMockValue(bigMaxAmountToSwap);
@@ -1423,7 +1423,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
+          .setMinTargetHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
         await aWETH.connect(user).approve(autoRepay.address, liquidityToSwap.add(callerFee));
         const userAEthBalanceBefore = await aWETH.balanceOf(userAddress);
         const userWethBalanceBefore = await weth.balanceOf(userAddress);
@@ -1503,7 +1503,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
+          .setMinTargetHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
         await aWETH.connect(user).approve(autoRepay.address, liquidityToSwap.add(callerFee));
         const userAEthBalanceBefore = await aWETH.balanceOf(userAddress);
         // Add a % to repay on top of the debt
@@ -1581,7 +1581,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
+          .setMinTargetHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
         await aWETH.connect(user).approve(autoRepay.address, liquidityToSwap.add(callerFee));
         const userAEthBalanceBefore = await aWETH.balanceOf(userAddress);
         // Add a % to repay on top of the debt
@@ -1655,7 +1655,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userData = await pool.getUserAccountData(userAddress);
         await autoRepay
           .connect(user)
-          .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
+          .setMinTargetHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
         await aDai.connect(user).approve(autoRepay.address, amountCollateralToSwap.add(callerFee));
         const userADaiBalanceBefore = await aDai.balanceOf(userAddress);
         const userDaiBalanceBefore = await dai.balanceOf(userAddress);

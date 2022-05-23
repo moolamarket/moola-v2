@@ -17,7 +17,7 @@ contract AutoRepay is BaseUniswapAdapter {
   using PercentageMath for uint256;
   using EnumerableSet for EnumerableSet.AddressSet;
 
-  event HealthFactorSet(address indexed user, uint256 min, uint256 max);
+  event HealthFactorSet(address indexed user, uint256 min, uint256 target, uint256 max, address borrowAddress, address collateralAddress);
 
   /**
    * @dev struct RepayParams
@@ -45,9 +45,23 @@ contract AutoRepay is BaseUniswapAdapter {
     bool useFlashloan;
   }
 
+  struct BorrowParams {
+    address user;
+    uint256 minCollateralAmountOut;
+    uint256 borrowAmount;
+    address[] path;
+    bool useATokenAsFrom;
+    bool useATokenAsTo;
+    bool useFlashloan;
+  }
+
   struct UserInfo {
     uint256 minHealthFactor;
+    uint256 targetHealthFactor;
     uint256 maxHealthFactor;
+    uint256 rateMode;
+    address collateralAddress;
+    address borrowAddress;
   }
 
   EnumerableSet.AddressSet private _whitelistedAddresses;
@@ -88,16 +102,59 @@ contract AutoRepay is BaseUniswapAdapter {
     return addresses;
   }
 
-  function setMinMaxHealthFactor(uint256 minHealthFactor, uint256 maxHealthFactor) external {
+  function setMinTargetHealthFactor(uint256 minHealthFactor, uint256 targetHealthFactor) external {
     require(
-      maxHealthFactor >= minHealthFactor,
-      'maxHealthFactor should be more or equal than minHealthFactor'
+      targetHealthFactor >= minHealthFactor,
+      'targetHealthFactor should be more or equal than minHealthFactor'
     );
     userInfos[msg.sender] = UserInfo({
       minHealthFactor: minHealthFactor,
-      maxHealthFactor: maxHealthFactor
+      targetHealthFactor: targetHealthFactor,
+      maxHealthFactor: 0,
+      rateMode: 0,
+      borrowAddress: address(0),
+      collateralAddress: address(0)
     });
-    emit HealthFactorSet(msg.sender, minHealthFactor, maxHealthFactor);
+    emit HealthFactorSet(msg.sender, minHealthFactor, targetHealthFactor, 0, address(0), address(0));
+  }
+
+  function setMinTargetMaxHealthFactor(uint256 minHealthFactor, uint256 targetHealthFactor, uint256 maxHealthFactor, address borrowAddress, address collateralAddress, uint256 rateMode) external {
+    require(
+      targetHealthFactor >= minHealthFactor,
+      'targetHealthFactor should be more or equal than minHealthFactor'
+    );
+    require(
+      maxHealthFactor >= targetHealthFactor,
+      'maxHealthFactor should be more or equal than targetHealthFactor'
+    );
+    // 1 for Stable, 2 for Variable
+    require(rateMode == 1 || rateMode == 2, 'Not valid rate mode provided');
+    require(_getReserveData(collateralAddress).aTokenAddress != address(0), 'Not valid collateralAddress provided');
+    require(_getReserveData(borrowAddress).aTokenAddress != address(0), 'Not valid borrowAddress provided');
+    require(collateralAddress != borrowAddress, 'collateral and borrwo could not be equal');
+
+    userInfos[msg.sender] = UserInfo({
+      minHealthFactor: minHealthFactor,
+      targetHealthFactor: targetHealthFactor,
+      maxHealthFactor: maxHealthFactor,
+      rateMode: rateMode,
+      collateralAddress: collateralAddress,
+      borrowAddress: borrowAddress
+    });
+    emit HealthFactorSet(msg.sender, minHealthFactor, targetHealthFactor, maxHealthFactor, borrowAddress, collateralAddress);
+  }
+
+  function clearMinTargetMaxHealthFactor() external {
+    require(userInfos[msg.sender].minHealthFactor > 0, 'Already clear');
+    userInfos[msg.sender] = UserInfo({
+      minHealthFactor: 0,
+      targetHealthFactor: 0,
+      maxHealthFactor: 0,
+      rateMode: 0,
+      collateralAddress: address(0),
+      borrowAddress: address(0)
+    });
+    emit HealthFactorSet(msg.sender, 0, 0, 0, address(0), address(0));
   }
 
   function _checkMinHealthFactor(address user) internal view returns (uint256) {
@@ -109,11 +166,28 @@ contract AutoRepay is BaseUniswapAdapter {
     return healthFactor;
   }
 
+  function _checkMaxHealthFactor(address user) internal view returns (uint256) {
+    (, , , , , uint256 healthFactor) = LENDING_POOL.getUserAccountData(user);
+    require(
+      healthFactor > userInfos[user].maxHealthFactor,
+      'User health factor must be more than maxHealthFactor for user'
+    );
+    return healthFactor;
+  }
+
   function _checkHealthFactorIncreased(address user, uint256 healthFactorBefore) internal view {
     (, , , , , uint256 healthFactor) = LENDING_POOL.getUserAccountData(user);
     require(
-      healthFactor > healthFactorBefore && healthFactor <= userInfos[user].maxHealthFactor,
-      'User health factor was not increased or more than maxHealthFactor'
+      healthFactor > healthFactorBefore && healthFactor <= userInfos[user].targetHealthFactor,
+      'User health factor was not increased or more than targetHealthFactor'
+    );
+  }
+
+  function _checkHealthFactorDecreased(address user, uint256 healthFactorBefore) internal view {
+    (, , , , , uint256 healthFactor) = LENDING_POOL.getUserAccountData(user);
+    require(
+      healthFactor < healthFactorBefore && healthFactor >= userInfos[user].targetHealthFactor,
+      'User health factor was not decreased or less than targetHealthFactor'
     );
   }
 
@@ -141,41 +215,61 @@ contract AutoRepay is BaseUniswapAdapter {
   ) external override returns (bool) {
     require(msg.sender == address(LENDING_POOL), 'CALLER_MUST_BE_LENDING_POOL');
     require(initiator == address(this), 'Only this contract can call flashloan');
-    (
-      RepayParams memory repayParams,
-      PermitSignature memory permitSignature,
-      address caller
-    ) = _decodeParams(params);
-    repayParams.debtAsset = assets[0];
-    repayParams.debtRepayAmount = amounts[0];
 
-    // Repay debt. Approves for 0 first to comply with tokens that implement the anti frontrunning approval fix.
-    {
-      IERC20(repayParams.debtAsset).safeApprove(address(LENDING_POOL), 0);
-      IERC20(repayParams.debtAsset).safeApprove(address(LENDING_POOL), repayParams.debtRepayAmount);
-      uint256 repaidAmount = IERC20(repayParams.debtAsset).balanceOf(address(this));
-      LENDING_POOL.repay(
-        repayParams.debtAsset,
-        repayParams.debtRepayAmount,
-        repayParams.rateMode,
-        repayParams.user
-      );
-      repaidAmount = repaidAmount.sub(IERC20(repayParams.debtAsset).balanceOf(address(this)));
+    (bool isBorrow) = _decodeBoolParam(params);
+    if (isBorrow) {
+      (
+        BorrowParams memory borrowParams,
+        PermitSignature memory permitSignature,
+        address caller
+      ) = _decodeBorrowParams(params);
 
-      if (repaidAmount < repayParams.debtRepayAmount) {
-        repayParams.collateralAmount = repayParams.collateralAmount.mul(repaidAmount).div(
-          repayParams.debtRepayAmount
+      UserInfo memory userInfo = userInfos[borrowParams.user];
+
+      IERC20(userInfo.borrowAddress).safeApprove(address(LENDING_POOL), 0);
+      IERC20(userInfo.borrowAddress).safeApprove(address(LENDING_POOL), borrowParams.borrowAmount);
+
+      LENDING_POOL.borrow(userInfo.borrowAddress, borrowParams.borrowAmount, userInfo.rateMode, 0, borrowParams.user);
+
+      _doSwapAndPullWithFeeBorrow(borrowParams, permitSignature, caller, 0, userInfo);
+
+    } else {
+      (
+        RepayParams memory repayParams,
+        PermitSignature memory permitSignature,
+        address caller
+      ) = _decodeRepayParams(params);
+      repayParams.debtAsset = assets[0];
+      repayParams.debtRepayAmount = amounts[0];
+
+      // Repay debt. Approves for 0 first to comply with tokens that implement the anti frontrunning approval fix.
+      {
+        IERC20(repayParams.debtAsset).safeApprove(address(LENDING_POOL), 0);
+        IERC20(repayParams.debtAsset).safeApprove(address(LENDING_POOL), repayParams.debtRepayAmount);
+        uint256 repaidAmount = IERC20(repayParams.debtAsset).balanceOf(address(this));
+        LENDING_POOL.repay(
+          repayParams.debtAsset,
+          repayParams.debtRepayAmount,
+          repayParams.rateMode,
+          repayParams.user
         );
+        repaidAmount = repaidAmount.sub(IERC20(repayParams.debtAsset).balanceOf(address(this)));
+
+        if (repaidAmount < repayParams.debtRepayAmount) {
+          repayParams.collateralAmount = repayParams.collateralAmount.mul(repaidAmount).div(
+            repayParams.debtRepayAmount
+          );
+        }
+
+        repayParams.debtRepayAmount = repaidAmount;
       }
 
-      repayParams.debtRepayAmount = repaidAmount;
+      _doSwapAndPullWithFeeRepay(repayParams, permitSignature, caller, premiums[0]);
+
+      // Repay flashloan. Approves for 0 first to comply with tokens that implement the anti frontrunning approval fix.
+      IERC20(repayParams.debtAsset).safeApprove(address(LENDING_POOL), 0);
+      IERC20(repayParams.debtAsset).safeApprove(address(LENDING_POOL), amounts[0].add(premiums[0]));
     }
-
-    _doSwapAndPullWithFee(repayParams, permitSignature, caller, premiums[0]);
-
-    // Repay flashloan. Approves for 0 first to comply with tokens that implement the anti frontrunning approval fix.
-    IERC20(repayParams.debtAsset).safeApprove(address(LENDING_POOL), 0);
-    IERC20(repayParams.debtAsset).safeApprove(address(LENDING_POOL), amounts[0].add(premiums[0]));
 
     return true;
   }
@@ -194,7 +288,7 @@ contract AutoRepay is BaseUniswapAdapter {
     require(isWhitelisted(msg.sender), 'Caller is not whitelisted');
     uint256 healthFactorBefore = _checkMinHealthFactor(repayParams.user);
     if (repayParams.useFlashloan) {
-      bytes memory params = abi.encode(repayParams, permitSignature, msg.sender);
+      bytes memory params = abi.encode(false, repayParams, permitSignature, msg.sender);
       address[] memory assets = new address[](1);
       assets[0] = repayParams.debtAsset;
       uint256[] memory amounts = new uint256[](1);
@@ -221,7 +315,7 @@ contract AutoRepay is BaseUniswapAdapter {
         );
       }
       repayParams.debtRepayAmount = amountToRepay;
-      _doSwapAndPullWithFee(repayParams, permitSignature, msg.sender, 0);
+      _doSwapAndPullWithFeeRepay(repayParams, permitSignature, msg.sender, 0);
 
       // Repay debt. Approves 0 first to comply with tokens that implement the anti frontrunning approval fix
       IERC20(repayParams.debtAsset).safeApprove(address(LENDING_POOL), 0);
@@ -236,6 +330,35 @@ contract AutoRepay is BaseUniswapAdapter {
     _checkHealthFactorIncreased(repayParams.user, healthFactorBefore);
   }
 
+  function decreaseHealthFactor(
+    BorrowParams memory borrowParams,
+    PermitSignature calldata permitSignature
+  ) external {
+    require(isWhitelisted(msg.sender), 'Caller is not whitelisted');
+    uint256 healthFactorBefore = _checkMaxHealthFactor(borrowParams.user);
+    UserInfo memory userInfo = userInfos[borrowParams.user];
+
+    if (borrowParams.useFlashloan) {
+      bytes memory params = abi.encode(true, borrowParams, permitSignature, msg.sender);
+      address[] memory assets = new address[](1);
+      assets[0] = userInfo.borrowAddress;
+      uint256[] memory amounts = new uint256[](1);
+      amounts[0] = borrowParams.borrowAmount;
+      uint256[] memory modes = new uint256[](1);
+      modes[0] = userInfo.rateMode;
+      LENDING_POOL.flashLoan(address(this), assets, amounts, modes, borrowParams.user, params, 0);
+    } else {
+      IERC20(userInfo.borrowAddress).safeApprove(address(LENDING_POOL), 0);
+      IERC20(userInfo.borrowAddress).safeApprove(address(LENDING_POOL), borrowParams.borrowAmount);
+
+      LENDING_POOL.borrow(userInfo.borrowAddress, borrowParams.borrowAmount, userInfo.rateMode, 0, borrowParams.user);
+
+      _doSwapAndPullWithFeeBorrow(borrowParams, permitSignature, msg.sender, 0, userInfo);
+    }
+    _checkHealthFactorDecreased(borrowParams.user, healthFactorBefore);
+  }
+
+
   /**
    * @dev If the collateral asset is not equal to the debt asset,
    * then this function pulls tokens from the user, transfers the fee to the whitelisted caller,
@@ -248,7 +371,7 @@ contract AutoRepay is BaseUniswapAdapter {
    * @param caller address of increaseHealthFactor function caller
    * @param premium flashloan fee if called inside executeOperation otherwise 0
    */
-  function _doSwapAndPullWithFee(
+  function _doSwapAndPullWithFeeRepay(
     RepayParams memory repayParams,
     PermitSignature memory permitSignature,
     address caller,
@@ -316,7 +439,55 @@ contract AutoRepay is BaseUniswapAdapter {
     }
   }
 
-  function _decodeParams(bytes memory params)
+  /**
+   * @dev This function pulls tokens from the user, transfers the fee to the whitelisted caller,
+   * and swaps the borrow asset to the collateral asset.
+   *
+   * @param borrowParams See {BorrowParams}
+   * @param caller address of increaseHealthFactor function caller
+   */
+  function _doSwapAndPullWithFeeBorrow(
+    BorrowParams memory borrowParams,
+    PermitSignature memory,
+    address caller,
+    uint256,
+    UserInfo memory userInfo
+  ) internal {
+    uint256 amountIn = borrowParams.borrowAmount;
+    if (borrowParams.useATokenAsFrom) {
+      _deposit(userInfo.borrowAddress, borrowParams.borrowAmount, address(this));
+      amountIn = IERC20(_getReserveData(userInfo.borrowAddress).aTokenAddress).balanceOf(address(this));
+    }
+
+    address debtATokenAddress = _getReserveData(userInfo.borrowAddress).aTokenAddress;
+    address collateralATokenAddress = _getReserveData(userInfo.collateralAddress).aTokenAddress;
+
+    _swapExactTokensForTokensWithPath(
+      [
+        userInfo.borrowAddress,
+        userInfo.collateralAddress,
+        borrowParams.useATokenAsFrom ? debtATokenAddress : userInfo.borrowAddress,
+        borrowParams.useATokenAsTo ? collateralATokenAddress : userInfo.collateralAddress
+      ],
+      amountIn,
+      borrowParams.minCollateralAmountOut,
+      borrowParams.path,
+      borrowParams.useATokenAsFrom || borrowParams.useATokenAsTo,
+      address(this)
+    );
+
+    uint256 feeAmount = amountIn.mul(FEE).div(HUNDRED_PERCENT);
+
+    if (!borrowParams.useATokenAsTo) {
+      _deposit(userInfo.collateralAddress, amountIn - feeAmount, borrowParams.user);
+      _deposit(userInfo.collateralAddress, feeAmount, caller);
+    } else {
+      IERC20(collateralATokenAddress).safeTransfer(borrowParams.user, amountIn);
+      IERC20(collateralATokenAddress).safeTransfer(caller, feeAmount);
+    }
+  }
+
+  function _decodeRepayParams(bytes memory params)
     internal
     pure
     returns (
@@ -325,9 +496,45 @@ contract AutoRepay is BaseUniswapAdapter {
       address
     )
   {
-    (RepayParams memory repayParams, PermitSignature memory permitSignature, address caller) = abi
-      .decode(params, (RepayParams, PermitSignature, address));
+    (, RepayParams memory repayParams, PermitSignature memory permitSignature, address caller) = abi
+      .decode(params, (bool, RepayParams, PermitSignature, address));
 
     return (repayParams, permitSignature, caller);
+  }
+
+  function _decodeBorrowParams(bytes memory params)
+    internal
+    pure
+    returns (
+      BorrowParams memory,
+      PermitSignature memory,
+      address
+    )
+  {
+    (, BorrowParams memory borrowParams, PermitSignature memory permitSignature, address caller) = abi
+      .decode(params, (bool, BorrowParams, PermitSignature, address));
+
+    return (borrowParams, permitSignature, caller);
+  }
+
+  function _decodeBoolParam(bytes memory params)
+    internal
+    pure
+    returns (
+      bool
+    )
+  {
+    (bool isBorrow) = abi.decode(params, (bool));
+
+    return (isBorrow);
+  }
+
+  function _deposit(
+    address asset,
+    uint256 amount,
+    address to
+  ) internal {
+    IERC20(asset).safeApprove(address(LENDING_POOL), amount);
+    LENDING_POOL.deposit(asset, amount, to, 0);
   }
 }

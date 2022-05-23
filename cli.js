@@ -212,7 +212,7 @@ function printActions() {
     'auto-repay callerAddress userAddress collateral-asset debt-asset stable|variable debt-amount useFlashloan(true|false) [callerPrivateKey]'
   );
   console.info('auto-repay-user-info userAddress');
-  console.info('set-auto-repay-params address minHealthFactor maxHealthFactor [privateKey]');
+  console.info('set-auto-repay-params address minHealthFactor targetHealthFactor maxHealthFactor [privateKey]');
   console.info(
     'liquidationCall collateral-asset debt-asset risk-user debt-to-cover receive-AToken(true|false) address [privateKey]'
   );
@@ -1566,7 +1566,7 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
-      pk = params[3];
+      pk = params[4];
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1576,12 +1576,14 @@ async function execute(network, action, ...params) {
 
     if (!isNumeric(params[1])) return;
     if (!isNumeric(params[2])) return;
+    if (!isNumeric(params[3])) return;
 
     const user = params[0];
     const minHealthFactor = web3.utils.toWei(params[1]);
-    const maxHealthFactor = web3.utils.toWei(params[2]);
+    const targetHealthFactor = web3.utils.toWei(params[2]);
+    const maxHealthFactor = web3.utils.toWei(params[3]);
 
-    const method = autoRepay.methods.setMinMaxHealthFactor(minHealthFactor, maxHealthFactor);
+    const method = autoRepay.methods.setMinTargetHealthFactor(minHealthFactor, targetHealthFactor, maxHealthFactor);
 
     try {
       await retry(() => method.estimateGas({ from: user, gas: DEFAULT_GAS }));

@@ -569,7 +569,7 @@
         "type": "uint256"
       }
     ],
-    "name": "setMinMaxHealthFactor",
+    "name": "setMinTargetHealthFactor",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
