@@ -131,7 +131,7 @@ contract AutoRepay is BaseUniswapAdapter {
     require(rateMode == 1 || rateMode == 2, 'Not valid rate mode provided');
     require(_getReserveData(collateralAddress).aTokenAddress != address(0), 'Not valid collateralAddress provided');
     require(_getReserveData(borrowAddress).aTokenAddress != address(0), 'Not valid borrowAddress provided');
-    require(collateralAddress != borrowAddress, 'collateral and borrwo could not be equal');
+    require(collateralAddress != borrowAddress, 'collateral and borrow could not be equal');
 
     userInfos[msg.sender] = UserInfo({
       minHealthFactor: minHealthFactor,
@@ -228,8 +228,6 @@ contract AutoRepay is BaseUniswapAdapter {
 
       IERC20(userInfo.borrowAddress).safeApprove(address(LENDING_POOL), 0);
       IERC20(userInfo.borrowAddress).safeApprove(address(LENDING_POOL), borrowParams.borrowAmount);
-
-      LENDING_POOL.borrow(userInfo.borrowAddress, borrowParams.borrowAmount, userInfo.rateMode, 0, borrowParams.user);
 
       _doSwapAndPullWithFeeBorrow(borrowParams, permitSignature, caller, 0, userInfo);
 
@@ -350,9 +348,7 @@ contract AutoRepay is BaseUniswapAdapter {
     } else {
       IERC20(userInfo.borrowAddress).safeApprove(address(LENDING_POOL), 0);
       IERC20(userInfo.borrowAddress).safeApprove(address(LENDING_POOL), borrowParams.borrowAmount);
-
       LENDING_POOL.borrow(userInfo.borrowAddress, borrowParams.borrowAmount, userInfo.rateMode, 0, borrowParams.user);
-
       _doSwapAndPullWithFeeBorrow(borrowParams, permitSignature, msg.sender, 0, userInfo);
     }
     _checkHealthFactorDecreased(borrowParams.user, healthFactorBefore);
@@ -462,7 +458,7 @@ contract AutoRepay is BaseUniswapAdapter {
     address debtATokenAddress = _getReserveData(userInfo.borrowAddress).aTokenAddress;
     address collateralATokenAddress = _getReserveData(userInfo.collateralAddress).aTokenAddress;
 
-    _swapExactTokensForTokensWithPath(
+    amountIn = _swapExactTokensForTokensWithPath(
       [
         userInfo.borrowAddress,
         userInfo.collateralAddress,
