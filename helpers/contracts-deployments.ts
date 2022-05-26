@@ -44,7 +44,7 @@ import {
   StableDebtTokenFactory,
   UniswapLiquiditySwapAdapterFactory,
   UniswapRepayAdapterFactory,
-  AutoRepayFactory,
+  AutoRepayAndBorrowAdapterFactory,
   LeverageBorrowAdapterFactory,
   VariableDebtTokenFactory,
   WalletBalanceProviderFactory,
@@ -616,8 +616,8 @@ export const deployAutoRepay = async (
   verify?: boolean
 ) =>
   withSaveAndVerify(
-    await new AutoRepayFactory(await getFirstSigner()).deploy(...args),
-    eContractid.AutoRepay,
+    await new AutoRepayAndBorrowAdapterFactory(await getFirstSigner()).deploy(...args),
+    eContractid.AutoRepayAndBorrowAdapter,
     args,
     verify
   );

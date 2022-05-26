@@ -22,6 +22,7 @@ const { parseEther } = ethers.utils;
 
 const { expect } = require('chai');
 const zeroHash = '0x0000000000000000000000000000000000000000000000000000000000000000';
+const zeroAddress = '0x0000000000000000000000000000000000000000';
 const zeroPermitSignature = {
   amount: 0,
   deadline: 0,
@@ -92,6 +93,229 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
     });
     const ten = ethers.BigNumber.from(10);
     describe('executeOperation', () => {
+      it('should be possible to setMinTargetMaxHealthFactor and then clearMinTargetMaxHealthFactor', async () => {
+        const { users, pool, weth, oracle, dai, autoRepay } = testEnv;
+        const user = users[0].signer;
+        const userAddress = users[0].address;
+
+        const userData = await pool.getUserAccountData(userAddress);
+        await expect(
+          autoRepay
+          .connect(user)
+          .setMinTargetMaxHealthFactor(
+            userData.healthFactor.div(4),
+            userData.healthFactor.div(2),
+            userData.healthFactor.sub(parseEther('0.01')),
+            dai.address,
+            weth.address,
+            1
+          )
+        ).to.emit(autoRepay, 'HealthFactorSet')
+        .withArgs(userAddress, userData.healthFactor.div(4), userData.healthFactor.div(2), userData.healthFactor.sub(parseEther('0.01')), dai.address, weth.address);
+
+        const userInfosSet = await autoRepay.userInfos(userAddress);
+        expect(userInfosSet.minHealthFactor).to.be.eq(userData.healthFactor.div(4));
+        expect(userInfosSet.targetHealthFactor).to.be.eq(userData.healthFactor.div(2));
+        expect(userInfosSet.maxHealthFactor).to.be.eq(userData.healthFactor.sub(parseEther('0.01')));
+        expect(userInfosSet.rateMode).to.be.eq(1);
+        expect(userInfosSet.collateralAddress).to.be.eq(weth.address);
+        expect(userInfosSet.borrowAddress).to.be.eq(dai.address);
+
+        await expect(
+          autoRepay
+          .connect(user)
+          .clearMinTargetMaxHealthFactor()
+        ).to.emit(autoRepay, 'HealthFactorSet')
+        .withArgs(userAddress, Zero, Zero, Zero, zeroAddress, zeroAddress);
+
+        const userInfosCleared = await autoRepay.userInfos(userAddress);
+        expect(userInfosCleared.minHealthFactor).to.be.eq(Zero);
+        expect(userInfosCleared.targetHealthFactor).to.be.eq(Zero);
+        expect(userInfosCleared.maxHealthFactor).to.be.eq(Zero);
+        expect(userInfosCleared.rateMode).to.be.eq(Zero);
+        expect(userInfosCleared.collateralAddress).to.be.eq(zeroAddress);
+        expect(userInfosCleared.borrowAddress).to.be.eq(zeroAddress);
+      });
+
+      it('should NOT be possible to setMinTargetMaxHealthFactor if collateralAddress or rateMode or borrowAddress are not valid', async () => {
+        const { users, pool, weth, oracle, dai, autoRepay } = testEnv;
+        const user = users[0].signer;
+        const userAddress = users[0].address;
+        const notValidAddress = users[6].address;
+
+        const userData = await pool.getUserAccountData(userAddress);
+        await expect(
+          autoRepay
+          .connect(user)
+          .setMinTargetMaxHealthFactor(
+            userData.healthFactor.div(4),
+            userData.healthFactor.div(2),
+            userData.healthFactor.sub(parseEther('0.01')),
+            notValidAddress,
+            weth.address,
+            1
+          )
+        ).to.be.revertedWith('Not valid borrowAddress provided');
+
+        await expect(
+          autoRepay
+          .connect(user)
+          .setMinTargetMaxHealthFactor(
+            userData.healthFactor.div(4),
+            userData.healthFactor.div(2),
+            userData.healthFactor.sub(parseEther('0.01')),
+            dai.address,
+            notValidAddress,
+            1
+          )
+        ).to.be.revertedWith('Not valid collateralAddress provided');
+
+        await expect(
+          autoRepay
+          .connect(user)
+          .setMinTargetMaxHealthFactor(
+            userData.healthFactor.div(4),
+            userData.healthFactor.div(2),
+            userData.healthFactor.sub(parseEther('0.01')),
+            dai.address,
+            weth.address,
+            1000
+          )
+        ).to.be.revertedWith('Not valid rate mode provided');
+      });
+      it('should NOT be possible to setMinTargetMaxHealthFactor if collateralAddress and borrowAddress are equal', async () => {
+        const { users, pool, weth, oracle, dai, autoRepay } = testEnv;
+        const user = users[0].signer;
+        const userAddress = users[0].address;
+        const notValidAddress = users[6].address;
+
+        const userData = await pool.getUserAccountData(userAddress);
+        await expect(
+          autoRepay
+          .connect(user)
+          .setMinTargetMaxHealthFactor(
+            userData.healthFactor.div(4),
+            userData.healthFactor.div(2),
+            userData.healthFactor.sub(parseEther('0.01')),
+            weth.address,
+            weth.address,
+            1
+          )
+        ).to.be.revertedWith('Collateral and borrow could not be equal');
+      });
+
+      it('should NOT be possible swap tokens and borrow if caller is not whitelisted', async () => {
+        const { users, pool, weth, aWETH, oracle, dai, autoRepay, helpersContract, aDai } = testEnv;
+        const user = users[0].signer;
+        const userAddress = users[0].address;
+        const caller = users[1].signer;
+        const callerAddress = users[1].address;
+        const amountWETHtoSwap = await convertToCurrencyDecimals(weth.address, '10');
+        const daiPrice = await oracle.getAssetPrice(dai.address);
+        const expectedDaiAmount = await convertToCurrencyDecimals(
+          dai.address,
+          new BigNumber(amountWETHtoSwap.toString()).div(daiPrice.toString()).toFixed(0)
+        );
+
+        // Open user Debt
+        await pool.connect(user).borrow(dai.address, expectedDaiAmount, 1, 0, userAddress);
+        const daiBalance = await dai.balanceOf(userAddress);
+        await dai.connect(user).transfer(users[5].address, daiBalance)
+        const daiStableDebtTokenAddress = (
+          await helpersContract.getReserveTokensAddresses(dai.address)
+        ).stableDebtTokenAddress;
+        const daiStableDebtContract = await getContract<StableDebtToken>(
+          eContractid.StableDebtToken,
+          daiStableDebtTokenAddress
+        );
+
+        const amountDaiToSwap = await convertToCurrencyDecimals(dai.address, '100');
+
+        const daiDecimals = await dai.decimals();
+        const expectedWETHAmount = amountDaiToSwap.mul(daiPrice).div(ten.pow(daiDecimals));
+        const liquidityToSwap = expectedWETHAmount;
+
+        const userData = await pool.getUserAccountData(userAddress);
+        await autoRepay
+          .connect(user)
+          .setMinTargetMaxHealthFactor(userData.healthFactor.div(4), userData.healthFactor.div(2), userData.healthFactor.sub(parseEther('0.01')), dai.address, weth.address, 1);
+
+        await mockUniswapRouter.connect(user).setAmountToReturn(dai.address, liquidityToSwap);
+
+        await daiStableDebtContract.connect(user).approveDelegation(autoRepay.address, MAX_UINT_AMOUNT)
+
+        await expect(
+          autoRepay.connect(caller).decreaseHealthFactor(
+            {
+              user: userAddress,
+              minCollateralAmountOut: expectedWETHAmount,
+              borrowAmount: amountDaiToSwap,
+              path: [dai.address, weth.address],
+              useATokenAsFrom: false,
+              useATokenAsTo: false,
+              useFlashloan: true,
+            },
+            zeroPermitSignature
+          )
+        ).to.be.revertedWith('Caller is not whitelisted');
+      });
+
+      it('should NOT be possible swap tokens and borrow if current healthfactor is less then maxHealthFactor', async () => {
+        const { users, pool, weth, aWETH, oracle, dai, autoRepay, helpersContract, aDai } = testEnv;
+        const user = users[0].signer;
+        const userAddress = users[0].address;
+        const caller = users[1].signer;
+        const callerAddress = users[1].address;
+        const amountWETHtoSwap = await convertToCurrencyDecimals(weth.address, '10');
+        const daiPrice = await oracle.getAssetPrice(dai.address);
+        const expectedDaiAmount = await convertToCurrencyDecimals(
+          dai.address,
+          new BigNumber(amountWETHtoSwap.toString()).div(daiPrice.toString()).toFixed(0)
+        );
+
+        // Open user Debt
+        await pool.connect(user).borrow(dai.address, expectedDaiAmount, 1, 0, userAddress);
+        const daiBalance = await dai.balanceOf(userAddress);
+        await dai.connect(user).transfer(users[5].address, daiBalance)
+        const daiStableDebtTokenAddress = (
+          await helpersContract.getReserveTokensAddresses(dai.address)
+        ).stableDebtTokenAddress;
+        const daiStableDebtContract = await getContract<StableDebtToken>(
+          eContractid.StableDebtToken,
+          daiStableDebtTokenAddress
+        );
+
+        const amountDaiToSwap = await convertToCurrencyDecimals(dai.address, '100');
+
+        const daiDecimals = await dai.decimals();
+        const expectedWETHAmount = amountDaiToSwap.mul(daiPrice).div(ten.pow(daiDecimals));
+        const liquidityToSwap = expectedWETHAmount;
+
+        const userData = await pool.getUserAccountData(userAddress);
+        await autoRepay
+          .connect(user)
+          .setMinTargetMaxHealthFactor(userData.healthFactor.div(4), userData.healthFactor.div(2), userData.healthFactor.add(parseEther('0.01')), dai.address, weth.address, 1);
+
+        await mockUniswapRouter.connect(user).setAmountToReturn(dai.address, liquidityToSwap);
+
+        await daiStableDebtContract.connect(user).approveDelegation(autoRepay.address, MAX_UINT_AMOUNT)
+        await autoRepay.whitelistAddress(callerAddress);
+
+        await expect(
+          autoRepay.connect(caller).decreaseHealthFactor(
+            {
+              user: userAddress,
+              minCollateralAmountOut: expectedWETHAmount,
+              borrowAmount: amountDaiToSwap,
+              path: [dai.address, weth.address],
+              useATokenAsFrom: false,
+              useATokenAsTo: false,
+              useFlashloan: true,
+            },
+            zeroPermitSignature
+          )
+        ).to.be.revertedWith('User health factor must be more than maxHealthFactor for user');
+      });
 
       it('should correctly swap tokens and borrow with flashloan', async () => {
         const { users, pool, weth, aWETH, oracle, dai, autoRepay, helpersContract, aDai } = testEnv;

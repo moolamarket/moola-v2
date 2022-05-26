@@ -42,7 +42,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
   afterEach(async () => {
     await evmRevert(evmSnapshotId);
   });
-  describe('AutoRepay', () => {
+  describe('AutoRepayAndBorrowAdapter', () => {
     beforeEach(async () => {
       const { users, weth, dai, usdc, aave, pool, deployer } = testEnv;
       const userAddress = users[0].address;

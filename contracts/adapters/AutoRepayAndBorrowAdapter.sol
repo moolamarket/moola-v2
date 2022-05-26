@@ -12,7 +12,7 @@ import {DataTypes} from '../protocol/libraries/types/DataTypes.sol';
 import {IERC20} from '../dependencies/openzeppelin/contracts/IERC20.sol';
 import {SafeERC20} from '../dependencies/openzeppelin/contracts/SafeERC20.sol';
 
-contract AutoRepay is BaseUniswapAdapter {
+contract AutoRepayAndBorrowAdapter is BaseUniswapAdapter {
   using SafeERC20 for IERC20;
   using PercentageMath for uint256;
   using EnumerableSet for EnumerableSet.AddressSet;
@@ -121,17 +121,17 @@ contract AutoRepay is BaseUniswapAdapter {
   function setMinTargetMaxHealthFactor(uint256 minHealthFactor, uint256 targetHealthFactor, uint256 maxHealthFactor, address borrowAddress, address collateralAddress, uint256 rateMode) external {
     require(
       targetHealthFactor >= minHealthFactor,
-      'targetHealthFactor should be more or equal than minHealthFactor'
+      'TargetHealthFactor should be more or equal than minHealthFactor'
     );
     require(
       maxHealthFactor >= targetHealthFactor,
-      'maxHealthFactor should be more or equal than targetHealthFactor'
+      'MaxHealthFactor should be more or equal than targetHealthFactor'
     );
     // 1 for Stable, 2 for Variable
     require(rateMode == 1 || rateMode == 2, 'Not valid rate mode provided');
     require(_getReserveData(collateralAddress).aTokenAddress != address(0), 'Not valid collateralAddress provided');
     require(_getReserveData(borrowAddress).aTokenAddress != address(0), 'Not valid borrowAddress provided');
-    require(collateralAddress != borrowAddress, 'collateral and borrow could not be equal');
+    require(collateralAddress != borrowAddress, 'Collateral and borrow could not be equal');
 
     userInfos[msg.sender] = UserInfo({
       minHealthFactor: minHealthFactor,

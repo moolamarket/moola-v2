@@ -303,7 +303,7 @@
             "type": "bool"
           }
         ],
-        "internalType": "struct AutoRepay.BorrowParams",
+        "internalType": "struct AutoRepayAndBorrowAdapter.BorrowParams",
         "name": "borrowParams",
         "type": "tuple"
       },
@@ -550,7 +550,7 @@
             "type": "bool"
           }
         ],
-        "internalType": "struct AutoRepay.RepayParams",
+        "internalType": "struct AutoRepayAndBorrowAdapter.RepayParams",
         "name": "repayParams",
         "type": "tuple"
       },

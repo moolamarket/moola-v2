@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-const AutoRepay = require('../abi/AutoRepay.json');
+const AutoRepayAndBorrowAdapter = require('../abi/AutoRepayAndBorrowAdapter.json');
 const LendingPoolAddressesProvider = require('../abi/LendingPoolAddressProvider.json');
 const LendingPool = require('../abi/LendingPool.json');
 const DataProvider = require('../abi/MoolaProtocolDataProvider.json');
@@ -41,7 +41,7 @@ addressProvider = new kit.web3.eth.Contract(
   '0xD1088091A174d33412a968Fa34Cb67131188B332'
 );
 autoRepay = new kit.web3.eth.Contract(
-  AutoRepay,
+  AutoRepayAndBorrowAdapter,
   '0xeb1549caebf24dd83e1b5e48abedd81be240e408'
 );
 dataProvider = new kit.web3.eth.Contract(
@@ -105,7 +105,7 @@ async function execute() {
       const [newEvents, parsedToBlock] = await eventsCollector({
         rpcUrl: rpc,
         log: console.log,
-        abi: AutoRepay.filter((el) => el.name == 'HealthFactorSet'),
+        abi: AutoRepayAndBorrowAdapter.filter((el) => el.name == 'HealthFactorSet'),
         address: autoRepay.options.address,
         blockStep: 100000,
         fromBlock,

@@ -3,7 +3,7 @@ const LendingPoolAddressesProvider = require('./abi/LendingPoolAddressProvider.j
 const LendingPool = require('./abi/LendingPool.json');
 const PriceOracle = require('./abi/PriceOracle.json');
 const UniswapRepayAdapter = require('./abi/UniswapRepayAdapter.json');
-const AutoRepay = require('./abi/AutoRepay.json');
+const AutoRepayAndBorrowAdapter = require('./abi/AutoRepayAndBorrowAdapter.json');
 const LeverageBorrowAdapter = require('./abi/LeverageBorrowAdapter.json');
 const Uniswap = require('./abi/Uniswap.json');
 const DataProvider = require('./abi/MoolaProtocolDataProvider.json');
@@ -280,7 +280,7 @@ async function execute(network, action, ...params) {
         '0x55a48631e4ED42D2b12FBA0edc7ad8F66c28375C'
       );
       autoRepay = new kit.web3.eth.Contract(
-        AutoRepay,
+        AutoRepayAndBorrowAdapter,
         '0x19F8322CaC86623432e9142a349504DE6754f12A'
       );
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
@@ -315,7 +315,7 @@ async function execute(network, action, ...params) {
         '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c'
       );
       autoRepay = new kit.web3.eth.Contract(
-        AutoRepay,
+        AutoRepayAndBorrowAdapter,
         '0xeb1549caebf24dd83e1b5e48abedd81be240e408'
       );
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
@@ -360,7 +360,7 @@ async function execute(network, action, ...params) {
         '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c'
       );
       autoRepay = new kit.web3.eth.Contract(
-        AutoRepay,
+        AutoRepayAndBorrowAdapter,
         '0xeb1549caebf24dd83e1b5e48abedd81be240e408'
       );
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
@@ -1547,7 +1547,7 @@ async function execute(network, action, ...params) {
     console.log(
       `${user} user info:\n\tminimum health factor -> ${userInfo.minHealthFactor.toString()}\n\tmaximum health factor -> ${userInfo.maxHealthFactor.toString()}`
     );
-    console.log('allowances for AutoRepay contract:');
+    console.log('allowances for AutoRepayAndBorrowAdapter contract:');
     for (const token of Object.values(tokens)) {
       const reserveToken = await dataProvider.methods
         .getReserveTokensAddresses(token.options.address)
