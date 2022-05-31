@@ -5,6 +5,7 @@ const LendingPoolAddressesProvider = require('../abi/LendingPoolAddressProvider.
 const LendingPool = require('../abi/LendingPool.json');
 const DataProvider = require('../abi/MoolaProtocolDataProvider.json');
 const MToken = require('../abi/MToken.json');
+const DebtToken = require('../abi/DebtToken.json');
 const Uniswap = require('../abi/Uniswap.json');
 const PriceOracle = require('../abi/PriceOracle.json');
 
@@ -42,7 +43,7 @@ addressProvider = new kit.web3.eth.Contract(
 );
 autoRepay = new kit.web3.eth.Contract(
   AutoRepayAndBorrowAdapter,
-  '0xeb1549caebf24dd83e1b5e48abedd81be240e408'
+  '0x23cc685e04d4a341637b9640cd49552bb7424448'
 );
 dataProvider = new kit.web3.eth.Contract(
   DataProvider,
@@ -116,24 +117,31 @@ async function execute() {
       fromBlock = parsedToBlock;
 
       for (let event of newEvents) {
-        users[event.args.user] = {min: BN(event.args.min), max: BN(event.args.max)};
+        users[event.args.user] = {
+          min: BN(event.args.min),
+          target: BN(event.args.target),
+          max: BN(event.args.max),
+          rateMode: BN(event.args.rateMode),
+          borrowAddress: event.args.borrowAddress,
+          collateralAddress: event.args.collateralAddress
+        };
       }
 
-      const usersData = await Promise.map(
+      const usersDataRepay = await Promise.map(
         Object.keys(users),
         async (address) => [
           address,
           await lendingPool.methods.getUserAccountData(address).call(),
         ],
         { concurrency: 20 }
-      ).filter(([address, data]) => !BN(data.totalDebtETH).isZero() && BN(data.healthFactor).lt(users[address].min));
+      ).filter(([address, data]) => !BN(data.totalDebtETH).isZero() && BN(data.healthFactor).lt(users[address].min) && !BN(users[address].min).isZero());
 
-      console.log(`Users to auto repay with low health factor: ${usersData.length}`);
+      console.log(`Users to auto repay with low health factor: ${usersDataRepay.length}`);
 
       const tokenNames = Object.keys(tokens);
 
-      for (let i = 0; i < usersData.length; i++) {
-        const data = usersData[i];
+      for (let i = 0; i < usersDataRepay.length; i++) {
+        const data = usersDataRepay[i];
         const user = data[0];
 
         // building user positions for all tokens (perhpas get the list of user balances instead of getting the reserve data for all of them)
@@ -202,7 +210,7 @@ async function execute() {
         .call();
 
         const increaseHealthFactorMethod = async (repAmount, amountOut, useFlashloan) => {
-          const { amount, path, useATokenAsFrom, useATokenAsTo}  = await swapPathHelper.getBestSwapPath(
+          const { amount, path, useATokenAsFrom, useATokenAsTo}  = await swapPathHelper.getBestSwapPathRepay(
             amountOut, collateralAddress, reserveCollateralToken.aTokenAddress, borrowAddress, reserveBorrowToken.aTokenAddress
           );
           const maxCollateralAmount = BN(amount)
@@ -270,6 +278,105 @@ async function execute() {
 
         await repaySimulation(repayAmount, 1);
 
+      }
+
+      const usersDataBorrow = await Promise.map(
+        Object.keys(users),
+        async (address) => [
+          address,
+          await lendingPool.methods.getUserAccountData(address).call(),
+        ],
+        { concurrency: 20 }
+      ).filter(([address, data]) => BN(data.healthFactor).gt(users[address].max) && !BN(users[address].max).isZero());
+
+      console.log(`Users to auto repay with health factor more than max: ${usersDataBorrow.length}`);
+
+      for (let i = 0; i < usersDataBorrow.length; i++) {
+        const data = usersDataBorrow[i];
+        const user = data[0];
+        const accountData = data[1];
+        const userData = users[user];
+        const borrowAddress = userData.borrowAddress;
+        const collateralAddress = userData.collateralAddress;
+        const [ borrowTokenPrice, collateralTokenPrice ] = await priceOracle.methods.getAssetsPrices([userData.borrowAddress, userData.collateralAddress]).call()
+        const maxAbleToBorrow = BN(accountData.totalCollateralETH).multipliedBy(ether).dividedBy(borrowTokenPrice).toFixed(0);
+
+        const reserveCollateralToken = await dataProvider.methods
+          .getReserveTokensAddresses(collateralAddress)
+          .call();
+
+        const reserveBorrowToken = await dataProvider.methods
+        .getReserveTokensAddresses(borrowAddress)
+        .call();
+
+        const debtTokenAddress = userData.rateMode == 1 ? reserveBorrowToken.stableDebtTokenAddress : reserveBorrowToken.variableDebtTokenAddress;
+
+        const debtTokenBorrow = new eth.Contract(DebtToken, debtTokenAddress);
+
+
+        const decreaseHealthFactorMethod = async (maxAbleToBorrow, amount, useFlashloan) => {
+          const { path, useATokenAsFrom, useATokenAsTo }  = await swapPathHelper.getBestSwapPathBorrow(
+            maxAbleToBorrow, borrowAddress, reserveBorrowToken.aTokenAddress, collateralAddress, reserveCollateralToken.aTokenAddress
+          );
+          const minCollateralAmountOut = BN(amount)
+            .plus(BN(amount).multipliedBy(1).dividedBy(1000))
+            .toFixed(0); // 0.1% slippage
+
+          const method = autoRepay.methods.decreaseHealthFactor(
+            {
+              user,
+              minCollateralAmountOut,
+              borrowAmount: maxAbleToBorrow,
+              path,
+              useATokenAsFrom,
+              useATokenAsTo,
+              useFlashloan,
+            },
+            { amount: 0, deadline: 0, v: 0, r: ethers.constants.HashZero, s: ethers.constants.HashZero }
+          );
+          return method;
+        }
+
+        const borrowSimulation = async (maxAbleToBorrow, attempt) => {
+          console.log(`attempt: ${attempt}`)
+          const minCollateralAmountOut = BN(maxAbleToBorrow).multipliedBy(borrowTokenPrice).dividedBy(collateralTokenPrice).toFixed(0);
+          const method = await decreaseHealthFactorMethod(maxAbleToBorrow, minCollateralAmountOut, true);
+
+          if (
+            BN(await debtTokenBorrow.methods.borrowAllowance(user, autoRepay.options.address).call()).lt(maxAbleToBorrow)
+          ) {
+            console.log(`user ${user} not approved borrowAllowance ${debtTokenBorrow.options.address} tokens ${maxAbleToBorrow.toString()} on autoRepay contract, rate mode: ${userData.rateMode}`);
+            return;
+          }
+
+          try {
+            await retry(() => method.estimateGas({ from: caller, gas: DEFAULT_GAS }));
+            // if success simulation, trying to simulate without flashloan
+            try {
+              const methodNoFlashloan = await decreaseHealthFactorMethod(maxAbleToBorrow, minCollateralAmountOut, false);
+              await retry(() => methodNoFlashloan.estimateGas({ from: caller, gas: DEFAULT_GAS }));
+              method = methodNoFlashloan;
+
+            } catch (error) {
+              console.log('Could not borrow without flashloan, flashloan will be used');
+            }
+          } catch (err) {
+            console.log(`Cannot auto borrow ${100 - (attempt - 1) * 25 } %`, err.message);
+
+            if (attempt == 4) {
+              console.log('Could not borrow');
+              return;
+            }
+            await borrowSimulation(maxAbleToBorrow.multipliedBy(100 - attempt * 25).dividedBy(100), attempt + 1);
+            return;
+          }
+          console.log(
+            'auto borrow',
+            (await method.send({ from: caller, gas: DEFAULT_GAS })).transactionHash
+          );
+        }
+
+        await borrowSimulation(maxAbleToBorrow, 1);
       }
 
     }  catch (err) {

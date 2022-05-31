@@ -49,6 +49,12 @@
       },
       {
         "indexed": false,
+        "internalType": "uint256",
+        "name": "rateMode",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
         "internalType": "address",
         "name": "borrowAddress",
         "type": "address"

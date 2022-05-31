@@ -17,7 +17,7 @@ contract AutoRepayAndBorrowAdapter is BaseUniswapAdapter {
   using PercentageMath for uint256;
   using EnumerableSet for EnumerableSet.AddressSet;
 
-  event HealthFactorSet(address indexed user, uint256 min, uint256 target, uint256 max, address borrowAddress, address collateralAddress);
+  event HealthFactorSet(address indexed user, uint256 min, uint256 target, uint256 max, uint256 rateMode, address borrowAddress, address collateralAddress);
 
   /**
    * @dev struct RepayParams
@@ -115,7 +115,7 @@ contract AutoRepayAndBorrowAdapter is BaseUniswapAdapter {
       borrowAddress: address(0),
       collateralAddress: address(0)
     });
-    emit HealthFactorSet(msg.sender, minHealthFactor, targetHealthFactor, 0, address(0), address(0));
+    emit HealthFactorSet(msg.sender, minHealthFactor, targetHealthFactor, 0, 0, address(0), address(0));
   }
 
   function setMinTargetMaxHealthFactor(uint256 minHealthFactor, uint256 targetHealthFactor, uint256 maxHealthFactor, address borrowAddress, address collateralAddress, uint256 rateMode) external {
@@ -141,7 +141,7 @@ contract AutoRepayAndBorrowAdapter is BaseUniswapAdapter {
       collateralAddress: collateralAddress,
       borrowAddress: borrowAddress
     });
-    emit HealthFactorSet(msg.sender, minHealthFactor, targetHealthFactor, maxHealthFactor, borrowAddress, collateralAddress);
+    emit HealthFactorSet(msg.sender, minHealthFactor, targetHealthFactor, maxHealthFactor, rateMode, borrowAddress, collateralAddress);
   }
 
   function clearMinTargetMaxHealthFactor() external {
@@ -154,7 +154,7 @@ contract AutoRepayAndBorrowAdapter is BaseUniswapAdapter {
       collateralAddress: address(0),
       borrowAddress: address(0)
     });
-    emit HealthFactorSet(msg.sender, 0, 0, 0, address(0), address(0));
+    emit HealthFactorSet(msg.sender, 0, 0, 0, 0, address(0), address(0));
   }
 
   function _checkMinHealthFactor(address user) internal view returns (uint256) {

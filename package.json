@@ -86,7 +86,7 @@
     "prepublishOnly": "npm run compile",
     "moola:alfajores:full:migration": "npm run compile && npm run hardhat:alfajores -- moola:alfajores",
     "moola:celo:full:migration": "npm run compile && npm run hardhat:celo -- moola:celo",
-    "bot:autorepay": "node ./bots/auto-repay-bot.js"
+    "bot:autorepay": "node ./bots/auto-repay-borrow-bot.js"
   },
   "devDependencies": {
     "@celo/contractkit": "^1.2.4",
