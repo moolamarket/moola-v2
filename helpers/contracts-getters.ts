@@ -25,7 +25,7 @@ import {
   StableDebtTokenFactory,
   UniswapLiquiditySwapAdapterFactory,
   UniswapRepayAdapterFactory,
-  AutoRepayFactory,
+  AutoRepayAndBorrowAdapterFactory,
   LeverageBorrowAdapterFactory,
   VariableDebtTokenFactory,
   WalletBalanceProviderFactory,
@@ -396,8 +396,8 @@ export const getUniswapRepayAdapter = async (address?: tEthereumAddress) =>
   );
 
 export const getAutoRepay = async (address?: tEthereumAddress) =>
-  await AutoRepayFactory.connect(
-    address || (await getDb().get(`${eContractid.AutoRepay}.${DRE.network.name}`).value()).address,
+  await AutoRepayAndBorrowAdapterFactory.connect(
+    address || (await getDb().get(`${eContractid.AutoRepayAndBorrowAdapter}.${DRE.network.name}`).value()).address,
     await getFirstSigner()
   );
 
