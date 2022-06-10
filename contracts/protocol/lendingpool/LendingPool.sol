@@ -292,7 +292,7 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
   /**
    * @dev Allows a borrower to swap his debt between stable and variable mode, or viceversa
    * @param asset The address of the underlying asset borrowed
-   * @param rateMode The rate mode that the user wants to swap to
+   * @param rateMode The rate mode that the user wants to swap from
    **/
   function swapBorrowRateMode(address asset, uint256 rateMode) external override whenNotPaused {
     DataTypes.ReserveData storage reserve = _reserves[asset];
@@ -713,7 +713,7 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
   }
 
   /**
-   * @dev Returns the fee on flash loans 
+   * @dev Returns the fee on flash loans
    */
   function FLASHLOAN_PREMIUM_TOTAL() public view returns (uint256) {
     return _flashLoanPremiumTotal;

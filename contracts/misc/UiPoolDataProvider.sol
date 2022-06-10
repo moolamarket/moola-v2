@@ -95,7 +95,7 @@ contract UiPoolDataProvider is IUiPoolDataProvider {
 
       // reserve configuration
 
-      // we're getting this info from the aToken, because some of assets can be not compliant with ETC20Detailed
+      // we're getting this info from the aToken, because some of assets can be not compliant with ERC20Detailed
       reserveData.symbol = IERC20Detailed(reserveData.aTokenAddress).symbol();
       reserveData.name = '';
 

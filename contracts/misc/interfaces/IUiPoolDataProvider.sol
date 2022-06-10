@@ -42,11 +42,6 @@ interface IUiPoolDataProvider {
     uint256 stableRateSlope1;
     uint256 stableRateSlope2;
   }
-  //
-  //  struct ReserveData {
-  //    uint256 averageStableBorrowRate;
-  //    uint256 totalLiquidity;
-  //  }
 
   struct UserReserveData {
     address underlyingAsset;
@@ -58,15 +53,6 @@ interface IUiPoolDataProvider {
     uint256 stableBorrowLastUpdateTimestamp;
   }
 
-  //
-  //  struct ATokenSupplyData {
-  //    string name;
-  //    string symbol;
-  //    uint8 decimals;
-  //    uint256 totalSupply;
-  //    address aTokenAddress;
-  //  }
-
   function getReservesData(ILendingPoolAddressesProvider provider, address user)
     external
     view
@@ -75,19 +61,4 @@ interface IUiPoolDataProvider {
       UserReserveData[] memory,
       uint256
     );
-
-  //  function getUserReservesData(ILendingPoolAddressesProvider provider, address user)
-  //    external
-  //    view
-  //    returns (UserReserveData[] memory);
-  //
-  //  function getAllATokenSupply(ILendingPoolAddressesProvider provider)
-  //    external
-  //    view
-  //    returns (ATokenSupplyData[] memory);
-  //
-  //  function getATokenSupply(address[] calldata aTokens)
-  //    external
-  //    view
-  //    returns (ATokenSupplyData[] memory);
 }

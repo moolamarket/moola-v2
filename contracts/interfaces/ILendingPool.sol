@@ -396,7 +396,7 @@ interface ILendingPool {
     address from,
     address to,
     uint256 amount,
-    uint256 balanceFromAfter,
+    uint256 balanceFromBefore,
     uint256 balanceToBefore
   ) external;
 

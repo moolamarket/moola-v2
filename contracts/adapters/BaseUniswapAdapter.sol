@@ -28,7 +28,7 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
 
   // Max slippage percent allowed
   uint256 public constant override MAX_SLIPPAGE_PERCENT = 3000; // 30%
-  // FLash Loan fee set in lending pool
+  // Flash Loan fee set in lending pool
   uint256 public constant override FLASHLOAN_PREMIUM_TOTAL = 9;
   // USD oracle asset address
   address public constant override USD_ADDRESS = 0x10F7Fc1F91Ba351f9C629c5947AD69bD03C05b96;
@@ -256,7 +256,7 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
       .div(fromAssetPrice.mul(10**toAssetDecimals))
       .percentMul(PercentageMath.PERCENTAGE_FACTOR.add(MAX_SLIPPAGE()));
 
-    require(maxAmountToSwap < expectedMaxAmountToSwap, 'maxAmountToSwap exceed max slippage');
+    require(maxAmountToSwap <= expectedMaxAmountToSwap, 'maxAmountToSwap exceed max slippage');
 
     // Approves the transfer for the swap. Approves for 0 first to comply with tokens that implement the anti frontrunning approval fix.
     IERC20(assetToSwapFrom).safeApprove(address(UNISWAP_ROUTER), 0);

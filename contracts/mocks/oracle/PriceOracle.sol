@@ -4,8 +4,8 @@ pragma solidity 0.6.12;
 import {IPriceOracle} from '../../interfaces/IPriceOracle.sol';
 
 contract PriceOracle is IPriceOracle {
-  mapping(address => uint256) prices;
-  uint256 ethPriceUsd;
+  mapping(address => uint256) internal prices;
+  uint256 internal ethPriceUsd;
 
   event AssetPriceUpdated(address _asset, uint256 _price, uint256 timestamp);
   event EthPriceUpdated(uint256 _price, uint256 timestamp);

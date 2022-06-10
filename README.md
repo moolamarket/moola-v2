@@ -115,6 +115,7 @@ docker-compose up
 docker-compose exec contracts-env bash
 
 # A new Bash terminal is prompted, connected to the container
+npm run compile
 npm run test
 ```
 
