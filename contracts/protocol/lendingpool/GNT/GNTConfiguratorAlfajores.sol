@@ -7,7 +7,7 @@ import {Ownable} from '../../../dependencies/openzeppelin/contracts/Ownable.sol'
 import '../../../protocol/lendingpool/LendingPoolConfigurator.sol';
 import '../../../interfaces/ILendingPoolConfigurator.sol';
 
-contract WETHConfiguratorAlfajores is Ownable {
+contract GNTConfiguratorAlfajores is Ownable {
   address constant lendingPoolConfiguratorAddress = 0x39fe2A4a4174bB5cAC5568ce0715a0b320bcB231;
 
   LendingPoolConfigurator public lendingPoolConfigurator =
@@ -23,13 +23,13 @@ contract WETHConfiguratorAlfajores is Ownable {
   address constant interestRateStrategyAddress = 0x5B41b0c78659636c6664f08F7cCb620ceA3F1206;
   address constant treasury = 0x643C574128c7C56A1835e021Ad0EcC2592E72624;
   address constant incentivesController = 0x0000000000000000000000000000000000000000;
-  string constant underlyingAssetName = 'Wrapped Ether';
-  string constant aTokenName = 'Moola interest bearing WETH';
-  string constant aTokenSymbol = 'mWETH';
-  string constant variableDebtTokenName = 'Moola variable debt bearing mWETH';
-  string constant variableDebtTokenSymbol = 'variableDebtmWETH';
-  string constant stableDebtTokenName = 'Moola stable debt bearing mWETH';
-  string constant stableDebtTokenSymbol = 'stableDebtmWETH';
+  string constant underlyingAssetName = 'CarbonCreditBundleToken';
+  string constant aTokenName = 'Moola interest bearing GNT';
+  string constant aTokenSymbol = 'mGNT';
+  string constant variableDebtTokenName = 'Moola variable debt bearing mGNT';
+  string constant variableDebtTokenSymbol = 'variableDebtmGNT';
+  string constant stableDebtTokenName = 'Moola stable debt bearing mGNT';
+  string constant stableDebtTokenSymbol = 'stableDebtmGNT';
   uint256 constant baseLTV = 5000;
   uint256 constant liquidationThreshold = 6500;
   uint256 constant liquidationBonus = 11000;

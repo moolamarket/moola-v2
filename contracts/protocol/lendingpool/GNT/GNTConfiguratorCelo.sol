@@ -7,7 +7,7 @@ import {Ownable} from '../../../dependencies/openzeppelin/contracts/Ownable.sol'
 import '../../../protocol/lendingpool/LendingPoolConfigurator.sol';
 import '../../../interfaces/ILendingPoolConfigurator.sol';
 
-contract WETHConfiguratorCelo is Ownable {
+contract GNTConfiguratorCelo is Ownable {
   address constant lendingPoolConfiguratorAddress = 0x928F63a83217e427A84504950206834CBDa4Aa65;
 
   LendingPoolConfigurator public lendingPoolConfigurator =
@@ -24,12 +24,12 @@ contract WETHConfiguratorCelo is Ownable {
   address constant treasury = 0x313bc86D3D6e86ba164B2B451cB0D9CfA7943e5c;
   address constant incentivesController = 0x0000000000000000000000000000000000000000;
   string constant underlyingAssetName = 'Wrapped Ether';
-  string constant aTokenName = 'Moola interest bearing WETH';
-  string constant aTokenSymbol = 'mWETH';
-  string constant variableDebtTokenName = 'Moola variable debt bearing mWETH';
-  string constant variableDebtTokenSymbol = 'variableDebtmWETH';
-  string constant stableDebtTokenName = 'Moola stable debt bearing mWETH';
-  string constant stableDebtTokenSymbol = 'stableDebtmWETH';
+  string constant aTokenName = 'Moola interest bearing GNT';
+  string constant aTokenSymbol = 'mGNT';
+  string constant variableDebtTokenName = 'Moola variable debt bearing mGNT';
+  string constant variableDebtTokenSymbol = 'variableDebtmGNT';
+  string constant stableDebtTokenName = 'Moola stable debt bearing mGNT';
+  string constant stableDebtTokenSymbol = 'stableDebtmGNT';
   uint256 constant baseLTV = 5000; // TODO-- wait for params
   uint256 constant liquidationThreshold = 6500;
   uint256 constant liquidationBonus = 11000;
