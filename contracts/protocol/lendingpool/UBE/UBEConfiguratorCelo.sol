@@ -17,11 +17,11 @@ contract UBEConfiguratorCelo is Ownable {
   bytes constant params = '0x10';
   bool constant stableBorrowRateEnabled = true;
   uint8 constant underlyingAssetDecimals = 18;
-  address constant aTokenImpl = 0xe8B286649713447D8d5fBeBC28c731830d19B6C9;
-  address constant stableDebtTokenImpl = 0xB6a5059A228a16Fa2827E28E52ceC96BBC63D639;
-  address constant variableDebtTokenImpl = 0xB65b6a6a6F78E4daABF259c756567ae346699687;
+  address constant aTokenImpl = 0x55bFCED2451b2154e06604D4269c9349F31141e6;
+  address constant stableDebtTokenImpl = 0xaCdb7B3e2b0a038F1f4eF04736728E0065b689DA;
+  address constant variableDebtTokenImpl = 0x0301Cf8F1FCD9255BD32FB7e0fE5B3494f445C2C;
   address constant interestRateStrategyAddress = 0x801443470c119F2eac65F13886D9e293CdecE2DF;
-  address constant treasury = 0x643C574128c7C56A1835e021Ad0EcC2592E72624;
+  address constant treasury = 0x313bc86D3D6e86ba164B2B451cB0D9CfA7943e5c;
   address constant incentivesController = 0x0000000000000000000000000000000000000000;
   string constant underlyingAssetName = 'Ubeswap';
   string constant aTokenName = 'Moola interest bearing UBE';
@@ -31,7 +31,6 @@ contract UBEConfiguratorCelo is Ownable {
   string constant stableDebtTokenName = 'Moola stable debt bearing mUBE';
   string constant stableDebtTokenSymbol = 'stableDebtmUBE';
   uint256 constant baseLTV = 5000; // TODO-- wait for params
-  uint256 constant liquidationThreshold = 6500;
   uint256 constant liquidationThreshold = 6500;
   uint256 constant liquidationBonus = 11000;
   uint256 constant reserveFactor = 1000;

@@ -12,7 +12,7 @@ contract GNTConfiguratorCelo is Ownable {
 
   LendingPoolConfigurator public lendingPoolConfigurator =
     LendingPoolConfigurator(lendingPoolConfiguratorAddress);
-  address constant assetAddress = 0x122013fd7dF1C6F636a5bb8f03108E876548b455;
+  address constant assetAddress = 0x16FDA7073b085e0231824499345c7334a68f7783;
 
   bytes constant params = '0x10';
   bool constant stableBorrowRateEnabled = true;
@@ -20,17 +20,17 @@ contract GNTConfiguratorCelo is Ownable {
   address constant aTokenImpl = 0x55bFCED2451b2154e06604D4269c9349F31141e6;
   address constant stableDebtTokenImpl = 0xaCdb7B3e2b0a038F1f4eF04736728E0065b689DA;
   address constant variableDebtTokenImpl = 0x0301Cf8F1FCD9255BD32FB7e0fE5B3494f445C2C;
-  address constant interestRateStrategyAddress = 0xb3072f5F0d5e8B9036aEC29F37baB70E86EA0018;
+  address constant interestRateStrategyAddress = 0x801443470c119F2eac65F13886D9e293CdecE2DF;
   address constant treasury = 0x313bc86D3D6e86ba164B2B451cB0D9CfA7943e5c;
   address constant incentivesController = 0x0000000000000000000000000000000000000000;
-  string constant underlyingAssetName = 'Wrapped Ether';
+  string constant underlyingAssetName = 'CarbonCreditBundleToken';
   string constant aTokenName = 'Moola interest bearing GNT';
   string constant aTokenSymbol = 'mGNT';
   string constant variableDebtTokenName = 'Moola variable debt bearing mGNT';
   string constant variableDebtTokenSymbol = 'variableDebtmGNT';
   string constant stableDebtTokenName = 'Moola stable debt bearing mGNT';
   string constant stableDebtTokenSymbol = 'stableDebtmGNT';
-  uint256 constant baseLTV = 5000; // TODO-- wait for params
+  uint256 constant baseLTV = 5000; // TODO: update after mainnet params are confirmed
   uint256 constant liquidationThreshold = 6500;
   uint256 constant liquidationBonus = 11000;
   uint256 constant reserveFactor = 1000;
