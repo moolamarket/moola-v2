@@ -50,9 +50,9 @@ contract LeverageBorrowAdapter is BaseUniswapAdapter {
       'leverageParams length does not match to assets length'
     );
 
-    for (uint256 i = 0; i < assets.length; i++) {
+    for (uint i = 0; i < assets.length; i++) {
       LeverageParams memory leverageParams = leverageParamsArr[i];
-      uint256 amountIn = amounts[i];
+      uint amountIn = amounts[i];
       address asset = assets[i];
       if (leverageParams.useATokenAsFrom) {
         _deposit(asset, amountIn, address(this));
@@ -62,9 +62,7 @@ contract LeverageBorrowAdapter is BaseUniswapAdapter {
       // reusing amountIn
       amountIn = _swapExactTokensForTokensNoPriceCheck(
         leverageParams.useATokenAsFrom ? _getReserveData(asset).aTokenAddress : asset,
-        leverageParams.useATokenAsTo
-          ? _getReserveData(leverageParams.toAsset).aTokenAddress
-          : leverageParams.toAsset,
+        leverageParams.useATokenAsTo ? _getReserveData(leverageParams.toAsset).aTokenAddress : leverageParams.toAsset,
         amountIn,
         leverageParams.minAmountOut,
         leverageParams.useEthPath,

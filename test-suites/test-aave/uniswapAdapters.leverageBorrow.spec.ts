@@ -96,8 +96,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
       const ten = ethers.BigNumber.from(10);
 
       it('should correctly swap token and deposit', async () => {
-        const { users, pool, weth, aWETH, dai, oracle, leverageBorrowAdapter, helpersContract } =
-          testEnv;
+        const { users, pool, weth, aWETH, dai, oracle, leverageBorrowAdapter, helpersContract } = testEnv;
         const user = users[0].signer;
         const userAddress = users[0].address;
 
@@ -124,13 +123,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         await mockUniswapRouter.connect(user).setAmountToReturn(dai.address, liquidityToSwap);
 
         const params = buildLeverageBorrowAdapterParams([
-          {
-            useATokenAsFrom: false,
-            useATokenAsTo: false,
-            useEthPath: false,
-            toAsset: weth.address,
-            minAmountOut: liquidityToSwap,
-          },
+          { useATokenAsFrom: false, useATokenAsTo: false, useEthPath: false, toAsset: weth.address, minAmountOut: liquidityToSwap },
         ]);
 
         await expect(
@@ -163,8 +156,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
       });
 
       it('should correctly swap tokens(2 or more) and deposit', async () => {
-        const { users, pool, weth, aWETH, dai, oracle, leverageBorrowAdapter, helpersContract } =
-          testEnv;
+        const { users, pool, weth, aWETH, dai, oracle, leverageBorrowAdapter, helpersContract } = testEnv;
         const user = users[0].signer;
         const userAddress = users[0].address;
 
@@ -233,8 +225,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
       });
 
       it('should correctly swap token and deposit with variable mode', async () => {
-        const { users, pool, weth, aWETH, dai, oracle, leverageBorrowAdapter, helpersContract } =
-          testEnv;
+        const { users, pool, weth, aWETH, dai, oracle, leverageBorrowAdapter, helpersContract } = testEnv;
         const user = users[0].signer;
         const userAddress = users[0].address;
 

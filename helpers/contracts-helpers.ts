@@ -361,13 +361,9 @@ interface LeverageBorrowAdapter {
   minAmountOut: BigNumberish;
 }
 
-export const buildLeverageBorrowAdapterParams = (
-  leverageBorrowAdapterParamsArr: LeverageBorrowAdapter[]
-) => {
+export const buildLeverageBorrowAdapterParams = (leverageBorrowAdapterParamsArr: LeverageBorrowAdapter[]) => {
   return ethers.utils.defaultAbiCoder.encode(
-    [
-      'tuple(bool useATokenAsFrom, bool useATokenAsTo, bool useEthPath, address toAsset, uint256 minAmountOut)[]',
-    ],
+    ['tuple(bool useATokenAsFrom, bool useATokenAsTo, bool useEthPath, address toAsset, uint256 minAmountOut)[]'],
     [leverageBorrowAdapterParamsArr]
   );
 };
