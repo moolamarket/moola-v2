@@ -247,6 +247,7 @@ async function execute(network, action, ...params) {
   let MOO;
   let UBE;
   let GNT;
+  let PACT;
   let migrator;
   let privateKeyRequired = true;
   let liquiditySwapAdapter;
@@ -268,6 +269,7 @@ async function execute(network, action, ...params) {
       MOO = new kit.web3.eth.Contract(MToken, '0x17700282592D6917F6A73D0bF8AcCf4D578c131e');
       UBE = new kit.web3.eth.Contract(MToken, '0x00Be915B9dCf56a3CBE739D9B9c202ca692409EC');
       GNT = new kit.web3.eth.Contract(MToken, '0xcd8148C6f63C1559a1f95962569a915AA7907Eb7');
+      PACT = new kit.web3.eth.Contract(MToken, '0x73A2De6A8370108D43c3C80430C84c30df323eD2');
       CELO = new kit.web3.eth.Contract(MToken, '0xF194afDf50B03e69Bd7D057c1Aa9e10c9954E4C9');
       dataProvider = new kit.web3.eth.Contract(
         DataProvider,
@@ -305,6 +307,7 @@ async function execute(network, action, ...params) {
       MOO = new kit.web3.eth.Contract(MToken, '0x17700282592D6917F6A73D0bF8AcCf4D578c131e');
       UBE = new kit.web3.eth.Contract(MToken, '0x00Be915B9dCf56a3CBE739D9B9c202ca692409EC');
       GNT = new kit.web3.eth.Contract(MToken, '0x16FDA7073b085e0231824499345c7334a68f7783');
+      PACT = new kit.web3.eth.Contract(MToken, '0x46c9757C5497c5B1f2eb73aE79b6B67D119B0B58');
       CELO = new kit.web3.eth.Contract(MToken, '0x471EcE3750Da237f93B8E339c536989b8978a438');
       dataProvider = new kit.web3.eth.Contract(
         DataProvider,
@@ -393,6 +396,7 @@ async function execute(network, action, ...params) {
     moo: MOO,
     ube: UBE,
     gnt: GNT,
+    pact: PACT,
   };
 
   const reserves = {
@@ -401,6 +405,9 @@ async function execute(network, action, ...params) {
     ceur: cEUR.options.address,
     creal: cREAL.options.address,
     moo: MOO.options.address,
+    gnt: GNT.options.address,
+    pact: PACT.options.address,
+    ube: UBE.options.address,
   };
 
   const isValidAsset = (asset) => {
