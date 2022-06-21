@@ -30,9 +30,9 @@ contract PACTConfiguratorAlfajores is Ownable {
   string constant variableDebtTokenSymbol = 'variableDebtmPACT';
   string constant stableDebtTokenName = 'Moola stable debt bearing mPACT';
   string constant stableDebtTokenSymbol = 'stableDebtmPACT';
-  uint256 constant baseLTV = 5000;
-  uint256 constant liquidationThreshold = 6500;
-  uint256 constant liquidationBonus = 11000;
+  uint256 constant baseLTV = 3000;
+  uint256 constant liquidationThreshold = 4500;
+  uint256 constant liquidationBonus = 11200;
   uint256 constant reserveFactor = 1000;
 
   function execute() external onlyOwner {

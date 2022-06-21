@@ -30,8 +30,8 @@ contract GNTConfiguratorAlfajores is Ownable {
   string constant variableDebtTokenSymbol = 'variableDebtmGNT';
   string constant stableDebtTokenName = 'Moola stable debt bearing mGNT';
   string constant stableDebtTokenSymbol = 'stableDebtmGNT';
-  uint256 constant baseLTV = 5000;
-  uint256 constant liquidationThreshold = 6500;
+  uint256 constant baseLTV = 4500;
+  uint256 constant liquidationThreshold = 6000;
   uint256 constant liquidationBonus = 11000;
   uint256 constant reserveFactor = 1000;
 
