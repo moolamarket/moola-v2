@@ -287,7 +287,7 @@ async function execute(network, action, ...params) {
         RepayDelegationHelper,
         '0xeEe3D107c387B04A8e07B7732f0ED0f6ED990882'
       );
-      // leverageBorrowAdapter = new kit.web3.eth.Contract(LeverageBorrowAdapter, '0x7e7D2f9Ef635EC83DF06838eA4dc8053055a9F29');
+      // leverageBorrowAdapter = new kit.web3.eth.Contract(LeverageBorrowAdapter, '0x3dC0FCd3Aa6ca66a434086180e2604B9A9CFE781');
       break;
     case 'main':
       kit = newKit('https://forno.celo.org');
@@ -320,7 +320,7 @@ async function execute(network, action, ...params) {
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
       leverageBorrowAdapter = new kit.web3.eth.Contract(
         LeverageBorrowAdapter,
-        '0x7e7D2f9Ef635EC83DF06838eA4dc8053055a9F29'
+        '0x3dC0FCd3Aa6ca66a434086180e2604B9A9CFE781'
       );
       repayDelegationHelper = new kit.web3.eth.Contract(
         RepayDelegationHelper,
@@ -365,7 +365,7 @@ async function execute(network, action, ...params) {
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
       leverageBorrowAdapter = new kit.web3.eth.Contract(
         LeverageBorrowAdapter,
-        '0x7e7D2f9Ef635EC83DF06838eA4dc8053055a9F29'
+        '0x3dC0FCd3Aa6ca66a434086180e2604B9A9CFE781'
       );
   }
   const web3 = kit.web3;
