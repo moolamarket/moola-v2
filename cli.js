@@ -308,7 +308,7 @@ async function execute(network, action, ...params) {
         MoolaMigratorV1V2,
         '0xB87ebF9CD90003B66CF77c937eb5628124fA0662'
       );
-      liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
+      liquiditySwapAdapter = '0x1c456309F89B1BC5929B94EC97484AC87f7Ee160';
       repayAdapter = new kit.web3.eth.Contract(
         UniswapRepayAdapter,
         '0x13F9a9AF3A51C4a495F76bEb795FCb1f8fEbE6fb'
@@ -1249,6 +1249,8 @@ async function execute(network, action, ...params) {
     const tokenToSwapPrice = BN(amount)
       .multipliedBy(BN(tokenFromPrice))
       .dividedBy(BN(tokenToPrice))
+      .multipliedBy(995)
+      .dividedBy(1000) // 0.5% slippage
       .toFixed(0);
 
     console.log(`Checking mToken ${mToken.options.address} for approval`);
