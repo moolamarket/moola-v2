@@ -91,51 +91,51 @@ function buildLiquiditySwapParams(
   );
 }
 
-function buildSwapAndRepayParams(
-  collateralAsset,
-  collateralAmount,
-  path,
-  rateMode,
-  permitAmount,
-  deadline,
-  v,
-  r,
-  s,
-  useEthPath,
-  useATokenAsFrom,
-  useATokenAsTo
-) {
-  return ethers.utils.defaultAbiCoder.encode(
-    [
-      'address',
-      'uint256',
-      'address[]',
-      'uint256',
-      'uint256',
-      'uint256',
-      'uint8',
-      'bytes32',
-      'bytes32',
-      'bool',
-      'bool',
-      'bool',
-    ],
-    [
-      collateralAsset,
-      collateralAmount,
-      path,
-      rateMode,
-      permitAmount,
-      deadline,
-      v,
-      r,
-      s,
-      useEthPath,
-      useATokenAsFrom,
-      useATokenAsTo,
-    ]
-  );
-}
+// function buildSwapAndRepayParams(
+//   collateralAsset,
+//   collateralAmount,
+//   path,
+//   rateMode,
+//   permitAmount,
+//   deadline,
+//   v,
+//   r,
+//   s,
+//   useEthPath,
+//   useATokenAsFrom,
+//   useATokenAsTo
+// ) {
+//   return ethers.utils.defaultAbiCoder.encode(
+//     [
+//       'address',
+//       'uint256',
+//       'address[]',
+//       'uint256',
+//       'uint256',
+//       'uint256',
+//       'uint8',
+//       'bytes32',
+//       'bytes32',
+//       'bool',
+//       'bool',
+//       'bool',
+//     ],
+//     [
+//       collateralAsset,
+//       collateralAmount,
+//       path,
+//       rateMode,
+//       permitAmount,
+//       deadline,
+//       v,
+//       r,
+//       s,
+//       useEthPath,
+//       useATokenAsFrom,
+//       useATokenAsTo,
+//     ]
+//   );
+// }
 
 function buildLeverageBorrowParams(
   useATokenAsFrom,
@@ -1388,46 +1388,57 @@ async function execute(network, action, ...params) {
       );
     }
 
-    let method;
+    // let method;
 
-    if (useFlashLoan) {
-      const callParams = buildSwapAndRepayParams(
-        collateralAsset.options.address,
-        maxCollateralAmount,
-        swapPath,
+    // if (useFlashLoan) {
+    //   const callParams = buildSwapAndRepayParams(
+    //     collateralAsset.options.address,
+    //     maxCollateralAmount,
+    //     swapPath,
+    //     rateMode,
+    //     0,
+    //     0,
+    //     0,
+    //     zeroHash,
+    //     zeroHash,
+    //     false,
+    //     useATokenAsFrom,
+    //     useATokenAsTo
+    //   );
+    //   method = lendingPool.methods.flashLoan(
+    //     repayAdapter.options.address,
+    //     [debtAsset.options.address],
+    //     [repayAmount],
+    //     [0],
+    //     user,
+    //     callParams,
+    //     0
+    //   );
+    // } else {
+    //   method = repayAdapter.methods.swapAndRepayWithPath(
+    //     collateralAsset.options.address,
+    //     debtAsset.options.address,
+    //     swapPath,
+    //     maxCollateralAmount,
+    //     repayAmount,
+    //     rateMode,
+    //     { amount: 0, deadline: 0, v: 0, r: zeroHash, s: zeroHash },
+    //     false,
+    //     useATokenAsFrom,
+    //     useATokenAsTo
+    //   );
+    // }
+    const method = repayAdapter.methods.repayFromCollateral(
+      {collateralAsset: collateralAsset.options.address,
+        collateralAmount: collateralAsset:maxCollateralAmount,
+        path: swapPath,
         rateMode,
-        0,
-        0,
-        0,
-        zeroHash,
-        zeroHash,
-        false,
         useATokenAsFrom,
-        useATokenAsTo
-      );
-      method = lendingPool.methods.flashLoan(
-        repayAdapter.options.address,
-        [debtAsset.options.address],
-        [repayAmount],
-        [0],
-        user,
-        callParams,
-        0
-      );
-    } else {
-      method = repayAdapter.methods.swapAndRepayWithPath(
-        collateralAsset.options.address,
-        debtAsset.options.address,
-        swapPath,
-        maxCollateralAmount,
-        repayAmount,
-        rateMode,
-        { amount: 0, deadline: 0, v: 0, r: zeroHash, s: zeroHash },
-        false,
-        useATokenAsFrom,
-        useATokenAsTo
-      );
-    }
+        useATokenAsTo, 
+        useFlashLoan,
+      },
+      { amount: 0, deadline: 0, v: 0, r: zeroHash, s: zeroHash }
+    );
 
     try {
       await retry(() => method.estimateGas({ from: user, gas: DEFAULT_GAS }));
