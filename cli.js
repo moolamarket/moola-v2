@@ -234,7 +234,7 @@ async function execute(network, action, ...params) {
       liquiditySwapAdapter = '0xe469484419AD6730BeD187c22a47ca38B054B09f';
       repayAdapter = new kit.web3.eth.Contract(
         UniswapRepayAdapter,
-        '0x55a48631e4ED42D2b12FBA0edc7ad8F66c28375C'
+        '0x1832bFB1C94Adbe9D37d1fA8e04Db4B2521C55dc'
       );
       autoRepay = new kit.web3.eth.Contract(
         AutoRepay,
@@ -269,7 +269,7 @@ async function execute(network, action, ...params) {
       liquiditySwapAdapter = '0x1c456309F89B1BC5929B94EC97484AC87f7Ee160';
       repayAdapter = new kit.web3.eth.Contract(
         UniswapRepayAdapter,
-        '0x13F9a9AF3A51C4a495F76bEb795FCb1f8fEbE6fb'
+        '0xC4967DaE0d148c604Ea318aabCDaDF5dFFBe5aaE'
       );
       autoRepay = new kit.web3.eth.Contract(
         AutoRepay,
@@ -1304,12 +1304,13 @@ async function execute(network, action, ...params) {
     const repayAmount = BN(web3.utils.toWei(params[4]));
     const useFlashLoan = params[5] == 'true' ? true : false;
 
-    const path = getSwapPath();
+    const paths = getSwapPath();
     const tokenPairKey =
       `${collateralAsset.options.address}_${debtAsset.options.address}`.toLowerCase();
-    const swapPath = path[tokenPairKey].path;
-    useATokenAsFrom = path[tokenPairKey].useATokenAsFrom;
-    useATokenAsTo = path[tokenPairKey].useATokenAsTo;
+
+    const swapPath = paths[tokenPairKey].path;
+    useATokenAsFrom = paths[tokenPairKey].useATokenAsFrom;
+    useATokenAsTo = paths[tokenPairKey].useATokenAsTo;
     const reserveCollateralToken = await dataProvider.methods
       .getReserveTokensAddresses(collateralAsset.options.address)
       .call();
@@ -1349,7 +1350,7 @@ async function execute(network, action, ...params) {
         debtAsset: debtAsset.options.address,
         path: swapPath,
         collateralAmount: maxCollateralAmount,
-        debtRepayAmount: repayAmount,
+        debtRepayAmount: repayAmount.toFixed(0),
         rateMode,
         useATokenAsFrom,
         useATokenAsTo,
@@ -1399,12 +1400,12 @@ async function execute(network, action, ...params) {
     const repayAmount = BN(web3.utils.toWei(params[5]));
     const useFlashloan = params[6] == 'true' ? true : false;
 
-    const path = getSwapPath();
-    const swapPath = path[`${collateralAsset.options.address}_${debtAsset.options.address}`].path;
+    const paths = getSwapPath();
+    const swapPath = paths[`${collateralAsset.options.address}_${debtAsset.options.address}`].path;
     const useATokenAsFrom =
-      path[`${collateralAsset.options.address}_${debtAsset.options.address}`].useATokenAsFrom;
+      paths[`${collateralAsset.options.address}_${debtAsset.options.address}`].useATokenAsFrom;
     const useATokenAsTo =
-      path[`${collateralAsset.options.address}_${debtAsset.options.address}`].useATokenAsTo;
+      paths[`${collateralAsset.options.address}_${debtAsset.options.address}`].useATokenAsTo;
 
     const reserveCollateralToken = await dataProvider.methods
       .getReserveTokensAddresses(collateralAsset.options.address)
