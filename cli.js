@@ -24,6 +24,7 @@ const DEBT_TOKENS = {
 const ether = '1000000000000000000';
 const ray = '1000000000000000000000000000';
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+const zeroHash = '0x0000000000000000000000000000000000000000000000000000000000000000';
 const ALLOWANCE_THRESHOLD = BN('1e+30');
 const DEFAULT_GAS = 2000000;
 
@@ -93,6 +94,7 @@ function buildLiquiditySwapParams(
 function buildSwapAndRepayParams(
   collateralAsset,
   collateralAmount,
+  path,
   rateMode,
   permitAmount,
   deadline,
@@ -107,6 +109,7 @@ function buildSwapAndRepayParams(
     [
       'address',
       'uint256',
+      'address[]',
       'uint256',
       'uint256',
       'uint256',
@@ -120,6 +123,7 @@ function buildSwapAndRepayParams(
     [
       collateralAsset,
       collateralAmount,
+      path,
       rateMode,
       permitAmount,
       deadline,
@@ -1273,8 +1277,8 @@ async function execute(network, action, ...params) {
       [0],
       [0],
       [0],
-      ['0x0000000000000000000000000000000000000000000000000000000000000000'],
-      ['0x0000000000000000000000000000000000000000000000000000000000000000'],
+      [zeroHash],
+      [zeroHash],
       [false],
       [useATokenAsFrom],
       [useATokenAsTo]
@@ -1345,30 +1349,20 @@ async function execute(network, action, ...params) {
     const rateMode = getRateModeNumber(params[3]);
     const repayAmount = BN(web3.utils.toWei(params[4]));
     const useFlashLoan = params[5] == 'true' ? true : false;
-    let useATokenAsFrom = params[1].toLowerCase() !== 'celo';
-    let useATokenAsTo = params[2].toLowerCase() !== 'celo';
 
-    const zeroHash = '0x0000000000000000000000000000000000000000000000000000000000000000';
-
+    const path = getSwapPath();
+    const tokenPairKey =
+      `${collateralAsset.options.address}_${debtAsset.options.address}`.toLowerCase();
+    const swapPath = path[tokenPairKey].path;
+    useATokenAsFrom = path[tokenPairKey].useATokenAsFrom;
+    useATokenAsTo = path[tokenPairKey].useATokenAsTo;
     const reserveCollateralToken = await dataProvider.methods
       .getReserveTokensAddresses(collateralAsset.options.address)
       .call();
     const collateralMToken = new eth.Contract(MToken, reserveCollateralToken.aTokenAddress);
 
-    const reserveDebtToken = await dataProvider.methods
-      .getReserveTokensAddresses(debtAsset.options.address)
-      .call();
-
     let maxCollateralAmount = 0;
     if (collateralAsset != debtAsset) {
-      const paths = getSwapPaths();
-      const tokenPairKey =
-        `${collateralAsset.options.address}_${debtAsset.options.address}`.toLowerCase();
-      const swapPath = paths[tokenPairKey].path;
-      console.log('swapPath :>> ', swapPath);
-      useATokenAsFrom = paths[tokenPairKey].useATokenAsFrom;
-      useATokenAsTo = paths[tokenPairKey].useATokenAsTo;
-
       const amountOut = useFlashLoan
         ? repayAmount.plus(repayAmount.multipliedBy(9).dividedBy(10000))
         : repayAmount;
@@ -1379,7 +1373,6 @@ async function execute(network, action, ...params) {
     }
 
     console.log(`Checking collateral mToken ${collateralMToken.options.address} for approval`);
-
     if (
       BN(await collateralMToken.methods.allowance(user, repayAdapter.options.address).call()).lt(
         BN(maxCollateralAmount)
@@ -1401,6 +1394,7 @@ async function execute(network, action, ...params) {
       const callParams = buildSwapAndRepayParams(
         collateralAsset.options.address,
         maxCollateralAmount,
+        swapPath,
         rateMode,
         0,
         0,
@@ -1421,9 +1415,10 @@ async function execute(network, action, ...params) {
         0
       );
     } else {
-      method = repayAdapter.methods.swapAndRepay(
+      method = repayAdapter.methods.swapAndRepayWithPath(
         collateralAsset.options.address,
         debtAsset.options.address,
+        swapPath,
         maxCollateralAmount,
         repayAmount,
         rateMode,
@@ -1449,9 +1444,7 @@ async function execute(network, action, ...params) {
 
   if (action === 'auto-repay') {
     if (network == 'test') {
-      throw new Error(
-        'repay from collateral only works on the mainnet due to low liquidity in pools'
-      );
+      throw new Error('auto repay only works on the mainnet due to low liquidity in pools');
     }
 
     if (privateKeyRequired) {
@@ -1477,20 +1470,17 @@ async function execute(network, action, ...params) {
     const repayAmount = BN(web3.utils.toWei(params[5]));
     const useFlashloan = params[6] == 'true' ? true : false;
 
-    const paths = getSwapPaths();
-    const swapPath = paths[`${collateralAsset.options.address}_${debtAsset.options.address}`].path;
+    const path = getSwapPath();
+    const swapPath = path[`${collateralAsset.options.address}_${debtAsset.options.address}`].path;
     const useATokenAsFrom =
-      paths[`${collateralAsset.options.address}_${debtAsset.options.address}`].useATokenAsFrom;
+      path[`${collateralAsset.options.address}_${debtAsset.options.address}`].useATokenAsFrom;
     const useATokenAsTo =
-      paths[`${collateralAsset.options.address}_${debtAsset.options.address}`].useATokenAsTo;
+      path[`${collateralAsset.options.address}_${debtAsset.options.address}`].useATokenAsTo;
 
     const reserveCollateralToken = await dataProvider.methods
       .getReserveTokensAddresses(collateralAsset.options.address)
       .call();
-    const mToken = new eth.Contract(MToken, reserveCollateralToken.aTokenAddress);
-    const reserveDebtToken = await dataProvider.methods
-      .getReserveTokensAddresses(debtAsset.options.address)
-      .call();
+    const collateralMToken = new eth.Contract(MToken, reserveCollateralToken.aTokenAddress);
 
     let maxCollateralAmount = 0;
     if (collateralAsset != debtAsset) {
@@ -1504,9 +1494,9 @@ async function execute(network, action, ...params) {
     }
     const feeAmount = BN(maxCollateralAmount).multipliedBy(10).dividedBy(10000);
 
-    console.log(`Checking mToken ${mToken.options.address} for approval`);
+    console.log(`Checking collateralMToken ${collateralMToken.options.address} for approval`);
     if (
-      BN(await mToken.methods.allowance(user, autoRepay.options.address).call()).lt(
+      BN(await collateralMToken.methods.allowance(user, autoRepay.options.address).call()).lt(
         BN(maxCollateralAmount).plus(feeAmount)
       )
     ) {
@@ -1776,7 +1766,7 @@ async function execute(network, action, ...params) {
   console.error(`Unknown action: ${action}`);
   printActions();
 
-  function getSwapPaths(fromToken, toToken) {
+  function getSwapPath(fromToken, toToken) {
     const mcusdAddress = '0x918146359264c492bd6934071c6bd31c854edbc3';
     const mceurAddress = '0xe273ad7ee11dcfaa87383ad5977ee1504ac07568';
     const mceloAddress = '0x7d00cd74ff385c955ea3d79e47bf06bd7386387d';
