@@ -91,52 +91,6 @@ function buildLiquiditySwapParams(
   );
 }
 
-// function buildSwapAndRepayParams(
-//   collateralAsset,
-//   collateralAmount,
-//   path,
-//   rateMode,
-//   permitAmount,
-//   deadline,
-//   v,
-//   r,
-//   s,
-//   useEthPath,
-//   useATokenAsFrom,
-//   useATokenAsTo
-// ) {
-//   return ethers.utils.defaultAbiCoder.encode(
-//     [
-//       'address',
-//       'uint256',
-//       'address[]',
-//       'uint256',
-//       'uint256',
-//       'uint256',
-//       'uint8',
-//       'bytes32',
-//       'bytes32',
-//       'bool',
-//       'bool',
-//       'bool',
-//     ],
-//     [
-//       collateralAsset,
-//       collateralAmount,
-//       path,
-//       rateMode,
-//       permitAmount,
-//       deadline,
-//       v,
-//       r,
-//       s,
-//       useEthPath,
-//       useATokenAsFrom,
-//       useATokenAsTo,
-//     ]
-//   );
-// }
-
 function buildLeverageBorrowParams(
   useATokenAsFrom,
   useATokenAsTo,
