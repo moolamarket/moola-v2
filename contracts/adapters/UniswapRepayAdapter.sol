@@ -15,9 +15,12 @@ import {DataTypes} from '../protocol/libraries/types/DataTypes.sol';
  **/
 contract UniswapRepayAdapter is BaseUniswapAdapter {
   struct RepayParams {
+    address user;
     address collateralAsset;
-    uint256 collateralAmount;
+    address debtAsset;
     address[] path;
+    uint256 collateralAmount;
+    uint256 debtRepayAmount;
     uint256 rateMode;
     bool useATokenAsFrom;
     bool useATokenAsTo;
@@ -80,6 +83,34 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
     return true;
   }
 
+  function repayFromCollateral(
+    RepayParams memory repayParams,
+    PermitSignature calldata permitSignature
+  ) external {
+    if (repayParams.useFlashLoan) {
+      bytes memory params = abi.encode(repayParams, permitSignature);
+      address[] memory assets = new address[](1);
+      assets[0] = repayParams.debtAsset;
+      uint256[] memory amounts = new uint256[](1);
+      amounts[0] = repayParams.debtRepayAmount;
+      uint256[] memory modes = new uint256[](1);
+      modes[0] = 0;
+      LENDING_POOL.flashLoan(address(this), assets, amounts, modes, repayParams.user, params, 0);
+    } else {
+      swapAndRepayWithPath(
+        repayParams.collateralAsset,
+        repayParams.debtAsset,
+        repayParams.path,
+        repayParams.collateralAmount,
+        repayParams.debtRepayAmount,
+        repayParams.rateMode,
+        permitSignature,
+        repayParams.useATokenAsFrom,
+        repayParams.useATokenAsTo
+      );
+    }
+  }
+
   /**
    * @dev Swaps the user collateral for the debt asset and then repay the debt on the protocol on behalf of the user
    * without using flash loans. This method can be used when the temporary transfer of the collateral asset to this
@@ -105,7 +136,7 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
     PermitSignature calldata permitSignature,
     bool useATokenAsFrom,
     bool useATokenAsTo
-  ) external {
+  ) public {
     DataTypes.ReserveData memory debtReserveData = _getReserveData(debtAsset);
 
     uint256 amountToRepay;

@@ -1388,53 +1388,17 @@ async function execute(network, action, ...params) {
       );
     }
 
-    // let method;
-
-    // if (useFlashLoan) {
-    //   const callParams = buildSwapAndRepayParams(
-    //     collateralAsset.options.address,
-    //     maxCollateralAmount,
-    //     swapPath,
-    //     rateMode,
-    //     0,
-    //     0,
-    //     0,
-    //     zeroHash,
-    //     zeroHash,
-    //     false,
-    //     useATokenAsFrom,
-    //     useATokenAsTo
-    //   );
-    //   method = lendingPool.methods.flashLoan(
-    //     repayAdapter.options.address,
-    //     [debtAsset.options.address],
-    //     [repayAmount],
-    //     [0],
-    //     user,
-    //     callParams,
-    //     0
-    //   );
-    // } else {
-    //   method = repayAdapter.methods.swapAndRepayWithPath(
-    //     collateralAsset.options.address,
-    //     debtAsset.options.address,
-    //     swapPath,
-    //     maxCollateralAmount,
-    //     repayAmount,
-    //     rateMode,
-    //     { amount: 0, deadline: 0, v: 0, r: zeroHash, s: zeroHash },
-    //     false,
-    //     useATokenAsFrom,
-    //     useATokenAsTo
-    //   );
-    // }
     const method = repayAdapter.methods.repayFromCollateral(
-      {collateralAsset: collateralAsset.options.address,
-        collateralAmount: collateralAsset:maxCollateralAmount,
+      {
+        user,
+        collateralAsset: collateralAsset.options.address,
+        debtAsset: debtAsset.options.address,
         path: swapPath,
+        collateralAmount: maxCollateralAmount,
+        debtRepayAmount: repayAmount,
         rateMode,
         useATokenAsFrom,
-        useATokenAsTo, 
+        useATokenAsTo,
         useFlashLoan,
       },
       { amount: 0, deadline: 0, v: 0, r: zeroHash, s: zeroHash }
