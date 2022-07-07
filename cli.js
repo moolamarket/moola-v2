@@ -3,6 +3,7 @@ const LendingPoolAddressesProvider = require('./abi/LendingPoolAddressProvider.j
 const LendingPool = require('./abi/LendingPool.json');
 const PriceOracle = require('./abi/PriceOracle.json');
 const UniswapRepayAdapter = require('./abi/UniswapRepayAdapter.json');
+const LiquiditySwapAdapterSinglePair = require('./abi/LiquiditySwapAdapterSinglePair.json');
 const AutoRepay = require('./abi/AutoRepay.json');
 const LeverageBorrowAdapter = require('./abi/LeverageBorrowAdapter.json');
 const Uniswap = require('./abi/Uniswap.json');
@@ -48,48 +49,48 @@ function nowSeconds() {
   return Math.floor(Date.now() / 1000);
 }
 
-function buildLiquiditySwapParams(
-  assetToSwapToList,
-  minAmountsToReceive,
-  swapAllBalances,
-  permitAmounts,
-  deadlines,
-  v,
-  r,
-  s,
-  useEthPath,
-  useATokenAsFrom,
-  useATokenAsTo
-) {
-  return ethers.utils.defaultAbiCoder.encode(
-    [
-      'address[]',
-      'uint256[]',
-      'bool[]',
-      'uint256[]',
-      'uint256[]',
-      'uint8[]',
-      'bytes32[]',
-      'bytes32[]',
-      'bool[]',
-      'bool[]',
-      'bool[]',
-    ],
-    [
-      assetToSwapToList,
-      minAmountsToReceive,
-      swapAllBalances,
-      permitAmounts,
-      deadlines,
-      v,
-      r,
-      s,
-      useEthPath,
-      useATokenAsFrom,
-      useATokenAsTo,
-    ]
-  );
-}
+// function buildLiquiditySwapParams(
+//   assetToSwapToList,
+//   minAmountsToReceive,
+//   swapAllBalances,
+//   permitAmounts,
+//   deadlines,
+//   v,
+//   r,
+//   s,
+//   useEthPath,
+//   useATokenAsFrom,
+//   useATokenAsTo
+// ) {
+//   return ethers.utils.defaultAbiCoder.encode(
+//     [
+//       'address[]',
+//       'uint256[]',
+//       'bool[]',
+//       'uint256[]',
+//       'uint256[]',
+//       'uint8[]',
+//       'bytes32[]',
+//       'bytes32[]',
+//       'bool[]',
+//       'bool[]',
+//       'bool[]',
+//     ],
+//     [
+//       assetToSwapToList,
+//       minAmountsToReceive,
+//       swapAllBalances,
+//       permitAmounts,
+//       deadlines,
+//       v,
+//       r,
+//       s,
+//       useEthPath,
+//       useATokenAsFrom,
+//       useATokenAsTo,
+//     ]
+//   );
+// }
 
 function buildLeverageBorrowParams(
   useATokenAsFrom,
@@ -206,6 +207,7 @@ async function execute(network, action, ...params) {
   let migrator;
   let privateKeyRequired = true;
   let liquiditySwapAdapter;
+  let swapAdapter;
   let repayAdapter;
   let autoRepay;
   let leverageBorrowAdapter;
@@ -232,6 +234,10 @@ async function execute(network, action, ...params) {
         '0x78660A4bbe5108c8258c39696209329B3bC214ba'
       );
       liquiditySwapAdapter = '0xe469484419AD6730BeD187c22a47ca38B054B09f';
+      swapAdapter = new kit.web3.eth.Contract(
+        LiquiditySwapAdapterSinglePair,
+        '0xa7174954cD0B7D2Fd3237D24bD874e74c53E5796'
+      );
       repayAdapter = new kit.web3.eth.Contract(
         UniswapRepayAdapter,
         '0x1832bFB1C94Adbe9D37d1fA8e04Db4B2521C55dc'
@@ -266,11 +272,15 @@ async function execute(network, action, ...params) {
         MoolaMigratorV1V2,
         '0xB87ebF9CD90003B66CF77c937eb5628124fA0662'
       );
-      liquiditySwapAdapter = '0x1c456309F89B1BC5929B94EC97484AC87f7Ee160';
+      swapAdapter = new kit.web3.eth.Contract(
+        LiquiditySwapAdapterSinglePair,
+        '0x1C92B2eAea7c53Ac08A7B77151c2F0734b8e35b1'
+      );
       repayAdapter = new kit.web3.eth.Contract(
         UniswapRepayAdapter,
-        '0xC4967DaE0d148c604Ea318aabCDaDF5dFFBe5aaE'
+        '0x1aC509c23Ea9586c765c5F3ad2AC6BE32279FCA3'
       );
+
       autoRepay = new kit.web3.eth.Contract(
         AutoRepay,
         '0xeb1549caebf24dd83e1b5e48abedd81be240e408'
@@ -311,7 +321,8 @@ async function execute(network, action, ...params) {
         '0xB87ebF9CD90003B66CF77c937eb5628124fA0662'
       );
       privateKeyRequired = false;
-      liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
+      liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3'; // TODO--
+      swapAdapter = '0x1C92B2eAea7c53Ac08A7B77151c2F0734b8e35b1';
       repayAdapter = new kit.web3.eth.Contract(
         UniswapRepayAdapter,
         '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c'
@@ -1193,13 +1204,18 @@ async function execute(network, action, ...params) {
     const tokenTo = tokens[params[2]];
     const user = params[0];
     const amount = web3.utils.toWei(params[3]);
-    const useATokenAsFrom = params[1] != 'celo';
-    const useATokenAsTo = params[2] != 'celo';
+
+    const paths = getSwapPath();
+    const tokenPairKey = `${tokenFrom.options.address}_${tokenTo.options.address}`.toLowerCase();
+    const swapPath = paths[tokenPairKey].path;
+    useATokenAsFrom = paths[tokenPairKey].useATokenAsFrom;
+    useATokenAsTo = paths[tokenPairKey].useATokenAsTo;
 
     const reserveTokens = await dataProvider.methods
       .getReserveTokensAddresses(tokenFrom.options.address)
       .call();
     const mToken = new eth.Contract(MToken, reserveTokens.aTokenAddress);
+    // const mToken = tokenFrom;
 
     const [tokenFromPrice, tokenToPrice] = await priceOracle.methods
       .getAssetsPrices([tokenFrom.options.address, tokenTo.options.address])
@@ -1212,65 +1228,50 @@ async function execute(network, action, ...params) {
       .toFixed(0);
 
     console.log(`Checking mToken ${mToken.options.address} for approval`);
-    const currentAllowance = await mToken.methods.allowance(user, liquiditySwapAdapter).call();
+    const currentAllowance = await mToken.methods
+      .allowance(user, swapAdapter.options.address)
+      .call();
     if (BN(currentAllowance).isLessThan(ALLOWANCE_THRESHOLD)) {
       console.log(
         'Approve UniswapAdapter',
         (
           await mToken.methods
-            .approve(liquiditySwapAdapter, maxUint256)
+            .approve(swapAdapter.options.address, maxUint256)
             .send({ from: user, gas: DEFAULT_GAS })
         ).transactionHash
       );
     }
 
-    const callParams = buildLiquiditySwapParams(
-      [tokenTo.options.address],
-      [tokenToSwapPrice],
-      [0],
-      [0],
-      [0],
-      [0],
-      [zeroHash],
-      [zeroHash],
-      [false],
-      [useATokenAsFrom],
-      [useATokenAsTo]
+    const method = swapAdapter.methods.liquiditySwap(
+      {
+        user,
+        assetFrom: tokenFrom.options.address,
+        assetTo: tokenTo.options.address,
+        path: swapPath,
+        amountToSwap: amount,
+        minAmountToReceive: tokenToSwapPrice,
+        swapAllBalance: 0,
+        useATokenAsFrom,
+        useATokenAsTo,
+      },
+      {
+        amount: 0,
+        deadline: 0,
+        v: 0,
+        r: zeroHash,
+        s: zeroHash,
+      }
     );
 
     try {
-      await retry(() =>
-        lendingPool.methods
-          .flashLoan(
-            liquiditySwapAdapter,
-            [tokenFrom.options.address],
-            [amount],
-            [0],
-            user,
-            callParams,
-            0
-          )
-          .estimateGas({ from: user, gas: DEFAULT_GAS })
-      );
+      await retry(() => method.estimateGas({ from: user, gas: DEFAULT_GAS }));
     } catch (err) {
       console.log('Cannot swap liquidity', err.message);
       return;
     }
     console.log(
       'Liquidity swap',
-      (
-        await lendingPool.methods
-          .flashLoan(
-            liquiditySwapAdapter,
-            [tokenFrom.options.address],
-            [amount],
-            [0],
-            user,
-            callParams,
-            0
-          )
-          .send({ from: user, gas: DEFAULT_GAS })
-      ).transactionHash
+      (await method.send({ from: user, gas: DEFAULT_GAS })).transactionHash
     );
     return;
   }

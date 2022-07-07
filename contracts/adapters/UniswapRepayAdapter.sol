@@ -61,6 +61,7 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
     bytes calldata params
   ) external override returns (bool) {
     require(msg.sender == address(LENDING_POOL), 'CALLER_MUST_BE_LENDING_POOL');
+    require(initiator == address(this), 'Only this contract can call flashloan');
 
     (RepayParams memory decodedParams, PermitSignature memory permitSignature) = _decodeParams(
       params
@@ -73,7 +74,7 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
       amounts[0],
       decodedParams.collateralAmount,
       decodedParams.rateMode,
-      initiator,
+      decodedParams.user,
       premiums[0],
       permitSignature,
       decodedParams.useATokenAsFrom,
