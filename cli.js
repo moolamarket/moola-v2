@@ -49,49 +49,6 @@ function nowSeconds() {
   return Math.floor(Date.now() / 1000);
 }
 
-// function buildLiquiditySwapParams(
-//   assetToSwapToList,
-//   minAmountsToReceive,
-//   swapAllBalances,
-//   permitAmounts,
-//   deadlines,
-//   v,
-//   r,
-//   s,
-//   useEthPath,
-//   useATokenAsFrom,
-//   useATokenAsTo
-// ) {
-//   return ethers.utils.defaultAbiCoder.encode(
-//     [
-//       'address[]',
-//       'uint256[]',
-//       'bool[]',
-//       'uint256[]',
-//       'uint256[]',
-//       'uint8[]',
-//       'bytes32[]',
-//       'bytes32[]',
-//       'bool[]',
-//       'bool[]',
-//       'bool[]',
-//     ],
-//     [
-//       assetToSwapToList,
-//       minAmountsToReceive,
-//       swapAllBalances,
-//       permitAmounts,
-//       deadlines,
-//       v,
-//       r,
-//       s,
-//       useEthPath,
-//       useATokenAsFrom,
-//       useATokenAsTo,
-//     ]
-//   );
-// }
-
 function buildLeverageBorrowParams(
   useATokenAsFrom,
   useATokenAsTo,
@@ -240,7 +197,7 @@ async function execute(network, action, ...params) {
       );
       repayAdapter = new kit.web3.eth.Contract(
         UniswapRepayAdapter,
-        '0x1832bFB1C94Adbe9D37d1fA8e04Db4B2521C55dc'
+        '0x71b570D5f0Ec771A396F947E7E2870042dB9bA57'
       );
       autoRepay = new kit.web3.eth.Contract(
         AutoRepay,
@@ -272,13 +229,14 @@ async function execute(network, action, ...params) {
         MoolaMigratorV1V2,
         '0xB87ebF9CD90003B66CF77c937eb5628124fA0662'
       );
+      liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
       swapAdapter = new kit.web3.eth.Contract(
         LiquiditySwapAdapterSinglePair,
         '0x1C92B2eAea7c53Ac08A7B77151c2F0734b8e35b1'
       );
       repayAdapter = new kit.web3.eth.Contract(
         UniswapRepayAdapter,
-        '0x1aC509c23Ea9586c765c5F3ad2AC6BE32279FCA3'
+        '0xC96c78E46169cB854Dc793437A105F46F2435455'
       );
 
       autoRepay = new kit.web3.eth.Contract(
@@ -321,11 +279,14 @@ async function execute(network, action, ...params) {
         '0xB87ebF9CD90003B66CF77c937eb5628124fA0662'
       );
       privateKeyRequired = false;
-      liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3'; // TODO--
-      swapAdapter = '0x1C92B2eAea7c53Ac08A7B77151c2F0734b8e35b1';
+      liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
+      swapAdapter = new kit.web3.eth.Contract(
+        LiquiditySwapAdapterSinglePair,
+        '0x1C92B2eAea7c53Ac08A7B77151c2F0734b8e35b1'
+      );
       repayAdapter = new kit.web3.eth.Contract(
         UniswapRepayAdapter,
-        '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c'
+        '0xC96c78E46169cB854Dc793437A105F46F2435455'
       );
       autoRepay = new kit.web3.eth.Contract(
         AutoRepay,
@@ -1215,7 +1176,6 @@ async function execute(network, action, ...params) {
       .getReserveTokensAddresses(tokenFrom.options.address)
       .call();
     const mToken = new eth.Contract(MToken, reserveTokens.aTokenAddress);
-    // const mToken = tokenFrom;
 
     const [tokenFromPrice, tokenToPrice] = await priceOracle.methods
       .getAssetsPrices([tokenFrom.options.address, tokenTo.options.address])
