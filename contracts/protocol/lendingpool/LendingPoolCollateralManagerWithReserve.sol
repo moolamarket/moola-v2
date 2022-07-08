@@ -20,8 +20,8 @@ import {DataTypes} from '../libraries/types/DataTypes.sol';
 import {LendingPoolStorage} from './LendingPoolStorage.sol';
 
 /**
- * @title LendingPoolCollateralManager contract
- * @author Aave
+ * @title LendingPoolCollateralManager contract with an extra 2% liquidation fee sent to treasury
+ * @author Moola
  * @dev Implements actions involving management of collateral in the protocol, the main one being the liquidations
  * IMPORTANT This contract will run always via DELEGATECALL, through the LendingPool, so the chain of inheritance
  * is the same as the LendingPool, to have compatible storage layouts
@@ -61,7 +61,7 @@ contract LendingPoolCollateralManagerWithReserve is
   }
 
   /**
-   * @dev As thIS contract extends the VersionedInitializable contract to match the state
+   * @dev As this contract extends the VersionedInitializable contract to match the state
    * of the LendingPool contract, the getRevision() function is needed, but the value is not
    * important, as the initialize() function will never be called here
    */
@@ -72,7 +72,8 @@ contract LendingPoolCollateralManagerWithReserve is
   /**
    * @dev Function to liquidate a position if its Health Factor drops below 1
    * - The caller (liquidator) covers `debtToCover` amount of debt of the user getting liquidated, and receives
-   *   a proportionally amount of the `collateralAsset` plus a bonus to cover market risk
+   *   a proportionally amount of the `collateralAsset` plus a bonus to cover market risk, part of the bonus is sent to
+   *   treasury.
    * @param collateralAsset The address of the underlying asset used as collateral, to receive as result of the liquidation
    * @param debtAsset The address of the underlying borrowed asset to be repaid with the liquidation
    * @param user The address of the borrower getting liquidated
@@ -286,6 +287,7 @@ contract LendingPoolCollateralManagerWithReserve is
    * @return collateralAmount: The maximum amount that is possible to liquidate given all the liquidation constraints
    *                           (user balance, close factor)
    *         debtAmountNeeded: The amount to repay with the liquidation
+   *         collateralReserveAmount: The amount, as part of the collateralAmount, that will be sent to treasury.
    **/
   function _calculateAvailableCollateralToLiquidate(
     DataTypes.ReserveData storage collateralReserve,
@@ -341,7 +343,7 @@ contract LendingPoolCollateralManagerWithReserve is
     uint256 collateralReserveAmount = collateralAmount.mul(LIQUIDATION_RESERVE_PERCENT).div(
       vars.liquidationBonus.add(LIQUIDATION_RESERVE_PERCENT)
     );
-    // collateralAmount = collateralAmount.sub(collateralReserveAmount);
+
     return (collateralAmount, debtAmountNeeded, collateralReserveAmount);
   }
 }
