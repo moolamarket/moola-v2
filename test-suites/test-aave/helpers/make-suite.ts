@@ -62,6 +62,7 @@ export interface TestEnv {
   helpersContract: AaveProtocolDataProvider;
   weth: WETH9Mocked;
   aWETH: AToken;
+  aAAVE: AToken;
   dai: MintableERC20;
   aDai: AToken;
   usdc: MintableERC20;
@@ -90,6 +91,7 @@ const testEnv: TestEnv = {
   oracle: {} as PriceOracle,
   weth: {} as WETH9Mocked,
   aWETH: {} as AToken,
+  aAAVE: {} as AToken,
   dai: {} as MintableERC20,
   aDai: {} as AToken,
   usdc: {} as MintableERC20,
@@ -139,6 +141,7 @@ export async function initializeMakeSuite() {
   const aDaiAddress = allTokens.find((aToken) => aToken.symbol === 'aDAI')?.tokenAddress;
 
   const aWEthAddress = allTokens.find((aToken) => aToken.symbol === 'aWETH')?.tokenAddress;
+  const aAAVEAddress = allTokens.find((aToken) => aToken.symbol === 'aAAVE')?.tokenAddress;
 
   const reservesTokens = await testEnv.helpersContract.getAllReservesTokens();
 
@@ -150,12 +153,13 @@ export async function initializeMakeSuite() {
   if (!aDaiAddress || !aWEthAddress) {
     process.exit(1);
   }
-  if (!daiAddress || !usdcAddress || !aaveAddress || !wethAddress) {
+  if (!daiAddress || !usdcAddress || !aaveAddress || !wethAddress || !aAAVEAddress) {
     process.exit(1);
   }
 
   testEnv.aDai = await getAToken(aDaiAddress);
   testEnv.aWETH = await getAToken(aWEthAddress);
+  testEnv.aAAVE = await getAToken(aAAVEAddress);
 
   testEnv.dai = await getMintableERC20(daiAddress);
   testEnv.usdc = await getMintableERC20(usdcAddress);
