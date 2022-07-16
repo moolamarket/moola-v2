@@ -14,6 +14,7 @@ import {
   deployPriceOracle,
   deployAaveOracle,
   deployLendingPoolCollateralManager,
+  deployLendingPoolCollateralManagerWithReserve,
   deployMockFlashLoanReceiver,
   deployWalletBalancerProvider,
   deployAaveProtocolDataProvider,
@@ -274,6 +275,7 @@ const buildTestEnv = async (deployer: Signer, secondaryWallet: Signer) => {
   await waitForTx(
     await addressesProvider.setLendingPoolCollateralManager(collateralManager.address)
   );
+  await deployLendingPoolCollateralManagerWithReserve();
   await deployMockFlashLoanReceiver(addressesProvider.address);
 
   const mockUniswapRouter = await deployMockUniswapRouter();

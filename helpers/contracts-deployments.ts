@@ -27,6 +27,7 @@ import {
   LendingPoolAddressesProviderFactory,
   LendingPoolAddressesProviderRegistryFactory,
   LendingPoolCollateralManagerFactory,
+  LendingPoolCollateralManagerWithReserveFactory,
   LendingPoolConfiguratorFactory,
   LendingPoolFactory,
   LendingRateOracleFactory,
@@ -228,6 +229,22 @@ export const deployLendingPoolCollateralManager = async (verify?: boolean) => {
   return withSaveAndVerify(
     collateralManagerImpl,
     eContractid.LendingPoolCollateralManager,
+    [],
+    verify
+  );
+};
+
+export const deployLendingPoolCollateralManagerWithReserve = async (verify?: boolean) => {
+  const collateralManagerWithReserveImpl = await new LendingPoolCollateralManagerWithReserveFactory(
+    await getFirstSigner()
+  ).deploy();
+  await insertContractAddressInDb(
+    eContractid.LendingPoolCollateralManagerWithReserveImpl,
+    collateralManagerWithReserveImpl.address
+  );
+  return withSaveAndVerify(
+    collateralManagerWithReserveImpl,
+    eContractid.LendingPoolCollateralManagerWithReserve,
     [],
     verify
   );

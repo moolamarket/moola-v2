@@ -99,4 +99,9 @@ interface IAToken is IERC20, IScaledBalanceToken, IInitializableAToken {
    * @dev Returns the address of the incentives controller contract
    **/
   function getIncentivesController() external view returns (IAaveIncentivesController);
+
+  /**
+   * @dev Returns the address of the Aave treasury, receiving the fees on this aToken
+   **/
+  function RESERVE_TREASURY_ADDRESS() external view returns (address);
 }
