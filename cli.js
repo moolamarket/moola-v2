@@ -3,7 +3,7 @@ const LendingPoolAddressesProvider = require('./abi/LendingPoolAddressProvider.j
 const LendingPool = require('./abi/LendingPool.json');
 const PriceOracle = require('./abi/PriceOracle.json');
 const UniswapRepayAdapter = require('./abi/UniswapRepayAdapter.json');
-const LiquiditySwapAdapterSinglePair = require('./abi/LiquiditySwapAdapterSinglePair.json');
+const LiquiditySwapAdapter = require('./abi/LiquiditySwapAdapter.json');
 const AutoRepay = require('./abi/AutoRepay.json');
 const LeverageBorrowAdapter = require('./abi/LeverageBorrowAdapter.json');
 const Uniswap = require('./abi/Uniswap.json');
@@ -192,7 +192,7 @@ async function execute(network, action, ...params) {
       );
       liquiditySwapAdapter = '0xe469484419AD6730BeD187c22a47ca38B054B09f';
       swapAdapter = new kit.web3.eth.Contract(
-        LiquiditySwapAdapterSinglePair,
+        LiquiditySwapAdapter,
         '0xa7174954cD0B7D2Fd3237D24bD874e74c53E5796'
       );
       repayAdapter = new kit.web3.eth.Contract(
@@ -231,7 +231,7 @@ async function execute(network, action, ...params) {
       );
       liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
       swapAdapter = new kit.web3.eth.Contract(
-        LiquiditySwapAdapterSinglePair,
+        LiquiditySwapAdapter,
         '0x1C92B2eAea7c53Ac08A7B77151c2F0734b8e35b1'
       );
       repayAdapter = new kit.web3.eth.Contract(
@@ -281,7 +281,7 @@ async function execute(network, action, ...params) {
       privateKeyRequired = false;
       liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
       swapAdapter = new kit.web3.eth.Contract(
-        LiquiditySwapAdapterSinglePair,
+        LiquiditySwapAdapter,
         '0x1C92B2eAea7c53Ac08A7B77151c2F0734b8e35b1'
       );
       repayAdapter = new kit.web3.eth.Contract(
