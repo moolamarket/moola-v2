@@ -3,6 +3,7 @@ const LendingPoolAddressesProvider = require('./abi/LendingPoolAddressProvider.j
 const LendingPool = require('./abi/LendingPool.json');
 const PriceOracle = require('./abi/PriceOracle.json');
 const UniswapRepayAdapter = require('./abi/UniswapRepayAdapter.json');
+const LiquiditySwapAdapter = require('./abi/LiquiditySwapAdapter.json');
 const AutoRepay = require('./abi/AutoRepay.json');
 const LeverageBorrowAdapter = require('./abi/LeverageBorrowAdapter.json');
 const Uniswap = require('./abi/Uniswap.json');
@@ -24,6 +25,7 @@ const DEBT_TOKENS = {
 const ether = '1000000000000000000';
 const ray = '1000000000000000000000000000';
 const maxUint256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+const zeroHash = '0x0000000000000000000000000000000000000000000000000000000000000000';
 const ALLOWANCE_THRESHOLD = BN('1e+30');
 const DEFAULT_GAS = 2000000;
 
@@ -45,92 +47,6 @@ function printRayRate(num) {
 
 function nowSeconds() {
   return Math.floor(Date.now() / 1000);
-}
-
-function buildLiquiditySwapParams(
-  assetToSwapToList,
-  minAmountsToReceive,
-  swapAllBalances,
-  permitAmounts,
-  deadlines,
-  v,
-  r,
-  s,
-  useEthPath,
-  useATokenAsFrom,
-  useATokenAsTo
-) {
-  return ethers.utils.defaultAbiCoder.encode(
-    [
-      'address[]',
-      'uint256[]',
-      'bool[]',
-      'uint256[]',
-      'uint256[]',
-      'uint8[]',
-      'bytes32[]',
-      'bytes32[]',
-      'bool[]',
-      'bool[]',
-      'bool[]',
-    ],
-    [
-      assetToSwapToList,
-      minAmountsToReceive,
-      swapAllBalances,
-      permitAmounts,
-      deadlines,
-      v,
-      r,
-      s,
-      useEthPath,
-      useATokenAsFrom,
-      useATokenAsTo,
-    ]
-  );
-}
-
-function buildSwapAndRepayParams(
-  collateralAsset,
-  collateralAmount,
-  rateMode,
-  permitAmount,
-  deadline,
-  v,
-  r,
-  s,
-  useEthPath,
-  useATokenAsFrom,
-  useATokenAsTo
-) {
-  return ethers.utils.defaultAbiCoder.encode(
-    [
-      'address',
-      'uint256',
-      'uint256',
-      'uint256',
-      'uint256',
-      'uint8',
-      'bytes32',
-      'bytes32',
-      'bool',
-      'bool',
-      'bool',
-    ],
-    [
-      collateralAsset,
-      collateralAmount,
-      rateMode,
-      permitAmount,
-      deadline,
-      v,
-      r,
-      s,
-      useEthPath,
-      useATokenAsFrom,
-      useATokenAsTo,
-    ]
-  );
 }
 
 function buildLeverageBorrowParams(
@@ -248,6 +164,7 @@ async function execute(network, action, ...params) {
   let migrator;
   let privateKeyRequired = true;
   let liquiditySwapAdapter;
+  let swapAdapter;
   let repayAdapter;
   let autoRepay;
   let leverageBorrowAdapter;
@@ -274,9 +191,13 @@ async function execute(network, action, ...params) {
         '0x78660A4bbe5108c8258c39696209329B3bC214ba'
       );
       liquiditySwapAdapter = '0xe469484419AD6730BeD187c22a47ca38B054B09f';
+      swapAdapter = new kit.web3.eth.Contract(
+        LiquiditySwapAdapter,
+        '0xa7174954cD0B7D2Fd3237D24bD874e74c53E5796'
+      );
       repayAdapter = new kit.web3.eth.Contract(
         UniswapRepayAdapter,
-        '0x55a48631e4ED42D2b12FBA0edc7ad8F66c28375C'
+        '0x71b570D5f0Ec771A396F947E7E2870042dB9bA57'
       );
       autoRepay = new kit.web3.eth.Contract(
         AutoRepay,
@@ -309,10 +230,15 @@ async function execute(network, action, ...params) {
         '0xB87ebF9CD90003B66CF77c937eb5628124fA0662'
       );
       liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
+      swapAdapter = new kit.web3.eth.Contract(
+        LiquiditySwapAdapter,
+        '0x1C92B2eAea7c53Ac08A7B77151c2F0734b8e35b1'
+      );
       repayAdapter = new kit.web3.eth.Contract(
         UniswapRepayAdapter,
-        '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c'
+        '0xC96c78E46169cB854Dc793437A105F46F2435455'
       );
+
       autoRepay = new kit.web3.eth.Contract(
         AutoRepay,
         '0xeb1549caebf24dd83e1b5e48abedd81be240e408'
@@ -354,9 +280,13 @@ async function execute(network, action, ...params) {
       );
       privateKeyRequired = false;
       liquiditySwapAdapter = '0x574f683a3983AF2C386cc073E93efAE7fE2B9eb3';
+      swapAdapter = new kit.web3.eth.Contract(
+        LiquiditySwapAdapter,
+        '0x1C92B2eAea7c53Ac08A7B77151c2F0734b8e35b1'
+      );
       repayAdapter = new kit.web3.eth.Contract(
         UniswapRepayAdapter,
-        '0x18A7119360d078c5B55d8a8288bFcc43EbfeF57c'
+        '0xC96c78E46169cB854Dc793437A105F46F2435455'
       );
       autoRepay = new kit.web3.eth.Contract(
         AutoRepay,
@@ -1235,8 +1165,12 @@ async function execute(network, action, ...params) {
     const tokenTo = tokens[params[2]];
     const user = params[0];
     const amount = web3.utils.toWei(params[3]);
-    const useATokenAsFrom = params[1] != 'celo';
-    const useATokenAsTo = params[2] != 'celo';
+
+    const paths = getSwapPath();
+    const tokenPairKey = `${tokenFrom.options.address}_${tokenTo.options.address}`.toLowerCase();
+    const swapPath = paths[tokenPairKey].path;
+    useATokenAsFrom = paths[tokenPairKey].useATokenAsFrom;
+    useATokenAsTo = paths[tokenPairKey].useATokenAsTo;
 
     const reserveTokens = await dataProvider.methods
       .getReserveTokensAddresses(tokenFrom.options.address)
@@ -1249,68 +1183,55 @@ async function execute(network, action, ...params) {
     const tokenToSwapPrice = BN(amount)
       .multipliedBy(BN(tokenFromPrice))
       .dividedBy(BN(tokenToPrice))
+      .multipliedBy(995)
+      .dividedBy(1000) // 0.5% slippage
       .toFixed(0);
 
     console.log(`Checking mToken ${mToken.options.address} for approval`);
-    const currentAllowance = await mToken.methods.allowance(user, liquiditySwapAdapter).call();
+    const currentAllowance = await mToken.methods
+      .allowance(user, swapAdapter.options.address)
+      .call();
     if (BN(currentAllowance).isLessThan(ALLOWANCE_THRESHOLD)) {
       console.log(
         'Approve UniswapAdapter',
         (
           await mToken.methods
-            .approve(liquiditySwapAdapter, maxUint256)
+            .approve(swapAdapter.options.address, maxUint256)
             .send({ from: user, gas: DEFAULT_GAS })
         ).transactionHash
       );
     }
 
-    const callParams = buildLiquiditySwapParams(
-      [tokenTo.options.address],
-      [tokenToSwapPrice],
-      [0],
-      [0],
-      [0],
-      [0],
-      ['0x0000000000000000000000000000000000000000000000000000000000000000'],
-      ['0x0000000000000000000000000000000000000000000000000000000000000000'],
-      [false],
-      [useATokenAsFrom],
-      [useATokenAsTo]
+    const method = swapAdapter.methods.liquiditySwap(
+      {
+        user,
+        assetFrom: tokenFrom.options.address,
+        assetTo: tokenTo.options.address,
+        path: swapPath,
+        amountToSwap: amount,
+        minAmountToReceive: tokenToSwapPrice,
+        swapAllBalance: 0,
+        useATokenAsFrom,
+        useATokenAsTo,
+      },
+      {
+        amount: 0,
+        deadline: 0,
+        v: 0,
+        r: zeroHash,
+        s: zeroHash,
+      }
     );
 
     try {
-      await retry(() =>
-        lendingPool.methods
-          .flashLoan(
-            liquiditySwapAdapter,
-            [tokenFrom.options.address],
-            [amount],
-            [0],
-            user,
-            callParams,
-            0
-          )
-          .estimateGas({ from: user, gas: DEFAULT_GAS })
-      );
+      await retry(() => method.estimateGas({ from: user, gas: DEFAULT_GAS }));
     } catch (err) {
       console.log('Cannot swap liquidity', err.message);
       return;
     }
     console.log(
       'Liquidity swap',
-      (
-        await lendingPool.methods
-          .flashLoan(
-            liquiditySwapAdapter,
-            [tokenFrom.options.address],
-            [amount],
-            [0],
-            user,
-            callParams,
-            0
-          )
-          .send({ from: user, gas: DEFAULT_GAS })
-      ).transactionHash
+      (await method.send({ from: user, gas: DEFAULT_GAS })).transactionHash
     );
     return;
   }
@@ -1343,95 +1264,66 @@ async function execute(network, action, ...params) {
     const rateMode = getRateModeNumber(params[3]);
     const repayAmount = BN(web3.utils.toWei(params[4]));
     const useFlashLoan = params[5] == 'true' ? true : false;
-    const useATokenAsFrom = params[1] != 'celo';
-    const useATokenAsTo = params[2] != 'celo';
 
-    const zeroHash = '0x0000000000000000000000000000000000000000000000000000000000000000';
+    const paths = getSwapPath();
+    const tokenPairKey =
+      `${collateralAsset.options.address}_${debtAsset.options.address}`.toLowerCase();
 
+    const swapPath = paths[tokenPairKey].path;
+    useATokenAsFrom = paths[tokenPairKey].useATokenAsFrom;
+    useATokenAsTo = paths[tokenPairKey].useATokenAsTo;
     const reserveCollateralToken = await dataProvider.methods
       .getReserveTokensAddresses(collateralAsset.options.address)
       .call();
-    const mToken = new eth.Contract(MToken, reserveCollateralToken.aTokenAddress);
-
-    const reserveDebtToken = await dataProvider.methods
-      .getReserveTokensAddresses(debtAsset.options.address)
-      .call();
+    const collateralMToken = new eth.Contract(MToken, reserveCollateralToken.aTokenAddress);
 
     let maxCollateralAmount = 0;
     if (collateralAsset != debtAsset) {
       const amountOut = useFlashLoan
         ? repayAmount.plus(repayAmount.multipliedBy(9).dividedBy(10000))
         : repayAmount;
-      const amounts = await ubeswap.methods
-        .getAmountsIn(amountOut, [
-          useATokenAsFrom ? reserveCollateralToken.aTokenAddress : collateralAsset.options.address,
-          useATokenAsTo ? reserveDebtToken.aTokenAddress : debtAsset.options.address,
-        ])
-        .call();
+      const amounts = await ubeswap.methods.getAmountsIn(amountOut, swapPath).call();
       maxCollateralAmount = BN(amounts[0])
         .plus(BN(amounts[0]).multipliedBy(1).dividedBy(1000))
         .toFixed(0); // 0.1% slippage
     }
 
-    console.log(`Checking mToken ${mToken.options.address} for approval`);
+    console.log(`Checking collateral mToken ${collateralMToken.options.address} for approval`);
     if (
-      BN(await mToken.methods.allowance(user, repayAdapter.options.address).call()).lt(
+      BN(await collateralMToken.methods.allowance(user, repayAdapter.options.address).call()).lt(
         BN(maxCollateralAmount)
       )
     ) {
       console.log(
         'Approve UniswapAdapter',
         (
-          await mToken.methods
+          await collateralMToken.methods
             .approve(repayAdapter.options.address, maxCollateralAmount)
             .send({ from: user, gas: DEFAULT_GAS })
         ).transactionHash
       );
     }
 
-    let method;
-
-    if (useFlashLoan) {
-      const callParams = buildSwapAndRepayParams(
-        collateralAsset.options.address,
-        maxCollateralAmount,
-        rateMode,
-        0,
-        0,
-        0,
-        zeroHash,
-        zeroHash,
-        false,
-        useATokenAsFrom,
-        useATokenAsTo
-      );
-      method = lendingPool.methods.flashLoan(
-        repayAdapter.options.address,
-        [debtAsset.options.address],
-        [repayAmount],
-        [0],
+    const method = repayAdapter.methods.repayFromCollateral(
+      {
         user,
-        callParams,
-        0
-      );
-    } else {
-      method = repayAdapter.methods.swapAndRepay(
-        collateralAsset.options.address,
-        debtAsset.options.address,
-        maxCollateralAmount,
-        repayAmount,
+        collateralAsset: collateralAsset.options.address,
+        debtAsset: debtAsset.options.address,
+        path: swapPath,
+        collateralAmount: maxCollateralAmount,
+        debtRepayAmount: repayAmount.toFixed(0),
         rateMode,
-        { amount: 0, deadline: 0, v: 0, r: zeroHash, s: zeroHash },
-        false,
         useATokenAsFrom,
-        useATokenAsTo
-      );
-    }
+        useATokenAsTo,
+        useFlashLoan,
+      },
+      { amount: 0, deadline: 0, v: 0, r: zeroHash, s: zeroHash }
+    );
 
     try {
       await retry(() => method.estimateGas({ from: user, gas: DEFAULT_GAS }));
     } catch (err) {
-      console.log('Cannot repay', err.message);
+      console.log('Cannot repay from collateral: ', err.message);
       return;
     }
     console.log(
@@ -1443,9 +1335,7 @@ async function execute(network, action, ...params) {
 
   if (action === 'auto-repay') {
     if (network == 'test') {
-      throw new Error(
-        'repay from collateral only works on the mainnet due to low liquidity in pools'
-      );
+      throw new Error('auto repay only works on the mainnet due to low liquidity in pools');
     }
 
     if (privateKeyRequired) {
@@ -1471,77 +1361,33 @@ async function execute(network, action, ...params) {
     const repayAmount = BN(web3.utils.toWei(params[5]));
     const useFlashloan = params[6] == 'true' ? true : false;
 
-    const mcusdAddress = '0x918146359264c492bd6934071c6bd31c854edbc3';
-    const mceurAddress = '0xe273ad7ee11dcfaa87383ad5977ee1504ac07568';
-    const mceloAddress = '0x7d00cd74ff385c955ea3d79e47bf06bd7386387d';
-
-    const celo_cusd = [CELO.options.address, mcusdAddress]; // celo-mcusd
-    const celo_ceur = [CELO.options.address, mceurAddress]; // celo-mceur
-    const celo_creal = [CELO.options.address, cUSD.options.address, cREAL.options.address]; // celo-cusd, cusd-creal pair
-    const celo_moo = [MOO.options.address, mceloAddress]; // mcelo-moo
-
-    const cusd_ceur = [mcusdAddress, mceurAddress]; // mcusd-mceur
-    const cusd_creal = [cUSD.options.address, cREAL.options.address]; // cusd-creal
-    const cusd_moo = [cUSD.options.address, CELO.options.address, MOO.options.address]; // cusd-celo, celo-moo pair
-
-    const ceur_creal = [cEUR.options.address, CELO.options.address, cUSD.options.address, cREAL.options.address]; // ceur-celo, celo-cusd, cusd-creal - only 3k usd in pools
-    const ceur_moo = [mceurAddress, CELO.options.address, MOO.options.address]; // mceur-celo, celo-moo
-
-    const creal_moo = [cREAL.options.address, cUSD.options.address, CELO.options.address, MOO.options.address]; // creal-cusd, cusd-celo, celo-moo
-
-    const paths = {};
-
-    paths[`${CELO.options.address}_${cUSD.options.address}`.toLowerCase()] = { path: celo_cusd, useATokenAsFrom: false, useATokenAsTo: true };
-    paths[`${CELO.options.address}_${cEUR.options.address}`.toLowerCase()] = { path: celo_ceur, useATokenAsFrom: false, useATokenAsTo: true };
-    paths[`${CELO.options.address}_${cREAL.options.address}`.toLowerCase()] = { path: celo_creal, useATokenAsFrom: false, useATokenAsTo: false };
-    paths[`${CELO.options.address}_${MOO.options.address}`.toLowerCase()] = { path: celo_moo, useATokenAsFrom: false, useATokenAsTo: true };
-    paths[`${cUSD.options.address}_${cEUR.options.address}`.toLowerCase()] = { path: cusd_ceur, useATokenAsFrom: true, useATokenAsTo: true };
-    paths[`${cUSD.options.address}_${cREAL.options.address}`.toLowerCase()] = { path: cusd_creal, useATokenAsFrom: false, useATokenAsTo: false };
-    paths[`${cUSD.options.address}_${MOO.options.address}`.toLowerCase()] = { path: cusd_moo, useATokenAsFrom: false, useATokenAsTo: false };
-    paths[`${cEUR.options.address}_${cREAL.options.address}`.toLowerCase()] = { path: ceur_creal, useATokenAsFrom: false, useATokenAsTo: false };
-    paths[`${cEUR.options.address}_${MOO.options.address}`.toLowerCase()] = { path: ceur_moo, useATokenAsFrom: true, useATokenAsTo: true };
-    paths[`${cREAL.options.address}_${MOO.options.address}`.toLowerCase()] = { path: creal_moo, useATokenAsFrom: false, useATokenAsTo: true };
-    
-    paths[`${cUSD.options.address}_${CELO.options.address}`.toLowerCase()] = { path: [...celo_cusd].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
-    paths[`${cEUR.options.address}_${CELO.options.address}`.toLowerCase()] = { path: [...celo_ceur].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
-    paths[`${cREAL.options.address}_${CELO.options.address}`.toLowerCase()] = { path: [...celo_creal].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
-    paths[`${MOO.options.address}_${CELO.options.address}`.toLowerCase()] = { path: [...celo_moo].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
-    paths[`${cEUR.options.address}_${cUSD.options.address}`.toLowerCase()] = { path: [...cusd_ceur].reverse(), useATokenAsFrom: true, useATokenAsTo: true };
-    paths[`${cREAL.options.address}_${cUSD.options.address}`.toLowerCase()] = { path: [...cusd_creal].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
-    paths[`${MOO.options.address}_${cUSD.options.address}`.toLowerCase()] = { path: [...cusd_moo].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
-    paths[`${cREAL.options.address}_${cEUR.options.address}`.toLowerCase()] = { path: [...celo_creal].reverse(), useATokenAsFrom: false, useATokenAsTo: false };
-    paths[`${MOO.options.address}_${cEUR.options.address}`.toLowerCase()] = { path: [...ceur_moo].reverse(), useATokenAsFrom: true, useATokenAsTo: true };
-    paths[`${MOO.options.address}_${cREAL.options.address}`.toLowerCase()] = { path: [...creal_moo].reverse(), useATokenAsFrom: true, useATokenAsTo: false };
-
+    const paths = getSwapPath();
     const swapPath = paths[`${collateralAsset.options.address}_${debtAsset.options.address}`].path;
-    const useATokenAsFrom = paths[`${collateralAsset.options.address}_${debtAsset.options.address}`].useATokenAsFrom;
-    const useATokenAsTo = paths[`${collateralAsset.options.address}_${debtAsset.options.address}`].useATokenAsTo;
+    const useATokenAsFrom =
+      paths[`${collateralAsset.options.address}_${debtAsset.options.address}`].useATokenAsFrom;
+    const useATokenAsTo =
+      paths[`${collateralAsset.options.address}_${debtAsset.options.address}`].useATokenAsTo;
 
     const reserveCollateralToken = await dataProvider.methods
       .getReserveTokensAddresses(collateralAsset.options.address)
       .call();
-    const mToken = new eth.Contract(MToken, reserveCollateralToken.aTokenAddress);
-    const reserveDebtToken = await dataProvider.methods
-      .getReserveTokensAddresses(debtAsset.options.address)
-      .call();
+    const collateralMToken = new eth.Contract(MToken, reserveCollateralToken.aTokenAddress);
 
     let maxCollateralAmount = 0;
     if (collateralAsset != debtAsset) {
       const amountOut = useFlashloan
         ? repayAmount.plus(repayAmount.multipliedBy(9).dividedBy(10000))
         : repayAmount;
-      const amounts = await ubeswap.methods
-        .getAmountsIn(amountOut, swapPath)
-        .call();
+      const amounts = await ubeswap.methods.getAmountsIn(amountOut, swapPath).call();
       maxCollateralAmount = BN(amounts[0])
         .plus(BN(amounts[0]).multipliedBy(1).dividedBy(1000))
         .toFixed(0); // 0.1% slippage
     }
     const feeAmount = BN(maxCollateralAmount).multipliedBy(10).dividedBy(10000);
 
-    console.log(`Checking mToken ${mToken.options.address} for approval`);
+    console.log(`Checking collateralMToken ${collateralMToken.options.address} for approval`);
     if (
-      BN(await mToken.methods.allowance(user, autoRepay.options.address).call()).lt(
+      BN(await collateralMToken.methods.allowance(user, autoRepay.options.address).call()).lt(
         BN(maxCollateralAmount).plus(feeAmount)
       )
     ) {
@@ -1810,6 +1656,142 @@ async function execute(network, action, ...params) {
 
   console.error(`Unknown action: ${action}`);
   printActions();
+
+  function getSwapPath(fromToken, toToken) {
+    const mcusdAddress = '0x918146359264c492bd6934071c6bd31c854edbc3';
+    const mceurAddress = '0xe273ad7ee11dcfaa87383ad5977ee1504ac07568';
+    const mceloAddress = '0x7d00cd74ff385c955ea3d79e47bf06bd7386387d';
+
+    const celo_cusd = [CELO.options.address, mcusdAddress]; // celo-mcusd
+    const celo_ceur = [CELO.options.address, mceurAddress]; // celo-mceur
+    const celo_creal = [CELO.options.address, cUSD.options.address, cREAL.options.address]; // celo-cusd, cusd-creal pair
+    const celo_moo = [mceloAddress, MOO.options.address]; // mcelo-moo
+
+    const cusd_ceur = [mcusdAddress, mceurAddress]; // mcusd-mceur
+    const cusd_creal = [cUSD.options.address, cREAL.options.address]; // cusd-creal
+    const cusd_moo = [cUSD.options.address, CELO.options.address, MOO.options.address]; // cusd-celo, celo-moo pair
+
+    const ceur_creal = [
+      cEUR.options.address,
+      CELO.options.address,
+      cUSD.options.address,
+      cREAL.options.address,
+    ]; // ceur-celo, celo-cusd, cusd-creal - only 3k usd in pools
+    const ceur_moo = [mceurAddress, CELO.options.address, MOO.options.address]; // mceur-celo, celo-moo
+
+    const creal_moo = [
+      cREAL.options.address,
+      cUSD.options.address,
+      CELO.options.address,
+      MOO.options.address,
+    ]; // creal-cusd, cusd-celo, celo-moo
+
+    const paths = {};
+
+    paths[`${CELO.options.address}_${cUSD.options.address}`.toLowerCase()] = {
+      path: celo_cusd,
+      useATokenAsFrom: false,
+      useATokenAsTo: true,
+    };
+    paths[`${CELO.options.address}_${cEUR.options.address}`.toLowerCase()] = {
+      path: celo_ceur,
+      useATokenAsFrom: false,
+      useATokenAsTo: true,
+    };
+    paths[`${CELO.options.address}_${cREAL.options.address}`.toLowerCase()] = {
+      path: celo_creal,
+      useATokenAsFrom: false,
+      useATokenAsTo: false,
+    };
+    paths[`${CELO.options.address}_${MOO.options.address}`.toLowerCase()] = {
+      path: celo_moo,
+      useATokenAsFrom: true,
+      useATokenAsTo: false,
+    };
+    paths[`${cUSD.options.address}_${cEUR.options.address}`.toLowerCase()] = {
+      path: cusd_ceur,
+      useATokenAsFrom: true,
+      useATokenAsTo: true,
+    };
+    paths[`${cUSD.options.address}_${cREAL.options.address}`.toLowerCase()] = {
+      path: cusd_creal,
+      useATokenAsFrom: false,
+      useATokenAsTo: false,
+    };
+    paths[`${cUSD.options.address}_${MOO.options.address}`.toLowerCase()] = {
+      path: cusd_moo,
+      useATokenAsFrom: false,
+      useATokenAsTo: false,
+    };
+    paths[`${cEUR.options.address}_${cREAL.options.address}`.toLowerCase()] = {
+      path: ceur_creal,
+      useATokenAsFrom: false,
+      useATokenAsTo: false,
+    };
+    paths[`${cEUR.options.address}_${MOO.options.address}`.toLowerCase()] = {
+      path: ceur_moo,
+      useATokenAsFrom: true,
+      useATokenAsTo: false,
+    };
+    paths[`${cREAL.options.address}_${MOO.options.address}`.toLowerCase()] = {
+      path: creal_moo,
+      useATokenAsFrom: false,
+      useATokenAsTo: true,
+    };
+
+    paths[`${cUSD.options.address}_${CELO.options.address}`.toLowerCase()] = {
+      path: [...celo_cusd].reverse(),
+      useATokenAsFrom: true,
+      useATokenAsTo: false,
+    };
+    paths[`${cEUR.options.address}_${CELO.options.address}`.toLowerCase()] = {
+      path: [...celo_ceur].reverse(),
+      useATokenAsFrom: true,
+      useATokenAsTo: false,
+    };
+    paths[`${cREAL.options.address}_${CELO.options.address}`.toLowerCase()] = {
+      path: [...celo_creal].reverse(),
+      useATokenAsFrom: false,
+      useATokenAsTo: false,
+    };
+    paths[`${MOO.options.address}_${CELO.options.address}`.toLowerCase()] = {
+      path: [...celo_moo].reverse(),
+      useATokenAsFrom: true,
+      useATokenAsTo: false,
+    };
+    paths[`${cEUR.options.address}_${cUSD.options.address}`.toLowerCase()] = {
+      path: [...cusd_ceur].reverse(),
+      useATokenAsFrom: true,
+      useATokenAsTo: true,
+    };
+    paths[`${cREAL.options.address}_${cUSD.options.address}`.toLowerCase()] = {
+      path: [...cusd_creal].reverse(),
+      useATokenAsFrom: false,
+      useATokenAsTo: false,
+    };
+    paths[`${MOO.options.address}_${cUSD.options.address}`.toLowerCase()] = {
+      path: [...cusd_moo].reverse(),
+      useATokenAsFrom: false,
+      useATokenAsTo: false,
+    };
+    paths[`${cREAL.options.address}_${cEUR.options.address}`.toLowerCase()] = {
+      path: [...ceur_creal].reverse(),
+      useATokenAsFrom: false,
+      useATokenAsTo: false,
+    };
+    paths[`${MOO.options.address}_${cEUR.options.address}`.toLowerCase()] = {
+      path: [...ceur_moo].reverse(),
+      useATokenAsFrom: false,
+      useATokenAsTo: true,
+    };
+    paths[`${MOO.options.address}_${cREAL.options.address}`.toLowerCase()] = {
+      path: [...creal_moo].reverse(),
+      useATokenAsFrom: true,
+      useATokenAsTo: false,
+    };
+
+    return paths;
+  }
 }
 
 execute(...process.argv.slice(2).map((arg) => arg.toLowerCase()));
