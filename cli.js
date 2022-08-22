@@ -535,7 +535,7 @@ async function execute(network, action, ...params) {
     const user = params[1];
     const amount = web3.utils.toWei(params[2]);
     if (privateKeyRequired) {
-      pk = params[3];
+      pk = process.env.CELO_BOT_KEY;
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -584,7 +584,7 @@ async function execute(network, action, ...params) {
     const amount = web3.utils.toWei(params[2]);
     const rate = getRateModeNumber(params[3]);
     if (privateKeyRequired) {
-      pk = params[4];
+      pk = process.env.CELO_BOT_KEY;
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -618,7 +618,7 @@ async function execute(network, action, ...params) {
     const amount = params[2] === 'all' ? maxUint256 : web3.utils.toWei(params[2]);
     const rate = getRateModeNumber(params[3]);
     if (privateKeyRequired) {
-      pk = params[4];
+      pk = process.env.CELO_BOT_KEY;
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -675,7 +675,7 @@ async function execute(network, action, ...params) {
     const user = params[1];
     const amount = params[2] === 'all' ? maxUint256 : web3.utils.toWei(params[2]);
     if (privateKeyRequired) {
-      pk = params[3];
+      pk = process.env.CELO_BOT_KEY;;
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -710,7 +710,7 @@ async function execute(network, action, ...params) {
     const amount = web3.utils.toWei(params[3]);
     const rate = getRateModeNumber(params[4]);
     if (privateKeyRequired) {
-      pk = params[5];
+      pk = process.env.CELO_BOT_KEY;;
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -733,7 +733,7 @@ async function execute(network, action, ...params) {
     const amount = web3.utils.toWei(params[3]);
     const rate = getRateModeNumber(params[4]);
     if (privateKeyRequired) {
-      pk = params[5];
+      pk = process.env.CELO_BOT_KEY;;
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -768,7 +768,7 @@ async function execute(network, action, ...params) {
     const amount = web3.utils.toWei(params[3]);
     const rate = getRateModeNumber(params[4]);
     if (privateKeyRequired) {
-      pk = params[5];
+      pk = process.env.CELO_BOT_KEY;;
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -823,7 +823,7 @@ async function execute(network, action, ...params) {
   if (action === 'migrate-step-2') {
     const user = params[0];
     if (privateKeyRequired) {
-      pk = params[1];
+      pk = process.env.CELO_BOT_KEY;
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -914,7 +914,7 @@ async function execute(network, action, ...params) {
       process.env.CELO_BOT_NODE || kit.connection.web3.currentProvider.existingProvider.host;
     const user = process.env.CELO_BOT_ADDRESS || params[0];
     if (privateKeyRequired) {
-      pk = process.env.CELO_BOT_PK || params[1];
+      pk = process.env.CELO_BOT_KEY;
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1224,7 +1224,7 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
-      pk = params[4];
+      pk = process.env.CELO_BOT_KEY;;
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1324,7 +1324,7 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
-      pk = params[6];
+      pk = process.env.CELO_BOT_KEY;;
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1450,7 +1450,7 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
-      pk = params[7];
+      pk = process.env.CELO_BOT_KEY;
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1611,7 +1611,7 @@ async function execute(network, action, ...params) {
     const user = params[5];
 
     if (privateKeyRequired) {
-      pk = process.env.CELO_BOT_PK || params[6];
+      pk = process.env.CELO_BOT_KEY;
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1666,7 +1666,7 @@ async function execute(network, action, ...params) {
     const rateMode = getRateModeNumber(rateModeInput);
 
     if (privateKeyRequired) {
-      pk = params[5];
+      pk = process.env.CELO_BOT_KEY;
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1717,7 +1717,7 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
-      pk = params[5];
+      pk = process.env.CELO_BOT_KEY;
       if (!pk) {
         console.error('Missing private key');
         return;
