@@ -316,7 +316,7 @@ async function execute(network, action, ...params) {
       );
       autoRepay = new kit.web3.eth.Contract(
         AutoRepayAndBorrowAdapter,
-        '0xeb1549caebf24dd83e1b5e48abedd81be240e408'
+        '0xa948FD5F2653e8BFe35876730dB6a36FA4d46252'
       );
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
       leverageBorrowAdapter = new kit.web3.eth.Contract(
@@ -1566,7 +1566,7 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
-      pk = params[4];
+      pk = process.env.CELO_BOT_KEY;
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1582,8 +1582,11 @@ async function execute(network, action, ...params) {
     const minHealthFactor = web3.utils.toWei(params[1]);
     const targetHealthFactor = web3.utils.toWei(params[2]);
     const maxHealthFactor = web3.utils.toWei(params[3]);
+    const borrowToken = param[4];
+    const collateralToken = param[5];
+    const rateMode = param[6];
 
-    const method = autoRepay.methods.setMinTargetHealthFactor(minHealthFactor, targetHealthFactor, maxHealthFactor);
+    const method = autoRepay.methods.setMinTargetMaxHealthFactor(minHealthFactor, targetHealthFactor, maxHealthFactor, borrowToken, collateralToken, rateMode);
 
     try {
       await retry(() => method.estimateGas({ from: user, gas: DEFAULT_GAS }));
