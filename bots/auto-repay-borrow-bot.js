@@ -208,7 +208,6 @@ async function execute() {
         const reserveBorrowToken = await dataProvider.methods
         .getReserveTokensAddresses(borrowAddress)
         .call();
-        
 
         const increaseHealthFactorMethod = async (repAmount, amountOut, useFlashloan) => {
           const { amount, path, useATokenAsFrom, useATokenAsTo}  = await swapPathHelper.getBestSwapPathRepay(

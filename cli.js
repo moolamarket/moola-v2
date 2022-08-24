@@ -1,4 +1,4 @@
- const { newKit } = require('@celo/contractkit');
+const { newKit } = require('@celo/contractkit');
 const LendingPoolAddressesProvider = require('./abi/LendingPoolAddressProvider.json');
 const LendingPool = require('./abi/LendingPool.json');
 const PriceOracle = require('./abi/PriceOracle.json');
@@ -196,30 +196,30 @@ function printActions() {
   console.info('getReserveData asset');
   console.info('getReserveConfigurationData asset');
   console.info('getUserAccountData address');
-  console.info('deposit asset address amount');
-  console.info('borrow asset address amount stable|variable');
-  console.info('repay asset address amount|all stable|variable');
-  console.info('redeem asset address amount|all');
-  console.info('delegate asset to address amount|all stable|variable');
-  console.info('borrowFrom asset from address amount stable|variable');
-  console.info('repayFor asset for address amount stable|variable');
-  console.info('liquidity-swap address asset-from asset-to amount');
+  console.info('deposit asset address amount [privateKey]');
+  console.info('borrow asset address amount stable|variable [privateKey]');
+  console.info('repay asset address amount|all stable|variable [privateKey]');
+  console.info('redeem asset address amount|all [privateKey]');
+  console.info('delegate asset to address amount|all stable|variable [privateKey]');
+  console.info('borrowFrom asset from address amount stable|variable [privateKey]');
+  console.info('repayFor asset for address amount stable|variable [privateKey]');
+  console.info('liquidity-swap address asset-from asset-to amount [privateKey]');
   console.info(
-    'repay-from-collateral address collateral-asset debt-asset stable|variable debt-amount useFlashloan(true|false)'
+    'repay-from-collateral address collateral-asset debt-asset stable|variable debt-amount useFlashloan(true|false) [privateKey]'
   );
-  console.info('migrate-step-2 address');
-  console.info('liquidation-bot address');
+  console.info('migrate-step-2 address [privateKey]');
+  console.info('liquidation-bot address [privateKey]');
   console.info(
-    'auto-repay callerAddress userAddress collateral-asset debt-asset stable|variable debt-amount useFlashloan(true|false)'
+    'auto-repay callerAddress userAddress collateral-asset debt-asset stable|variable debt-amount useFlashloan(true|false) [privateKey]'
   );
   console.info('auto-repay-user-info userAddress');
-  console.info('set-auto-repay-params address minHealthFactor targetHealthFactor maxHealthFactor borrowToken collateralToken rateMode(stable|variable)');
+  console.info('set-auto-repay-params address minHealthFactor targetHealthFactor maxHealthFactor borrow-asset collateral-asset stable|variable [privateKey]');
   console.info(
-    'liquidationCall collateral-asset debt-asset risk-user debt-to-cover receive-AToken(true|false) address'
+    'liquidationCall collateral-asset debt-asset risk-user debt-to-cover receive-AToken(true|false) address [privateKey]'
   );
-  console.info('repayDelegation delegator asset amount stable|variable address');
+  console.info('repayDelegation delegator asset amount stable|variable address [privateKey]');
   console.info(
-    'leverage-borrow address collateral-asset debt-asset stable|variable debt-amount'
+    'leverage-borrow address collateral-asset debt-asset stable|variable debt-amount [privateKey]'
   );
 }
 
@@ -536,6 +536,9 @@ async function execute(network, action, ...params) {
     const user = params[1];
     const amount = web3.utils.toWei(params[2]);
     if (privateKeyRequired) {
+      if(!pk){
+        pk = params[3];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -584,6 +587,9 @@ async function execute(network, action, ...params) {
     const amount = web3.utils.toWei(params[2]);
     const rate = getRateModeNumber(params[3]);
     if (privateKeyRequired) {
+      if(!pk){
+        pk = params[4];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -617,6 +623,9 @@ async function execute(network, action, ...params) {
     const amount = params[2] === 'all' ? maxUint256 : web3.utils.toWei(params[2]);
     const rate = getRateModeNumber(params[3]);
     if (privateKeyRequired) {
+      if(!pk){
+        pk = params[4];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -673,6 +682,9 @@ async function execute(network, action, ...params) {
     const user = params[1];
     const amount = params[2] === 'all' ? maxUint256 : web3.utils.toWei(params[2]);
     if (privateKeyRequired) {
+      if(!pk){
+        pk = params[3];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -707,6 +719,9 @@ async function execute(network, action, ...params) {
     const amount = web3.utils.toWei(params[3]);
     const rate = getRateModeNumber(params[4]);
     if (privateKeyRequired) {
+      if(!pk){
+        pk = params[5];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -729,6 +744,9 @@ async function execute(network, action, ...params) {
     const amount = web3.utils.toWei(params[3]);
     const rate = getRateModeNumber(params[4]);
     if (privateKeyRequired) {
+      if(!pk){
+        pk = params[5];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -763,6 +781,9 @@ async function execute(network, action, ...params) {
     const amount = web3.utils.toWei(params[3]);
     const rate = getRateModeNumber(params[4]);
     if (privateKeyRequired) {
+      if(!pk){
+        pk = params[5];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -817,6 +838,9 @@ async function execute(network, action, ...params) {
   if (action === 'migrate-step-2') {
     const user = params[0];
     if (privateKeyRequired) {
+      if(!pk){
+        pk = params[1];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -907,6 +931,9 @@ async function execute(network, action, ...params) {
       process.env.CELO_BOT_NODE || kit.connection.web3.currentProvider.existingProvider.host;
     const user = process.env.CELO_BOT_ADDRESS || params[0];
     if (privateKeyRequired) {
+      if(!pk){
+        pk = params[1];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1216,6 +1243,9 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
+      if(!pk){
+        pk = params[3];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1315,6 +1345,9 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
+      if(!pk){
+        pk = params[6];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1440,6 +1473,9 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
+      if(!pk){
+        pk = params[7];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1555,6 +1591,9 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
+      if(!pk){
+        pk = params[7];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1611,6 +1650,9 @@ async function execute(network, action, ...params) {
     const user = params[5];
 
     if (privateKeyRequired) {
+      if(!pk){
+        pk = params[6];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1665,6 +1707,9 @@ async function execute(network, action, ...params) {
     const rateMode = getRateModeNumber(rateModeInput);
 
     if (privateKeyRequired) {
+      if(!pk){
+        pk = params[5];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1715,6 +1760,9 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
+      if(!pk){
+        pk = params[5];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
