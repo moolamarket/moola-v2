@@ -241,7 +241,6 @@ async function execute() {
           console.log(`attempt: ${attempt}`)
           const amountOut = repAmount.plus(repAmount.multipliedBy(9).dividedBy(10000)).toFixed(0);
           let { method, total } = await increaseHealthFactorMethod(repAmount, amountOut, true);
-          
           if (
             BN(await mToken.methods.allowance(user, autoRepay.options.address).call()).lt(total)
           ) {
