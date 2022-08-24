@@ -320,7 +320,7 @@ async function execute() {
           
           const minCollateralAmountOut = BN(amount)
             .minus(BN(amount).multipliedBy(1).dividedBy(100))
-            .toFixed(0); // 0.1% slippage
+            .toFixed(0); // 1% slippage
           const method = autoRepay.methods.decreaseHealthFactor(
             {
               user,
