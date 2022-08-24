@@ -216,7 +216,7 @@ async function execute() {
           );
           const maxCollateralAmount = BN(amount)
             .plus(BN(amount).multipliedBy(1).dividedBy(100))
-            .toFixed(0); // 0.1% slippage
+            .toFixed(0); // 1% slippage
           const feeAmount = BN(maxCollateralAmount).multipliedBy(10).dividedBy(10000);
           let method = autoRepay.methods.increaseHealthFactor(
             {
@@ -322,7 +322,6 @@ async function execute() {
           const minCollateralAmountOut = BN(amount)
             .minus(BN(amount).multipliedBy(1).dividedBy(100))
             .toFixed(0); // 0.1% slippage
-            
           const method = autoRepay.methods.decreaseHealthFactor(
             {
               user,
@@ -368,7 +367,7 @@ async function execute() {
               console.log('Could not borrow');
               return;
             }
-            await borrowSimulation((BN(maxAbleToBorrow).multipliedBy(100 - attempt * 25).dividedBy(100)).toFixed(0), attempt + 1);
+            await borrowSimulation(BN(maxAbleToBorrow).multipliedBy(100 - attempt * 25).dividedBy(100).toFixed(0), attempt + 1);
             return;
           }
           console.log(
