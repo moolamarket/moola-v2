@@ -76,10 +76,20 @@ task(
     // 2. Deploy address provider and set genesis manager
     const addressesProvider = await deployLendingPoolAddressesProvider(MarketId, verify);
 
+    // DISABLE SEC. 3 FOR GOVERNANCE USE!
+    // 3. Set the provider at the Registry
+    await waitForTx(
+      await addressesProviderRegistry.registerAddressesProvider(
+        addressesProvider.address,
+        ProviderId
+      )
+    );
+
     // 4. Set pool admins
 
     await waitForTx(await addressesProvider.setPoolAdmin(await getGenesisPoolAdmin(poolConfig)));
     await waitForTx(await addressesProvider.setEmergencyAdmin(await getEmergencyAdmin(poolConfig)));
+
     console.log('Pool Admin', await addressesProvider.getPoolAdmin());
     console.log('Emergency Admin', await addressesProvider.getEmergencyAdmin());
   });

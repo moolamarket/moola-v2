@@ -17,7 +17,7 @@ import 'hardhat-typechain';
 import 'solidity-coverage';
 import '@tenderly/hardhat-tenderly';
 
-const SKIP_LOAD = false;
+const SKIP_LOAD = process.env.SKIP_LOAD === 'true';
 const DEFAULT_BLOCK_GAS_LIMIT = 12450000;
 const DEFAULT_GAS_MUL = 5;
 const HARDFORK = 'istanbul';
