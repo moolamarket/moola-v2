@@ -15,7 +15,8 @@ const BigNumber = require('bignumber.js');
 const Promise = require('bluebird');
 const ethers = require('ethers');
 const SwapPath = require('./bots/helpers/helpers.js');
-let pk;
+require('dotenv').config()
+let pk = process.env.CELO_BOT_KEY;
 
 const DEBT_TOKENS = {
   1: 'stableDebtTokenAddress',
@@ -209,10 +210,10 @@ function printActions() {
   console.info('migrate-step-2 address [privateKey]');
   console.info('liquidation-bot address [privateKey]');
   console.info(
-    'auto-repay callerAddress userAddress collateral-asset debt-asset stable|variable debt-amount useFlashloan(true|false) [callerPrivateKey]'
+    'auto-repay callerAddress userAddress collateral-asset debt-asset stable|variable debt-amount useFlashloan(true|false) [privateKey]'
   );
   console.info('auto-repay-user-info userAddress');
-  console.info('set-auto-repay-params address minHealthFactor targetHealthFactor maxHealthFactor [privateKey]');
+  console.info('set-auto-repay-params address minHealthFactor targetHealthFactor maxHealthFactor borrow-asset collateral-asset stable|variable [privateKey]');
   console.info(
     'liquidationCall collateral-asset debt-asset risk-user debt-to-cover receive-AToken(true|false) address [privateKey]'
   );
@@ -316,7 +317,7 @@ async function execute(network, action, ...params) {
       );
       autoRepay = new kit.web3.eth.Contract(
         AutoRepayAndBorrowAdapter,
-        '0xeb1549caebf24dd83e1b5e48abedd81be240e408'
+        '0xa948FD5F2653e8BFe35876730dB6a36FA4d46252'
       );
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
       leverageBorrowAdapter = new kit.web3.eth.Contract(
@@ -535,7 +536,9 @@ async function execute(network, action, ...params) {
     const user = params[1];
     const amount = web3.utils.toWei(params[2]);
     if (privateKeyRequired) {
-      pk = params[3];
+      if(!pk){
+        pk = params[3];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -584,7 +587,9 @@ async function execute(network, action, ...params) {
     const amount = web3.utils.toWei(params[2]);
     const rate = getRateModeNumber(params[3]);
     if (privateKeyRequired) {
-      pk = params[4];
+      if(!pk){
+        pk = params[4];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -618,7 +623,9 @@ async function execute(network, action, ...params) {
     const amount = params[2] === 'all' ? maxUint256 : web3.utils.toWei(params[2]);
     const rate = getRateModeNumber(params[3]);
     if (privateKeyRequired) {
-      pk = params[4];
+      if(!pk){
+        pk = params[4];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -675,7 +682,9 @@ async function execute(network, action, ...params) {
     const user = params[1];
     const amount = params[2] === 'all' ? maxUint256 : web3.utils.toWei(params[2]);
     if (privateKeyRequired) {
-      pk = params[3];
+      if(!pk){
+        pk = params[3];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -710,7 +719,9 @@ async function execute(network, action, ...params) {
     const amount = web3.utils.toWei(params[3]);
     const rate = getRateModeNumber(params[4]);
     if (privateKeyRequired) {
-      pk = params[5];
+      if(!pk){
+        pk = params[5];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -733,7 +744,9 @@ async function execute(network, action, ...params) {
     const amount = web3.utils.toWei(params[3]);
     const rate = getRateModeNumber(params[4]);
     if (privateKeyRequired) {
-      pk = params[5];
+      if(!pk){
+        pk = params[5];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -768,7 +781,9 @@ async function execute(network, action, ...params) {
     const amount = web3.utils.toWei(params[3]);
     const rate = getRateModeNumber(params[4]);
     if (privateKeyRequired) {
-      pk = params[5];
+      if(!pk){
+        pk = params[5];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -823,7 +838,9 @@ async function execute(network, action, ...params) {
   if (action === 'migrate-step-2') {
     const user = params[0];
     if (privateKeyRequired) {
-      pk = params[1];
+      if(!pk){
+        pk = params[1];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -914,7 +931,9 @@ async function execute(network, action, ...params) {
       process.env.CELO_BOT_NODE || kit.connection.web3.currentProvider.existingProvider.host;
     const user = process.env.CELO_BOT_ADDRESS || params[0];
     if (privateKeyRequired) {
-      pk = process.env.CELO_BOT_PK || params[1];
+      if(!pk){
+        pk = params[1];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1224,7 +1243,9 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
-      pk = params[4];
+      if(!pk){
+        pk = params[3];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1324,7 +1345,9 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
-      pk = params[6];
+      if(!pk){
+        pk = params[6];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1450,7 +1473,9 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
-      pk = params[7];
+      if(!pk){
+        pk = params[7];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1566,7 +1591,9 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
-      pk = params[4];
+      if(!pk){
+        pk = params[7];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1582,8 +1609,23 @@ async function execute(network, action, ...params) {
     const minHealthFactor = web3.utils.toWei(params[1]);
     const targetHealthFactor = web3.utils.toWei(params[2]);
     const maxHealthFactor = web3.utils.toWei(params[3]);
+    const borrowToken = reserves[params[4]];
+    const collateralToken = reserves[params[5]];
+    const rateMode = params[6];
+    let rateModeIndex;
 
-    const method = autoRepay.methods.setMinTargetHealthFactor(minHealthFactor, targetHealthFactor, maxHealthFactor);
+    switch(rateMode){
+      case "variable":
+        rateModeIndex = 0;
+        break;
+      case "stable":
+        rateModeIndex = 1;
+        break;
+      default:
+        throw("Invalid rate mode has been provided");
+    }
+
+    const method = autoRepay.methods.setMinTargetMaxHealthFactor(minHealthFactor, targetHealthFactor, maxHealthFactor, borrowToken, collateralToken, rateModeIndex);
 
     try {
       await retry(() => method.estimateGas({ from: user, gas: DEFAULT_GAS }));
@@ -1608,7 +1650,9 @@ async function execute(network, action, ...params) {
     const user = params[5];
 
     if (privateKeyRequired) {
-      pk = process.env.CELO_BOT_PK || params[6];
+      if(!pk){
+        pk = params[6];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1663,7 +1707,9 @@ async function execute(network, action, ...params) {
     const rateMode = getRateModeNumber(rateModeInput);
 
     if (privateKeyRequired) {
-      pk = params[5];
+      if(!pk){
+        pk = params[5];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1714,7 +1760,9 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
-      pk = params[5];
+      if(!pk){
+        pk = params[5];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;

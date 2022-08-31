@@ -43,7 +43,7 @@ addressProvider = new kit.web3.eth.Contract(
 );
 autoRepay = new kit.web3.eth.Contract(
   AutoRepayAndBorrowAdapter,
-  '0x23cc685e04d4a341637b9640cd49552bb7424448'
+  '0xa948FD5F2653e8BFe35876730dB6a36FA4d46252'
 );
 dataProvider = new kit.web3.eth.Contract(
   DataProvider,
@@ -56,7 +56,7 @@ cREAL = new kit.web3.eth.Contract(MToken, '0xe8537a3d056DA446677B9E9d6c5dB704EaA
 MOO = new kit.web3.eth.Contract(MToken, '0x17700282592D6917F6A73D0bF8AcCf4D578c131e');
 CELO = new kit.web3.eth.Contract(MToken, '0x471EcE3750Da237f93B8E339c536989b8978a438');
 
-const ubeswapRouter = '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121';
+const ubeswapRouter = '0xE3D8bd6Aed4F159bc8000a9cD47CffDb95F96121';
 const ubeswap = new kit.web3.eth.Contract(Uniswap, ubeswapRouter);
 
 const mcusdAddress = '0x918146359264c492bd6934071c6bd31c854edbc3';
@@ -83,7 +83,7 @@ const retry = async (fun, tries = 5) => {
     return await fun();
   } catch (err) {
     if (tries == 0) throw err;
-    await Promise.delay(1000);
+    await Promise.delay(100);
     return retry(fun, tries - 1);
   }
 };
@@ -214,8 +214,8 @@ async function execute() {
             amountOut, collateralAddress, reserveCollateralToken.aTokenAddress, borrowAddress, reserveBorrowToken.aTokenAddress
           );
           const maxCollateralAmount = BN(amount)
-            .plus(BN(amount).multipliedBy(1).dividedBy(1000))
-            .toFixed(0); // 0.1% slippage
+            .plus(BN(amount).multipliedBy(1).dividedBy(100))
+            .toFixed(0); // 1% slippage
           const feeAmount = BN(maxCollateralAmount).multipliedBy(10).dividedBy(10000);
           let method = autoRepay.methods.increaseHealthFactor(
             {
@@ -240,7 +240,6 @@ async function execute() {
           console.log(`attempt: ${attempt}`)
           const amountOut = repAmount.plus(repAmount.multipliedBy(9).dividedBy(10000)).toFixed(0);
           let { method, total } = await increaseHealthFactorMethod(repAmount, amountOut, true);
-
           if (
             BN(await mToken.methods.allowance(user, autoRepay.options.address).call()).lt(total)
           ) {
@@ -310,7 +309,6 @@ async function execute() {
         .call();
 
         const debtTokenAddress = userData.rateMode == 1 ? reserveBorrowToken.stableDebtTokenAddress : reserveBorrowToken.variableDebtTokenAddress;
-
         const debtTokenBorrow = new eth.Contract(DebtToken, debtTokenAddress);
 
 
@@ -318,10 +316,10 @@ async function execute() {
           const { path, useATokenAsFrom, useATokenAsTo }  = await swapPathHelper.getBestSwapPathBorrow(
             maxAbleToBorrow, borrowAddress, reserveBorrowToken.aTokenAddress, collateralAddress, reserveCollateralToken.aTokenAddress
           );
+          
           const minCollateralAmountOut = BN(amount)
-            .plus(BN(amount).multipliedBy(1).dividedBy(1000))
-            .toFixed(0); // 0.1% slippage
-
+            .minus(BN(amount).multipliedBy(1).dividedBy(100))
+            .toFixed(0); // 1% slippage
           const method = autoRepay.methods.decreaseHealthFactor(
             {
               user,
@@ -367,7 +365,7 @@ async function execute() {
               console.log('Could not borrow');
               return;
             }
-            await borrowSimulation(maxAbleToBorrow.multipliedBy(100 - attempt * 25).dividedBy(100), attempt + 1);
+            await borrowSimulation(BN(maxAbleToBorrow).multipliedBy(100 - attempt * 25).dividedBy(100).toFixed(0), attempt + 1);
             return;
           }
           console.log(
