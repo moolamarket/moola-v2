@@ -15,13 +15,16 @@ import {DataTypes} from '../protocol/libraries/types/DataTypes.sol';
  **/
 contract UniswapRepayAdapter is BaseUniswapAdapter {
   struct RepayParams {
+    address user;
     address collateralAsset;
+    address debtAsset;
+    address[] path;
     uint256 collateralAmount;
+    uint256 debtRepayAmount;
     uint256 rateMode;
-    PermitSignature permitSignature;
-    bool useEthPath;
     bool useATokenAsFrom;
     bool useATokenAsTo;
+    bool useFlashLoan;
   }
 
   constructor(
@@ -58,24 +61,55 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
     bytes calldata params
   ) external override returns (bool) {
     require(msg.sender == address(LENDING_POOL), 'CALLER_MUST_BE_LENDING_POOL');
+    require(initiator == address(this), 'Only this contract can call flashloan');
 
-    RepayParams memory decodedParams = _decodeParams(params);
+    (RepayParams memory decodedParams, PermitSignature memory permitSignature) = _decodeParams(
+      params
+    );
 
-    _swapAndRepay(
+    _swapAndRepayWithPath(
       decodedParams.collateralAsset,
       assets[0],
+      decodedParams.path,
       amounts[0],
       decodedParams.collateralAmount,
       decodedParams.rateMode,
-      initiator,
+      decodedParams.user,
       premiums[0],
-      decodedParams.permitSignature,
-      decodedParams.useEthPath,
+      permitSignature,
       decodedParams.useATokenAsFrom,
       decodedParams.useATokenAsTo
     );
 
     return true;
+  }
+
+  function repayFromCollateral(
+    RepayParams memory repayParams,
+    PermitSignature calldata permitSignature
+  ) external {
+    if (repayParams.useFlashLoan) {
+      bytes memory params = abi.encode(repayParams, permitSignature);
+      address[] memory assets = new address[](1);
+      assets[0] = repayParams.debtAsset;
+      uint256[] memory amounts = new uint256[](1);
+      amounts[0] = repayParams.debtRepayAmount;
+      uint256[] memory modes = new uint256[](1);
+      modes[0] = 0;
+      LENDING_POOL.flashLoan(address(this), assets, amounts, modes, repayParams.user, params, 0);
+    } else {
+      swapAndRepayWithPath(
+        repayParams.collateralAsset,
+        repayParams.debtAsset,
+        repayParams.path,
+        repayParams.collateralAmount,
+        repayParams.debtRepayAmount,
+        repayParams.rateMode,
+        permitSignature,
+        repayParams.useATokenAsFrom,
+        repayParams.useATokenAsTo
+      );
+    }
   }
 
   /**
@@ -85,6 +119,7 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
    * The user should give this contract allowance to pull the ATokens in order to withdraw the underlying asset
    * @param collateralAsset Address of asset to be swapped
    * @param debtAsset Address of debt asset
+   * @param path Path for swapping collateralAsset into debtAsset
    * @param collateralAmount Amount of the collateral to be swapped
    * @param debtRepayAmount Amount of the debt to be repaid
    * @param debtRateMode Rate mode of the debt to be repaid
@@ -92,17 +127,17 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
    * @param useATokenAsFrom use corresponding aToken instead of collateralAsset in swap
    * @param useATokenAsTo use corresponding aToken instead of debtAsset in swap
    */
-  function swapAndRepay(
+  function swapAndRepayWithPath(
     address collateralAsset,
     address debtAsset,
+    address[] memory path,
     uint256 collateralAmount,
     uint256 debtRepayAmount,
     uint256 debtRateMode,
     PermitSignature calldata permitSignature,
-    bool useEthPath,
     bool useATokenAsFrom,
     bool useATokenAsTo
-  ) external {
+  ) public {
     DataTypes.ReserveData memory debtReserveData = _getReserveData(debtAsset);
 
     uint256 amountToRepay;
@@ -119,13 +154,13 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
       maxCollateralToSwap = maxCollateralToSwap.mul(amountToRepay).div(debtRepayAmount);
     }
 
-    _doSwapAndPull(
+    _doSwapAndPullWithPath(
       collateralAsset,
       debtAsset,
+      path,
       msg.sender,
       0,
       permitSignature,
-      useEthPath,
       useATokenAsFrom,
       useATokenAsTo,
       amountToRepay,
@@ -143,22 +178,22 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
    *
    * @param collateralAsset Address of token to be swapped
    * @param debtAsset Address of debt token to be received from the swap
+   * @param path Path for swapping collateralAsset into debtAsset
    * @param user Address of the user
    * @param premium Fee of the flash loan
    * @param permitSignature struct containing the permit signature
-   * @param useEthPath use WETH address in path
    * @param useATokenAsFrom use corresponding aToken instead of collateralAsset in swap
    * @param useATokenAsTo use corresponding aToken instead of debtAsset in swap
    * @param amountToRepay amount that transferred in repay
    * @param maxCollateralToSwap maximum amount of collateral to swap
    */
-  function _doSwapAndPull(
+  function _doSwapAndPullWithPath(
     address collateralAsset,
     address debtAsset,
+    address[] memory path,
     address user,
     uint256 premium,
     PermitSignature memory permitSignature,
-    bool useEthPath,
     bool useATokenAsFrom,
     bool useATokenAsTo,
     uint256 amountToRepay,
@@ -169,12 +204,7 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
       // NOTE: commented for fixing stack too deep error
       // address debtATokenAddress = _getReserveData(debtAsset).aTokenAddress;
       // uint256 neededForFlashLoanDebt = repaidAmount.add(premium);
-      uint256 amounts0 = _getAmountsIn(
-        useATokenAsFrom ? collateralATokenAddress : collateralAsset,
-        useATokenAsTo ? _getReserveData(debtAsset).aTokenAddress : debtAsset,
-        amountToRepay.add(premium),
-        useEthPath
-      )[0];
+      uint256 amounts0 = _getAmountsInWIthPath(path, amountToRepay.add(premium))[0];
       require(amounts0 <= maxCollateralToSwap, 'slippage too high');
 
       if (useATokenAsFrom) {
@@ -186,14 +216,12 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
       }
 
       // Swap collateral asset to the debt asset
-      _swapTokensForExactTokens(
+      _swapTokensForExactTokensWithPath(
         collateralAsset,
         debtAsset,
-        useATokenAsFrom ? collateralATokenAddress : collateralAsset,
-        useATokenAsTo ? _getReserveData(debtAsset).aTokenAddress : debtAsset,
+        path,
         amounts0,
-        amountToRepay.add(premium),
-        useEthPath
+        amountToRepay.add(premium)
       );
 
       if (useATokenAsTo) {
@@ -221,26 +249,26 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
    *
    * @param collateralAsset Address of token to be swapped
    * @param debtAsset Address of debt token to be received from the swap
+   * @param path Path for swapping collateralAsset into debtAsset
    * @param amount Amount of the debt to be repaid
    * @param collateralAmount Amount of the reserve to be swapped
    * @param rateMode Rate mode of the debt to be repaid
    * @param initiator Address of the user
    * @param premium Fee of the flash loan
    * @param permitSignature struct containing the permit signature
-   * @param useEthPath use WETH address in path
    * @param useATokenAsFrom use corresponding aToken instead of collateralAsset in swap
    * @param useATokenAsTo use corresponding aToken instead of debtAsset in swap
    */
-  function _swapAndRepay(
+  function _swapAndRepayWithPath(
     address collateralAsset,
     address debtAsset,
+    address[] memory path,
     uint256 amount,
     uint256 collateralAmount,
     uint256 rateMode,
     address initiator,
     uint256 premium,
     PermitSignature memory permitSignature,
-    bool useEthPath,
     bool useATokenAsFrom,
     bool useATokenAsTo
   ) internal {
@@ -256,13 +284,13 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
       maxCollateralToSwap = maxCollateralToSwap.mul(repaidAmount).div(amount);
     }
 
-    _doSwapAndPull(
+    _doSwapAndPullWithPath(
       collateralAsset,
       debtAsset,
+      path,
       initiator,
       premium,
       permitSignature,
-      useEthPath,
       useATokenAsFrom,
       useATokenAsTo,
       repaidAmount,
@@ -276,45 +304,21 @@ contract UniswapRepayAdapter is BaseUniswapAdapter {
 
   /**
    * @dev Decodes debt information encoded in the flash loan params
-   * @param params Additional variadic field to include extra params. Expected parameters:
-   *   address collateralAsset Address of the reserve to be swapped
-   *   uint256 collateralAmount Amount of reserve to be swapped
-   *   uint256 rateMode Rate modes of the debt to be repaid
-   *   uint256 permitAmount Amount for the permit signature
-   *   uint256 deadline Deadline for the permit signature
-   *   uint8 v V param for the permit signature
-   *   bytes32 r R param for the permit signature
-   *   bytes32 s S param for the permit signature
-   *   bool useEthPath use WETH path route
+   * @param params Additional variadic field to include extra params.
+   *
    * @return RepayParams struct containing decoded params
+   * @return PermitSignature struct containing the permit signature
    */
-  function _decodeParams(bytes memory params) internal pure returns (RepayParams memory) {
-    (
-      address collateralAsset,
-      uint256 collateralAmount,
-      uint256 rateMode,
-      uint256 permitAmount,
-      uint256 deadline,
-      uint8 v,
-      bytes32 r,
-      bytes32 s,
-      bool useEthPath,
-      bool useATokenAsFrom,
-      bool useATokenAsTo
-    ) = abi.decode(
-        params,
-        (address, uint256, uint256, uint256, uint256, uint8, bytes32, bytes32, bool, bool, bool)
-      );
+  function _decodeParams(bytes memory params)
+    internal
+    pure
+    returns (RepayParams memory, PermitSignature memory)
+  {
+    (RepayParams memory repayParams, PermitSignature memory permitSignature) = abi.decode(
+      params,
+      (RepayParams, PermitSignature)
+    );
 
-    return
-      RepayParams(
-        collateralAsset,
-        collateralAmount,
-        rateMode,
-        PermitSignature(permitAmount, deadline, v, r, s),
-        useEthPath,
-        useATokenAsFrom,
-        useATokenAsTo
-      );
+    return (repayParams, permitSignature);
   }
 }
