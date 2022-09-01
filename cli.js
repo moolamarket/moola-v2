@@ -3,8 +3,7 @@ const LendingPoolAddressesProvider = require('./abi/LendingPoolAddressProvider.j
 const LendingPool = require('./abi/LendingPool.json');
 const PriceOracle = require('./abi/PriceOracle.json');
 const UniswapRepayAdapter = require('./abi/UniswapRepayAdapter.json');
-const LiquiditySwapAdapter = require('./abi/LiquiditySwapAdapter.json');
-const AutoRepay = require('./abi/AutoRepay.json');
+const AutoRepayAndBorrowAdapter = require('./abi/AutoRepayAndBorrowAdapter.json');
 const LeverageBorrowAdapter = require('./abi/LeverageBorrowAdapter.json');
 const Uniswap = require('./abi/Uniswap.json');
 const DataProvider = require('./abi/MoolaProtocolDataProvider.json');
@@ -15,7 +14,9 @@ const RepayDelegationHelper = require('./abi/RepayDelegationHelper.json');
 const BigNumber = require('bignumber.js');
 const Promise = require('bluebird');
 const ethers = require('ethers');
-let pk;
+const SwapPath = require('./bots/helpers/helpers.js');
+require('dotenv').config()
+let pk = process.env.CELO_BOT_KEY;
 
 const DEBT_TOKENS = {
   1: 'stableDebtTokenAddress',
@@ -124,10 +125,10 @@ function printActions() {
   console.info('migrate-step-2 address [privateKey]');
   console.info('liquidation-bot address [privateKey]');
   console.info(
-    'auto-repay callerAddress userAddress collateral-asset debt-asset stable|variable debt-amount useFlashloan(true|false) [callerPrivateKey]'
+    'auto-repay callerAddress userAddress collateral-asset debt-asset stable|variable debt-amount useFlashloan(true|false) [privateKey]'
   );
   console.info('auto-repay-user-info userAddress');
-  console.info('set-auto-repay-params address minHealthFactor maxHealthFactor [privateKey]');
+  console.info('set-auto-repay-params address minHealthFactor targetHealthFactor maxHealthFactor borrow-asset collateral-asset stable|variable [privateKey]');
   console.info(
     'liquidationCall collateral-asset debt-asset risk-user debt-to-cover receive-AToken(true|false) address [privateKey]'
   );
@@ -200,7 +201,7 @@ async function execute(network, action, ...params) {
         '0x71b570D5f0Ec771A396F947E7E2870042dB9bA57'
       );
       autoRepay = new kit.web3.eth.Contract(
-        AutoRepay,
+        AutoRepayAndBorrowAdapter,
         '0x19F8322CaC86623432e9142a349504DE6754f12A'
       );
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
@@ -240,8 +241,8 @@ async function execute(network, action, ...params) {
       );
 
       autoRepay = new kit.web3.eth.Contract(
-        AutoRepay,
-        '0xeb1549caebf24dd83e1b5e48abedd81be240e408'
+        AutoRepayAndBorrowAdapter,
+        '0xa948FD5F2653e8BFe35876730dB6a36FA4d46252'
       );
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
       leverageBorrowAdapter = new kit.web3.eth.Contract(
@@ -289,7 +290,7 @@ async function execute(network, action, ...params) {
         '0xC96c78E46169cB854Dc793437A105F46F2435455'
       );
       autoRepay = new kit.web3.eth.Contract(
-        AutoRepay,
+        AutoRepayAndBorrowAdapter,
         '0xeb1549caebf24dd83e1b5e48abedd81be240e408'
       );
       ubeswap = new kit.web3.eth.Contract(Uniswap, '0xe3d8bd6aed4f159bc8000a9cd47cffdb95f96121');
@@ -464,7 +465,9 @@ async function execute(network, action, ...params) {
     const user = params[1];
     const amount = web3.utils.toWei(params[2]);
     if (privateKeyRequired) {
-      pk = params[3];
+      if(!pk){
+        pk = params[3];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -513,7 +516,9 @@ async function execute(network, action, ...params) {
     const amount = web3.utils.toWei(params[2]);
     const rate = getRateModeNumber(params[3]);
     if (privateKeyRequired) {
-      pk = params[4];
+      if(!pk){
+        pk = params[4];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -547,7 +552,9 @@ async function execute(network, action, ...params) {
     const amount = params[2] === 'all' ? maxUint256 : web3.utils.toWei(params[2]);
     const rate = getRateModeNumber(params[3]);
     if (privateKeyRequired) {
-      pk = params[4];
+      if(!pk){
+        pk = params[4];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -604,7 +611,9 @@ async function execute(network, action, ...params) {
     const user = params[1];
     const amount = params[2] === 'all' ? maxUint256 : web3.utils.toWei(params[2]);
     if (privateKeyRequired) {
-      pk = params[3];
+      if(!pk){
+        pk = params[3];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -639,7 +648,9 @@ async function execute(network, action, ...params) {
     const amount = web3.utils.toWei(params[3]);
     const rate = getRateModeNumber(params[4]);
     if (privateKeyRequired) {
-      pk = params[5];
+      if(!pk){
+        pk = params[5];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -662,7 +673,9 @@ async function execute(network, action, ...params) {
     const amount = web3.utils.toWei(params[3]);
     const rate = getRateModeNumber(params[4]);
     if (privateKeyRequired) {
-      pk = params[5];
+      if(!pk){
+        pk = params[5];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -697,7 +710,9 @@ async function execute(network, action, ...params) {
     const amount = web3.utils.toWei(params[3]);
     const rate = getRateModeNumber(params[4]);
     if (privateKeyRequired) {
-      pk = params[5];
+      if(!pk){
+        pk = params[5];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -752,7 +767,9 @@ async function execute(network, action, ...params) {
   if (action === 'migrate-step-2') {
     const user = params[0];
     if (privateKeyRequired) {
-      pk = params[1];
+      if(!pk){
+        pk = params[1];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -843,7 +860,9 @@ async function execute(network, action, ...params) {
       process.env.CELO_BOT_NODE || kit.connection.web3.currentProvider.existingProvider.host;
     const user = process.env.CELO_BOT_ADDRESS || params[0];
     if (privateKeyRequired) {
-      pk = process.env.CELO_BOT_PK || params[1];
+      if(!pk){
+        pk = params[1];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1153,7 +1172,9 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
-      pk = params[4];
+      if(!pk){
+        pk = params[3];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1244,7 +1265,9 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
-      pk = params[6];
+      if(!pk){
+        pk = params[6];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1339,7 +1362,9 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
-      pk = params[7];
+      if(!pk){
+        pk = params[7];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1361,28 +1386,34 @@ async function execute(network, action, ...params) {
     const repayAmount = BN(web3.utils.toWei(params[5]));
     const useFlashloan = params[6] == 'true' ? true : false;
 
-    const paths = getSwapPath();
-    const swapPath = paths[`${collateralAsset.options.address}_${debtAsset.options.address}`].path;
-    const useATokenAsFrom =
-      paths[`${collateralAsset.options.address}_${debtAsset.options.address}`].useATokenAsFrom;
-    const useATokenAsTo =
-      paths[`${collateralAsset.options.address}_${debtAsset.options.address}`].useATokenAsTo;
+    const mcusdAddress = '0x918146359264c492bd6934071c6bd31c854edbc3';
+    const mceurAddress = '0xe273ad7ee11dcfaa87383ad5977ee1504ac07568';
+    const mceloAddress = '0x7d00cd74ff385c955ea3d79e47bf06bd7386387d';
+
+    const swapPathHelper = new SwapPath(ubeswap, CELO, mceloAddress, cUSD, mcusdAddress, cEUR, mceurAddress, cREAL, MOO);
+
+    let maxCollateralAmount = 0;
+
+    const amountOut = useFlashloan
+      ? repayAmount.plus(repayAmount.multipliedBy(9).dividedBy(10000))
+      : repayAmount;
 
     const reserveCollateralToken = await dataProvider.methods
       .getReserveTokensAddresses(collateralAsset.options.address)
       .call();
-    const collateralMToken = new eth.Contract(MToken, reserveCollateralToken.aTokenAddress);
+    const mToken = new eth.Contract(MToken, reserveCollateralToken.aTokenAddress);
+    const reserveBorrowToken = await dataProvider.methods
+      .getReserveTokensAddresses(debtAsset.options.address)
+      .call();
 
-    let maxCollateralAmount = 0;
-    if (collateralAsset != debtAsset) {
-      const amountOut = useFlashloan
-        ? repayAmount.plus(repayAmount.multipliedBy(9).dividedBy(10000))
-        : repayAmount;
-      const amounts = await ubeswap.methods.getAmountsIn(amountOut, swapPath).call();
-      maxCollateralAmount = BN(amounts[0])
-        .plus(BN(amounts[0]).multipliedBy(1).dividedBy(1000))
-        .toFixed(0); // 0.1% slippage
-    }
+    const { amount, path, useATokenAsFrom, useATokenAsTo}  = await swapPathHelper.getBestSwapPath(
+      amountOut, collateralAddress, reserveCollateralToken.aTokenAddress, borrowAddress, reserveBorrowToken.aTokenAddress
+    );
+
+    maxCollateralAmount = BN(amount)
+      .plus(BN(amount).multipliedBy(1).dividedBy(1000))
+      .toFixed(0); // 0.1% slippage
+
     const feeAmount = BN(maxCollateralAmount).multipliedBy(10).dividedBy(10000);
 
     console.log(`Checking collateralMToken ${collateralMToken.options.address} for approval`);
@@ -1403,7 +1434,7 @@ async function execute(network, action, ...params) {
         collateralAmount: maxCollateralAmount.toString(0),
         debtRepayAmount: repayAmount.toFixed(0),
         rateMode,
-        path: swapPath,
+        path,
         useATokenAsFrom,
         useATokenAsTo,
         useFlashloan,
@@ -1430,7 +1461,7 @@ async function execute(network, action, ...params) {
     console.log(
       `${user} user info:\n\tminimum health factor -> ${userInfo.minHealthFactor.toString()}\n\tmaximum health factor -> ${userInfo.maxHealthFactor.toString()}`
     );
-    console.log('allowances for AutoRepay contract:');
+    console.log('allowances for AutoRepayAndBorrowAdapter contract:');
     for (const token of Object.values(tokens)) {
       const reserveToken = await dataProvider.methods
         .getReserveTokensAddresses(token.options.address)
@@ -1449,7 +1480,9 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
-      pk = params[3];
+      if(!pk){
+        pk = params[7];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1459,12 +1492,29 @@ async function execute(network, action, ...params) {
 
     if (!isNumeric(params[1])) return;
     if (!isNumeric(params[2])) return;
+    if (!isNumeric(params[3])) return;
 
     const user = params[0];
     const minHealthFactor = web3.utils.toWei(params[1]);
-    const maxHealthFactor = web3.utils.toWei(params[2]);
+    const targetHealthFactor = web3.utils.toWei(params[2]);
+    const maxHealthFactor = web3.utils.toWei(params[3]);
+    const borrowToken = reserves[params[4]];
+    const collateralToken = reserves[params[5]];
+    const rateMode = params[6];
+    let rateModeIndex;
 
-    const method = autoRepay.methods.setMinMaxHealthFactor(minHealthFactor, maxHealthFactor);
+    switch(rateMode){
+      case "variable":
+        rateModeIndex = 0;
+        break;
+      case "stable":
+        rateModeIndex = 1;
+        break;
+      default:
+        throw("Invalid rate mode has been provided");
+    }
+
+    const method = autoRepay.methods.setMinTargetMaxHealthFactor(minHealthFactor, targetHealthFactor, maxHealthFactor, borrowToken, collateralToken, rateModeIndex);
 
     try {
       await retry(() => method.estimateGas({ from: user, gas: DEFAULT_GAS }));
@@ -1489,7 +1539,9 @@ async function execute(network, action, ...params) {
     const user = params[5];
 
     if (privateKeyRequired) {
-      pk = process.env.CELO_BOT_PK || params[6];
+      if(!pk){
+        pk = params[6];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1544,7 +1596,9 @@ async function execute(network, action, ...params) {
     const rateMode = getRateModeNumber(rateModeInput);
 
     if (privateKeyRequired) {
-      pk = params[5];
+      if(!pk){
+        pk = params[5];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
@@ -1595,7 +1649,9 @@ async function execute(network, action, ...params) {
     }
 
     if (privateKeyRequired) {
-      pk = params[5];
+      if(!pk){
+        pk = params[5];
+      }
       if (!pk) {
         console.error('Missing private key');
         return;
