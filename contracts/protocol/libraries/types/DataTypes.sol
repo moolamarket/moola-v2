@@ -24,7 +24,7 @@ library DataTypes {
     //address of the interest rate strategy
     address interestRateStrategyAddress;
     //the id of the reserve. Represents the position in the list of the active reserves
-    uint8 id;
+    uint256 id;
   }
 
   struct ReserveConfigurationMap {
@@ -42,7 +42,7 @@ library DataTypes {
   }
 
   struct UserConfigurationMap {
-    uint256 data;
+    uint256[79] data;
   }
 
   enum InterestRateMode {NONE, STABLE, VARIABLE}

@@ -24,10 +24,14 @@ library UserConfiguration {
     uint256 reserveIndex,
     bool borrowing
   ) internal {
-    require(reserveIndex < 128, Errors.UL_INVALID_INDEX);
-    self.data =
-      (self.data & ~(1 << (reserveIndex * 2))) |
-      (uint256(borrowing ? 1 : 0) << (reserveIndex * 2));
+    require(reserveIndex < 10000, Errors.UL_INVALID_INDEX);
+    uint256 dataIndex;
+    for(uint256 reserveDataIndex = reserveIndex; reserveDataIndex>128; reserveDataIndex-=128){
+      dataIndex++;
+    }
+    self.data[dataIndex] =
+      (self.data[dataIndex] & ~(1 << (reserveIndex % 128 * 2))) |
+      (uint256(borrowing ? 1 : 0) << (reserveIndex % 128 * 2));
   }
 
   /**
@@ -41,10 +45,14 @@ library UserConfiguration {
     uint256 reserveIndex,
     bool usingAsCollateral
   ) internal {
-    require(reserveIndex < 128, Errors.UL_INVALID_INDEX);
-    self.data =
-      (self.data & ~(1 << (reserveIndex * 2 + 1))) |
-      (uint256(usingAsCollateral ? 1 : 0) << (reserveIndex * 2 + 1));
+    require(reserveIndex < 10000, Errors.UL_INVALID_INDEX);
+    uint dataIndex;
+    for(uint256 reserveDataIndex = reserveIndex; reserveDataIndex>128; reserveDataIndex-=128){
+      dataIndex++;
+    }
+    self.data[dataIndex] =
+      (self.data[dataIndex] & ~(1 << (reserveIndex % 128 * 2 + 1))) |
+      (uint256(usingAsCollateral ? 1 : 0) << (reserveIndex % 128 * 2 + 1));
   }
 
   /**
@@ -57,8 +65,15 @@ library UserConfiguration {
     DataTypes.UserConfigurationMap memory self,
     uint256 reserveIndex
   ) internal pure returns (bool) {
-    require(reserveIndex < 128, Errors.UL_INVALID_INDEX);
-    return (self.data >> (reserveIndex * 2)) & 3 != 0;
+    require(reserveIndex < 10000, Errors.UL_INVALID_INDEX);
+    uint256 dataIndex;
+    for(uint256 reserveDataIndex = reserveIndex; reserveDataIndex > 128; reserveDataIndex-=128){
+      dataIndex++;
+    }
+    if(reserveIndex>256){
+      require(dataIndex>1, "fff");
+    }
+    return (self.data[dataIndex] >> (reserveIndex % 128 * 2)) & 3 != 0;
   }
 
   /**
@@ -72,8 +87,13 @@ library UserConfiguration {
     pure
     returns (bool)
   {
-    require(reserveIndex < 128, Errors.UL_INVALID_INDEX);
-    return (self.data >> (reserveIndex * 2)) & 1 != 0;
+    require(reserveIndex < 10000, Errors.UL_INVALID_INDEX);
+    uint256 dataIndex;
+    for(uint256 reserveDataIndex = reserveIndex; reserveDataIndex>128; reserveDataIndex-=128){
+      dataIndex++;
+    }
+    
+    return (self.data[dataIndex] >> (reserveIndex % 128 * 2)) & 1 != 0;
   }
 
   /**
@@ -87,8 +107,12 @@ library UserConfiguration {
     pure
     returns (bool)
   {
-    require(reserveIndex < 128, Errors.UL_INVALID_INDEX);
-    return (self.data >> (reserveIndex * 2 + 1)) & 1 != 0;
+    require(reserveIndex < 10000, Errors.UL_INVALID_INDEX);
+    uint256 dataIndex;
+    for(uint256 reserveDataIndex = reserveIndex; reserveDataIndex>128; reserveDataIndex-=128){
+      dataIndex++;
+    }
+    return (self.data[dataIndex] >> (reserveIndex % 128 * 2 + 1)) & 1 != 0;
   }
 
   /**
@@ -97,7 +121,11 @@ library UserConfiguration {
    * @return True if the user has been borrowing any reserve, false otherwise
    **/
   function isBorrowingAny(DataTypes.UserConfigurationMap memory self) internal pure returns (bool) {
-    return self.data & BORROWING_MASK != 0;
+    for(uint i=0; i<79; i++){
+      if(self.data[i] & BORROWING_MASK != 0){
+        return true;
+      }
+    }
   }
 
   /**
@@ -106,6 +134,6 @@ library UserConfiguration {
    * @return True if the user has been borrowing any reserve, false otherwise
    **/
   function isEmpty(DataTypes.UserConfigurationMap memory self) internal pure returns (bool) {
-    return self.data == 0;
+    return self.data[0] == 0;
   }
 }
