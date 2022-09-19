@@ -145,7 +145,7 @@ contract AToken is
     address user,
     uint256 amount,
     uint256 index
-  ) external override returns (bool) {
+  ) external override onlyLendingPool returns (bool) {
     uint256 previousBalance = super.balanceOf(user);
 
     uint256 amountScaled = amount.rayDiv(index);

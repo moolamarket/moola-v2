@@ -69,10 +69,7 @@ library UserConfiguration {
     uint256 dataIndex;
     for(uint256 reserveDataIndex = reserveIndex; reserveDataIndex > 128; reserveDataIndex-=128){
       dataIndex++;
-    }
-    if(reserveIndex>256){
-      require(dataIndex>1, "fff");
-    }
+    }S
     return (self.data[dataIndex] >> (reserveIndex % 128 * 2)) & 3 != 0;
   }
 
