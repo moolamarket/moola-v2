@@ -166,13 +166,14 @@ library GenericLogic {
     )
   {
     CalculateUserAccountDataVars memory vars;
-
+    
     if (userConfig.isEmpty()) {
       return (0, 0, 0, 0, uint256(-1));
     }
+
     for (vars.i = 0; vars.i < reservesCount; vars.i++) {
       if (!userConfig.isUsingAsCollateralOrBorrowing(vars.i)) {
-        continue;
+         continue;
       }
 
       vars.currentReserveAddress = reserves[vars.i];
@@ -184,7 +185,7 @@ library GenericLogic {
 
       vars.tokenUnit = 10**vars.decimals;
       vars.reserveUnitPrice = IPriceOracleGetter(oracle).getAssetPrice(vars.currentReserveAddress);
-
+    
       if (vars.liquidationThreshold != 0 && userConfig.isUsingAsCollateral(vars.i)) {
         vars.compoundedLiquidityBalance = IERC20(currentReserve.aTokenAddress).balanceOf(user);
 
@@ -198,8 +199,7 @@ library GenericLogic {
           liquidityBalanceETH.mul(vars.liquidationThreshold)
         );
       }
-
-      if (userConfig.isBorrowing(vars.i)) {
+      if (userConfig.isBorrowing(vars.i)) { 
         vars.compoundedBorrowBalance = IERC20(currentReserve.stableDebtTokenAddress).balanceOf(
           user
         );
@@ -212,6 +212,9 @@ library GenericLogic {
         );
       }
     }
+
+    vars.currentReserveAddress = reserves[vars.i];
+    
 
     vars.avgLtv = vars.totalCollateralInETH > 0 ? vars.avgLtv.div(vars.totalCollateralInETH) : 0;
     vars.avgLiquidationThreshold = vars.totalCollateralInETH > 0

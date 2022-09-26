@@ -87,7 +87,7 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
     _addressesProvider = provider;
     _maxStableRateBorrowSizePercent = 2500;
     _flashLoanPremiumTotal = 9;
-    _maxNumberOfReserves = 128;
+    _maxNumberOfReserves = 10000;
   }
 
   /**
