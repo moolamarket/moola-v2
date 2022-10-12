@@ -1736,7 +1736,7 @@ async function execute(network, action, ...params) {
     paths[`${cREAL.options.address}_${MOO.options.address}`.toLowerCase()] = {
       path: creal_moo,
       useATokenAsFrom: false,
-      useATokenAsTo: true,
+      useATokenAsTo: false,
     };
 
     paths[`${cUSD.options.address}_${CELO.options.address}`.toLowerCase()] = {
@@ -1786,7 +1786,7 @@ async function execute(network, action, ...params) {
     };
     paths[`${MOO.options.address}_${cREAL.options.address}`.toLowerCase()] = {
       path: [...creal_moo].reverse(),
-      useATokenAsFrom: true,
+      useATokenAsFrom: false,
       useATokenAsTo: false,
     };
 
