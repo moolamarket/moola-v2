@@ -1756,8 +1756,8 @@ async function execute(network, action, ...params) {
     };
     paths[`${MOO.options.address}_${CELO.options.address}`.toLowerCase()] = {
       path: [...celo_moo].reverse(),
-      useATokenAsFrom: true,
-      useATokenAsTo: false,
+      useATokenAsFrom: false,
+      useATokenAsTo: true,
     };
     paths[`${cEUR.options.address}_${cUSD.options.address}`.toLowerCase()] = {
       path: [...cusd_ceur].reverse(),
