@@ -59,6 +59,7 @@ library ReserveLogic {
     view
     returns (uint256)
   {
+    return reserve.liquidityIndex; // Zero income.
     uint40 timestamp = reserve.lastUpdateTimestamp;
 
     //solium-disable-next-line
@@ -87,6 +88,7 @@ library ReserveLogic {
     view
     returns (uint256)
   {
+    return reserve.variableBorrowIndex; // Zero interest.
     uint40 timestamp = reserve.lastUpdateTimestamp;
 
     //solium-disable-next-line

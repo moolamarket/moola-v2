@@ -110,7 +110,8 @@ contract StableDebtToken is IStableDebtToken, DebtTokenBase {
       return 0;
     }
     uint256 cumulatedInterest =
-      MathUtils.calculateCompoundedInterest(stableRate, _timestamps[account]);
+      // MathUtils.calculateCompoundedInterest(stableRate, _timestamps[account]);
+      MathUtils.calculateCompoundedInterest(stableRate, uint40(block.timestamp)); // Zero interest.
     return accountBalance.rayMul(cumulatedInterest);
   }
 
