@@ -26,6 +26,55 @@
       {
         "indexed": true,
         "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "min",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "target",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "max",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "rateMode",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "borrowAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "collateralAddress",
+        "type": "address"
+      }
+    ],
+    "name": "HealthFactorSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
         "name": "previousOwner",
         "type": "address"
       },
@@ -85,7 +134,33 @@
   },
   {
     "inputs": [],
+    "name": "FEE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "FLASHLOAN_PREMIUM_TOTAL",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "HUNDRED_PERCENT",
     "outputs": [
       {
         "internalType": "uint256",
@@ -185,6 +260,95 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "clearMinTargetMaxHealthFactor",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "user",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minCollateralAmountOut",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "borrowAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address[]",
+            "name": "path",
+            "type": "address[]"
+          },
+          {
+            "internalType": "bool",
+            "name": "useATokenAsFrom",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "useATokenAsTo",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "useFlashloan",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct AutoRepayAndBorrowAdapter.BorrowParams",
+        "name": "borrowParams",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint8",
+            "name": "v",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "r",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "s",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct IBaseUniswapAdapter.PermitSignature",
+        "name": "permitSignature",
+        "type": "tuple"
+      }
+    ],
+    "name": "decreaseHealthFactor",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -326,22 +490,15 @@
   },
   {
     "inputs": [],
-    "name": "owner",
+    "name": "getWitelistedAddresses",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "address[]",
         "name": "",
-        "type": "address"
+        "type": "address[]"
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "renounceOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -395,11 +552,11 @@
           },
           {
             "internalType": "bool",
-            "name": "useFlashLoan",
+            "name": "useFlashloan",
             "type": "bool"
           }
         ],
-        "internalType": "struct UniswapRepayAdapter.RepayParams",
+        "internalType": "struct AutoRepayAndBorrowAdapter.RepayParams",
         "name": "repayParams",
         "type": "tuple"
       },
@@ -436,7 +593,65 @@
         "type": "tuple"
       }
     ],
-    "name": "repayFromCollateral",
+    "name": "increaseHealthFactor",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "userAddress",
+        "type": "address"
+      }
+    ],
+    "name": "isWhitelisted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "userAddress",
+        "type": "address"
+      }
+    ],
+    "name": "removeFromWhitelist",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -457,79 +672,55 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "collateralAsset",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "debtAsset",
-        "type": "address"
-      },
-      {
-        "internalType": "address[]",
-        "name": "path",
-        "type": "address[]"
-      },
-      {
         "internalType": "uint256",
-        "name": "collateralAmount",
+        "name": "minHealthFactor",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "debtRepayAmount",
+        "name": "targetHealthFactor",
         "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "debtRateMode",
-        "type": "uint256"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint256",
-            "name": "amount",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "deadline",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint8",
-            "name": "v",
-            "type": "uint8"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "r",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "s",
-            "type": "bytes32"
-          }
-        ],
-        "internalType": "struct IBaseUniswapAdapter.PermitSignature",
-        "name": "permitSignature",
-        "type": "tuple"
-      },
-      {
-        "internalType": "bool",
-        "name": "useATokenAsFrom",
-        "type": "bool"
-      },
-      {
-        "internalType": "bool",
-        "name": "useATokenAsTo",
-        "type": "bool"
       }
     ],
-    "name": "swapAndRepayWithPath",
+    "name": "setMinTargetHealthFactor",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "minHealthFactor",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "targetHealthFactor",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxHealthFactor",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "borrowAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "collateralAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "rateMode",
+        "type": "uint256"
+      }
+    ],
+    "name": "setMinTargetMaxHealthFactor",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -544,6 +735,69 @@
     ],
     "name": "transferOwnership",
     "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "userInfos",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "minHealthFactor",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "targetHealthFactor",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxHealthFactor",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "rateMode",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "collateralAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "borrowAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "userAddress",
+        "type": "address"
+      }
+    ],
+    "name": "whitelistAddress",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   }

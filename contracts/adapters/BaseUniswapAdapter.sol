@@ -176,10 +176,6 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     bool aTokenExist,
     address swapTo
   ) internal returns (uint256) {
-    // Approves the transfer for the swap. Approves for 0 first to comply with tokens that implement the anti frontrunning approval fix.
-    IERC20(assetToSwapFrom).safeApprove(address(UNISWAP_ROUTER), 0);
-    IERC20(assetToSwapFrom).safeApprove(address(UNISWAP_ROUTER), amountToSwap);
-
     address[] memory path;
     if (useEthPath) {
       path = new address[](3);
@@ -191,6 +187,31 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
       path[0] = assetToSwapFrom;
       path[1] = assetToSwapTo;
     }
+
+    return _swapExactTokensForTokensNoPriceCheckWithPath(
+      assetToSwapFrom,
+      assetToSwapTo,
+      amountToSwap,
+      minAmountOut,
+      path,
+      aTokenExist,
+      swapTo
+    );
+
+  }
+
+  function _swapExactTokensForTokensNoPriceCheckWithPath(
+    address assetToSwapFrom,
+    address assetToSwapTo,
+    uint256 amountToSwap,
+    uint256 minAmountOut,
+    address[] memory path,
+    bool aTokenExist,
+    address swapTo
+  ) internal returns (uint256) {
+    // Approves the transfer for the swap. Approves for 0 first to comply with tokens that implement the anti frontrunning approval fix.
+    IERC20(assetToSwapFrom).safeApprove(address(UNISWAP_ROUTER), 0);
+    IERC20(assetToSwapFrom).safeApprove(address(UNISWAP_ROUTER), amountToSwap);
 
     if (aTokenExist) {
       uint256 balanceBefore = IERC20(path[path.length - 1]).balanceOf(address(this));
@@ -223,6 +244,41 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
 
       return amounts[amounts.length - 1];
     }
+  }
+
+  /**
+   * @dev Swaps an exact `amountToSwap` of an asset to another
+   * @param amountToSwap Exact amount of `assetToSwapFrom` to be swapped
+   * @param minAmountOut the min amount of `assetToSwapTo` to be received from the swap
+   * @param aTokenExist is a token exist in path
+   * @return the amount received from the swap
+   */
+  function _swapExactTokensForTokensWithPath(
+    address[4] memory assets,
+    uint256 amountToSwap,
+    uint256 minAmountOut,
+    address[] memory path,
+    bool aTokenExist,
+    address swapTo
+  ) internal returns (uint256) {
+    {
+      uint256 expectedMinAmountOut = amountToSwap
+        .mul(_getPrice(assets[0]).mul(10**_getDecimals(assets[1])))
+        .div(_getPrice(assets[1]).mul(10**_getDecimals(assets[0])))
+        .percentMul(PercentageMath.PERCENTAGE_FACTOR.sub(MAX_SLIPPAGE()));
+
+      require(expectedMinAmountOut < minAmountOut, 'minAmountOut exceed max slippage');
+    }
+
+    return _swapExactTokensForTokensNoPriceCheckWithPath(
+      assets[2],
+      assets[3],
+      amountToSwap,
+      minAmountOut,
+      path,
+      aTokenExist,
+      swapTo
+    );
   }
 
   /**

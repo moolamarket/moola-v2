@@ -12,23 +12,17 @@ import {IERC20} from '../dependencies/openzeppelin/contracts/IERC20.sol';
  * @notice Uniswap V2 Adapter to swap liquidity.
  * @author Aave
  **/
-contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
-  struct PermitParams {
-    uint256[] amount;
-    uint256[] deadline;
-    uint8[] v;
-    bytes32[] r;
-    bytes32[] s;
-  }
-
+contract UniswapLiquiditySwapAdapterSinglePair is BaseUniswapAdapter {
   struct SwapParams {
-    address[] assetToSwapToList;
-    uint256[] minAmountsToReceive;
-    bool[] swapAllBalance;
-    PermitParams permitParams;
-    bool[] useEthPath;
-    bool[] useATokenAsFrom;
-    bool[] useATokenAsTo;
+    address user;
+    address assetFrom;
+    address assetTo;
+    address[] path;
+    uint256 amountToSwap;
+    uint256 minAmountToReceive;
+    bool swapAllBalance;
+    bool useATokenAsFrom;
+    bool useATokenAsTo;
   }
 
   constructor(
@@ -47,14 +41,14 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
    * @param premiums Fee of the flash loan
    * @param initiator Address of the user
    * @param params Additional variadic field to include extra params. Expected parameters:
-   *   address[] assetToSwapToList List of the addresses of the reserve to be swapped to and deposited
-   *   uint256[] minAmountsToReceive List of min amounts to be received from the swap
-   *   bool[] swapAllBalance Flag indicating if all the user balance should be swapped
-   *   uint256[] permitAmount List of amounts for the permit signature
-   *   uint256[] deadline List of deadlines for the permit signature
-   *   uint8[] v List of v param for the permit signature
-   *   bytes32[] r List of r param for the permit signature
-   *   bytes32[] s List of s param for the permit signature
+   *   address assetTo The address of the reserve to be swapped to and deposited
+   *   uint256 minAmountToReceive Min amount to be received from the swap
+   *   bool swapAllBalance Flag indicating if all the user balance should be swapped
+   *   uint256 permitAmount Amount for the permit signature
+   *   uint256 deadline Deadline for the permit signature
+   *   uint8 v V param for the permit signature
+   *   bytes32 r R param for the permit signature
+   *   bytes32 s S param for the permit signature
    */
   function executeOperation(
     address[] calldata assets,
@@ -64,124 +58,41 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
     bytes calldata params
   ) external override returns (bool) {
     require(msg.sender == address(LENDING_POOL), 'CALLER_MUST_BE_LENDING_POOL');
+    require(initiator == address(this), 'Only this contract can call flashloan');
 
-    SwapParams memory decodedParams = _decodeParams(params);
-
-    require(
-      assets.length == decodedParams.assetToSwapToList.length &&
-        assets.length == decodedParams.minAmountsToReceive.length &&
-        assets.length == decodedParams.swapAllBalance.length &&
-        assets.length == decodedParams.permitParams.amount.length &&
-        assets.length == decodedParams.permitParams.deadline.length &&
-        assets.length == decodedParams.permitParams.v.length &&
-        assets.length == decodedParams.permitParams.r.length &&
-        assets.length == decodedParams.permitParams.s.length &&
-        assets.length == decodedParams.useEthPath.length &&
-        assets.length == decodedParams.useATokenAsFrom.length &&
-        assets.length == decodedParams.useATokenAsTo.length,
-      'INCONSISTENT_PARAMS'
+    (SwapParams memory decodedParams, PermitSignature memory permitSignature) = _decodeParams(
+      params
     );
 
-    for (uint256 i = 0; i < assets.length; i++) {
-      _swapLiquidity(
-        assets[i],
-        decodedParams.assetToSwapToList[i],
-        amounts[i],
-        premiums[i],
-        initiator,
-        decodedParams.minAmountsToReceive[i],
-        decodedParams.swapAllBalance[i],
-        PermitSignature(
-          decodedParams.permitParams.amount[i],
-          decodedParams.permitParams.deadline[i],
-          decodedParams.permitParams.v[i],
-          decodedParams.permitParams.r[i],
-          decodedParams.permitParams.s[i]
-        ),
-        decodedParams.useEthPath[i],
-        decodedParams.useATokenAsFrom[i],
-        decodedParams.useATokenAsTo[i]
-      );
-    }
+    _swapLiquidity(
+      assets[0],
+      decodedParams.assetTo,
+      decodedParams.path,
+      amounts[0],
+      premiums[0],
+      decodedParams.user,
+      decodedParams.minAmountToReceive,
+      decodedParams.swapAllBalance,
+      permitSignature,
+      decodedParams.useATokenAsFrom,
+      decodedParams.useATokenAsTo
+    );
 
     return true;
   }
 
-  struct SwapAndDepositLocalVars {
-    uint256 i;
-    uint256 aTokenInitiatorBalance;
-    uint256 amountToSwap;
-    uint256 receivedAmount;
-    address aToken;
-  }
+  function liquiditySwap(SwapParams memory swapParams, PermitSignature calldata permitSignature)
+    external
+  {
+    bytes memory params = abi.encode(swapParams, permitSignature);
+    address[] memory assets = new address[](1);
+    assets[0] = swapParams.assetFrom;
+    uint256[] memory amounts = new uint256[](1);
+    amounts[0] = swapParams.amountToSwap;
+    uint256[] memory modes = new uint256[](1);
+    modes[0] = 0;
 
-  /**
-   * @dev Swaps an amount of an asset to another and deposits the new asset amount on behalf of the user without using
-   * a flash loan. This method can be used when the temporary transfer of the collateral asset to this contract
-   * does not affect the user position.
-   * The user should give this contract allowance to pull the ATokens in order to withdraw the underlying asset and
-   * perform the swap.
-   * @param assetToSwapFromList List of addresses of the underlying asset to be swap from
-   * @param assetToSwapToList List of addresses of the underlying asset to be swap to and deposited
-   * @param amountToSwapList List of amounts to be swapped. If the amount exceeds the balance, the total balance is used for the swap
-   * @param minAmountsToReceive List of min amounts to be received from the swap
-   * @param permitParams List of struct containing the permit signatures
-   *   uint256 permitAmount Amount for the permit signature
-   *   uint256 deadline Deadline for the permit signature
-   *   uint8 v param for the permit signature
-   *   bytes32 r param for the permit signature
-   *   bytes32 s param for the permit signature
-   * @param useEthPath true if the swap needs to occur using ETH in the routing, false otherwise
-   */
-  function swapAndDeposit(
-    address[] calldata assetToSwapFromList,
-    address[] calldata assetToSwapToList,
-    uint256[] calldata amountToSwapList,
-    uint256[] calldata minAmountsToReceive,
-    PermitSignature[] calldata permitParams,
-    bool[] calldata useEthPath
-  ) external {
-    require(
-      assetToSwapFromList.length == assetToSwapToList.length &&
-        assetToSwapFromList.length == amountToSwapList.length &&
-        assetToSwapFromList.length == minAmountsToReceive.length &&
-        assetToSwapFromList.length == permitParams.length,
-      'INCONSISTENT_PARAMS'
-    );
-
-    SwapAndDepositLocalVars memory vars;
-
-    for (vars.i = 0; vars.i < assetToSwapFromList.length; vars.i++) {
-      vars.aToken = _getReserveData(assetToSwapFromList[vars.i]).aTokenAddress;
-
-      vars.aTokenInitiatorBalance = IERC20(vars.aToken).balanceOf(msg.sender);
-      vars.amountToSwap = amountToSwapList[vars.i] > vars.aTokenInitiatorBalance
-        ? vars.aTokenInitiatorBalance
-        : amountToSwapList[vars.i];
-
-      _pullAToken(
-        assetToSwapFromList[vars.i],
-        vars.aToken,
-        msg.sender,
-        vars.amountToSwap,
-        permitParams[vars.i]
-      );
-
-      vars.receivedAmount = _swapExactTokensForTokensNoPriceCheck(
-        assetToSwapFromList[vars.i],
-        assetToSwapToList[vars.i],
-        vars.amountToSwap,
-        minAmountsToReceive[vars.i],
-        useEthPath[vars.i],
-        false,
-        address(this)
-      );
-
-      // Deposit new reserve
-      IERC20(assetToSwapToList[vars.i]).safeApprove(address(LENDING_POOL), 0);
-      IERC20(assetToSwapToList[vars.i]).safeApprove(address(LENDING_POOL), vars.receivedAmount);
-      LENDING_POOL.deposit(assetToSwapToList[vars.i], vars.receivedAmount, msg.sender, 0);
-    }
+    LENDING_POOL.flashLoan(address(this), assets, amounts, modes, swapParams.user, params, 0);
   }
 
   /**
@@ -193,7 +104,6 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
    * @param minAmountToReceive Min amount to be received from the swap
    * @param swapAllBalance Flag indicating if all the user balance should be swapped
    * @param permitSignature List of struct containing the permit signature
-   * @param useEthPath true if the swap needs to occur using ETH in the routing, false otherwise
    */
 
   struct SwapLiquidityLocalVars {
@@ -208,13 +118,13 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
   function _swapLiquidity(
     address assetFrom,
     address assetTo,
+    address[] memory path,
     uint256 amount,
     uint256 premium,
     address initiator,
     uint256 minAmountToReceive,
     bool swapAllBalance,
     PermitSignature memory permitSignature,
-    bool useEthPath,
     bool useATokenAsFrom,
     bool useATokenAsTo
   ) internal {
@@ -233,12 +143,12 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
       LENDING_POOL.deposit(assetFrom, vars.amountToSwap, address(this), 0);
     }
 
-    vars.receivedAmount = _swapExactTokensForTokensNoPriceCheck(
+    vars.receivedAmount = _swapExactTokensForTokensWithPathNoPriceCheck(
       useATokenAsFrom ? vars.aToken : assetFrom,
       useATokenAsTo ? _getReserveData(assetTo).aTokenAddress : assetTo,
+      path,
       vars.amountToSwap,
       minAmountToReceive,
-      useEthPath,
       useATokenAsFrom || useATokenAsTo,
       address(this)
     );
@@ -261,59 +171,72 @@ contract UniswapLiquiditySwapAdapter is BaseUniswapAdapter {
     IERC20(assetFrom).safeApprove(address(LENDING_POOL), vars.flashLoanDebt);
   }
 
-  /**
-   * @dev Decodes the information encoded in the flash loan params
-   * @param params Additional variadic field to include extra params. Expected parameters:
-   *   address[] assetToSwapToList List of the addresses of the reserve to be swapped to and deposited
-   *   uint256[] minAmountsToReceive List of min amounts to be received from the swap
-   *   bool[] swapAllBalance Flag indicating if all the user balance should be swapped
-   *   uint256[] permitAmount List of amounts for the permit signature
-   *   uint256[] deadline List of deadlines for the permit signature
-   *   uint8[] v List of v param for the permit signature
-   *   bytes32[] r List of r param for the permit signature
-   *   bytes32[] s List of s param for the permit signature
-   *   bool[] useEthPath true if the swap needs to occur using ETH in the routing, false otherwise
-   * @return SwapParams struct containing decoded params
-   */
-  function _decodeParams(bytes memory params) internal pure returns (SwapParams memory) {
-    (
-      address[] memory assetToSwapToList,
-      uint256[] memory minAmountsToReceive,
-      bool[] memory swapAllBalance,
-      uint256[] memory permitAmount,
-      uint256[] memory deadline,
-      uint8[] memory v,
-      bytes32[] memory r,
-      bytes32[] memory s,
-      bool[] memory useEthPath,
-      bool[] memory useATokenAsFrom,
-      bool[] memory useATokenAsTo
-    ) = abi.decode(
-        params,
-        (
-          address[],
-          uint256[],
-          bool[],
-          uint256[],
-          uint256[],
-          uint8[],
-          bytes32[],
-          bytes32[],
-          bool[],
-          bool[],
-          bool[]
-        )
+  function _swapExactTokensForTokensWithPathNoPriceCheck(
+    address assetToSwapFrom,
+    address assetToSwapTo,
+    address[] memory path,
+    uint256 amountToSwap,
+    uint256 minAmountOut,
+    bool aTokenExist,
+    address swapTo
+  ) internal returns (uint256) {
+    require(path.length >= 2, 'Wrong path provided');
+
+    // Approves the transfer for the swap. Approves for 0 first to comply with tokens that implement the anti frontrunning approval fix.
+    IERC20(assetToSwapFrom).safeApprove(address(UNISWAP_ROUTER), 0);
+    IERC20(assetToSwapFrom).safeApprove(address(UNISWAP_ROUTER), amountToSwap);
+
+    if (aTokenExist) {
+      uint256 balanceBefore = IERC20(path[path.length - 1]).balanceOf(address(this));
+
+      UNISWAP_ROUTER.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        amountToSwap,
+        minAmountOut,
+        path,
+        swapTo,
+        block.timestamp
       );
 
-    return
-      SwapParams(
-        assetToSwapToList,
-        minAmountsToReceive,
-        swapAllBalance,
-        PermitParams(permitAmount, deadline, v, r, s),
-        useEthPath,
-        useATokenAsFrom,
-        useATokenAsTo
+      uint256 swappedAmount = IERC20(path[path.length - 1]).balanceOf(address(this)).sub(
+        balanceBefore
       );
+
+      emit Swapped(assetToSwapFrom, assetToSwapTo, amountToSwap, swappedAmount);
+
+      return swappedAmount;
+    } else {
+      uint256[] memory amounts = UNISWAP_ROUTER.swapExactTokensForTokens(
+        amountToSwap,
+        minAmountOut,
+        path,
+        swapTo,
+        block.timestamp
+      );
+
+      emit Swapped(assetToSwapFrom, assetToSwapTo, amounts[0], amounts[amounts.length - 1]);
+
+      return amounts[amounts.length - 1];
+    }
+  }
+
+  /**
+   * @dev Decodes the information encoded in the flash loan params
+   * @param params Additional variadic field to include extra params.
+   *
+   * @return SwapParams struct containing decoded params
+   * @return PermitSignature struct containing the permit signature
+   */
+
+  function _decodeParams(bytes memory params)
+    internal
+    pure
+    returns (SwapParams memory, PermitSignature memory)
+  {
+    (SwapParams memory swapParams, PermitSignature memory permitSignature) = abi.decode(
+      params,
+      (SwapParams, PermitSignature)
+    );
+
+    return (swapParams, permitSignature);
   }
 }

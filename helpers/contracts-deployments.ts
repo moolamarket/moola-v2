@@ -27,6 +27,7 @@ import {
   LendingPoolAddressesProviderFactory,
   LendingPoolAddressesProviderRegistryFactory,
   LendingPoolCollateralManagerFactory,
+  LendingPoolCollateralManagerWithReserveFactory,
   LendingPoolConfiguratorFactory,
   LendingPoolFactory,
   LendingRateOracleFactory,
@@ -44,7 +45,7 @@ import {
   StableDebtTokenFactory,
   UniswapLiquiditySwapAdapterFactory,
   UniswapRepayAdapterFactory,
-  AutoRepayFactory,
+  AutoRepayAndBorrowAdapterFactory,
   LeverageBorrowAdapterFactory,
   VariableDebtTokenFactory,
   WalletBalanceProviderFactory,
@@ -228,6 +229,22 @@ export const deployLendingPoolCollateralManager = async (verify?: boolean) => {
   return withSaveAndVerify(
     collateralManagerImpl,
     eContractid.LendingPoolCollateralManager,
+    [],
+    verify
+  );
+};
+
+export const deployLendingPoolCollateralManagerWithReserve = async (verify?: boolean) => {
+  const collateralManagerWithReserveImpl = await new LendingPoolCollateralManagerWithReserveFactory(
+    await getFirstSigner()
+  ).deploy();
+  await insertContractAddressInDb(
+    eContractid.LendingPoolCollateralManagerWithReserveImpl,
+    collateralManagerWithReserveImpl.address
+  );
+  return withSaveAndVerify(
+    collateralManagerWithReserveImpl,
+    eContractid.LendingPoolCollateralManagerWithReserve,
     [],
     verify
   );
@@ -616,8 +633,8 @@ export const deployAutoRepay = async (
   verify?: boolean
 ) =>
   withSaveAndVerify(
-    await new AutoRepayFactory(await getFirstSigner()).deploy(...args),
-    eContractid.AutoRepay,
+    await new AutoRepayAndBorrowAdapterFactory(await getFirstSigner()).deploy(...args),
+    eContractid.AutoRepayAndBorrowAdapter,
     args,
     verify
   );
