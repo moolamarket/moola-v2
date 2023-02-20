@@ -171,6 +171,10 @@ contract StableDebtToken is IStableDebtToken, DebtTokenBase {
       .add(rate.rayMul(vars.amountInRay))
       .rayDiv(vars.nextSupply.wadToRay());
 
+    if (balanceIncrease > 0) {
+      emit Transfer(address(0), onBehalfOf, balanceIncrease);
+    }
+
     _mint(onBehalfOf, amount.add(balanceIncrease), vars.previousSupply);
 
     emit Transfer(address(0), onBehalfOf, amount);
@@ -233,6 +237,10 @@ contract StableDebtToken is IStableDebtToken, DebtTokenBase {
     }
     //solium-disable-next-line
     _totalSupplyTimestamp = uint40(block.timestamp);
+
+    if (balanceIncrease > 0) {
+      emit Transfer(address(0), user, balanceIncrease);
+    }
 
     if (balanceIncrease > amount) {
       uint256 amountToMint = balanceIncrease.sub(amount);
