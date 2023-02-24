@@ -77,6 +77,7 @@ const web3 = kit.web3;
 const eth = web3.eth;
 kit.addAccount(CELO_BOT_KEY);
 const caller = kit.connection.wallet.accountSigners.keys().next().value;
+console.log(`Caller address: ${caller}`);
 
 const retry = async (fun, tries = 5) => {
   try {
