@@ -70,9 +70,8 @@ makeSuite('LendingPool FlashLoan function', (testEnv: TestEnv) => {
       .plus(reserveData.totalStableDebt.toString())
       .plus(reserveData.totalVariableDebt.toString());
 
-    const treasuryReward = new BigNumber(treasuryBalanceAfter.toString()).minus(
-      treasuryBalanceBefore.toString()
-    );
+    const treasuryReward = new BigNumber(treasuryBalanceAfter.toString())
+      .minus(treasuryBalanceBefore.toString());
 
     expect(totalLiquidity.toString()).to.be.equal('1000000000000000000');
     expect(currentLiquidityRate.toString()).to.be.equal('0');
@@ -108,9 +107,8 @@ makeSuite('LendingPool FlashLoan function', (testEnv: TestEnv) => {
       .plus(reserveData.totalStableDebt.toString())
       .plus(reserveData.totalVariableDebt.toString());
 
-    const treasuryReward = new BigNumber(treasuryBalanceAfter.toString()).minus(
-      treasuryBalanceBefore.toString()
-    );
+    const treasuryReward = new BigNumber(treasuryBalanceAfter.toString())
+      .minus(treasuryBalanceBefore.toString());
 
     expect(totalLiquidity.toString()).to.be.equal('1000000000000000000');
     expect(currentLiqudityRate.toString()).to.be.equal('0');
@@ -304,9 +302,8 @@ makeSuite('LendingPool FlashLoan function', (testEnv: TestEnv) => {
 
     const expectedLiquidity = await convertToCurrencyDecimals(usdc.address, '1000.000');
 
-    const treasuryReward = new BigNumber(treasuryBalanceAfter.toString()).minus(
-      treasuryBalanceBefore.toString()
-    );
+    const treasuryReward = new BigNumber(treasuryBalanceAfter.toString())
+      .minus(treasuryBalanceBefore.toString());
     const expectedTreasuryReward = await convertToCurrencyDecimals(usdc.address, '0.050');
 
     expect(totalLiquidity).to.be.equal(expectedLiquidity, 'Invalid total liquidity');

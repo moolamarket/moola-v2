@@ -437,7 +437,9 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               },
               zeroPermitSignature
             )
-          ).to.be.revertedWith('User health factor was not increased or more than maxHealthFactor');
+          ).to.be.revertedWith(
+            'User health factor was not increased or more than maxHealthFactor'
+          );
         }
       );
 
@@ -1293,7 +1295,9 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
               },
               zeroPermitSignature
             )
-          ).to.be.revertedWith('User health factor was not increased or more than maxHealthFactor');
+          ).to.be.revertedWith(
+            'User health factor was not increased or more than maxHealthFactor'
+          );
         }
       );
 
