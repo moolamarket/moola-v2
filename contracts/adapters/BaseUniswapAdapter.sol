@@ -45,7 +45,7 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     WETH_ADDRESS = wethAddress;
   }
 
-  function MAX_SLIPPAGE() public pure virtual returns (uint256) {
+  function MAX_SLIPPAGE() public virtual pure returns (uint256) {
     return MAX_SLIPPAGE_PERCENT;
   }
 
@@ -150,24 +150,23 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     address swapTo
   ) internal returns (uint256) {
     {
-      uint256 expectedMinAmountOut = amountToSwap
-        .mul(_getPrice(assetToSwapFromPrice).mul(10**_getDecimals(assetToSwapToPrice)))
-        .div(_getPrice(assetToSwapToPrice).mul(10**_getDecimals(assetToSwapFromPrice)))
-        .percentMul(PercentageMath.PERCENTAGE_FACTOR.sub(MAX_SLIPPAGE()));
+    uint256 expectedMinAmountOut = amountToSwap
+      .mul(_getPrice(assetToSwapFromPrice).mul(10**_getDecimals(assetToSwapToPrice)))
+      .div(_getPrice(assetToSwapToPrice).mul(10**_getDecimals(assetToSwapFromPrice)))
+      .percentMul(PercentageMath.PERCENTAGE_FACTOR.sub(MAX_SLIPPAGE()));
 
-      require(expectedMinAmountOut < minAmountOut, 'minAmountOut exceed max slippage');
+    require(expectedMinAmountOut < minAmountOut, 'minAmountOut exceed max slippage');
     }
 
-    return
-      _swapExactTokensForTokensNoPriceCheck(
-        assetToSwapFrom,
-        assetToSwapTo,
-        amountToSwap,
-        minAmountOut,
-        useEthPath,
-        aTokenExist,
-        swapTo
-      );
+    return _swapExactTokensForTokensNoPriceCheck(
+      assetToSwapFrom,
+      assetToSwapTo,
+      amountToSwap,
+      minAmountOut,
+      useEthPath,
+      aTokenExist,
+      swapTo
+    );
   }
 
   function _swapExactTokensForTokensNoPriceCheck(
@@ -677,11 +676,10 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
    * @param amountOut Amount of reserveOut
    * @return uint256[] amounts Array containing the amountIn and amountOut for a swap
    */
-  function _getAmountsInWIthPath(address[] memory path, uint256 amountOut)
-    internal
-    view
-    returns (uint256[] memory)
-  {
+  function _getAmountsInWIthPath(
+    address[] memory path,
+    uint256 amountOut
+  ) internal view returns (uint256[] memory) {
     return UNISWAP_ROUTER.getAmountsIn(amountOut, path);
   }
 
