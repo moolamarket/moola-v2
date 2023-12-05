@@ -28,8 +28,6 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
 
   // Max slippage percent allowed
   uint256 public constant override MAX_SLIPPAGE_PERCENT = 3000; // 30%
-  // FLash Loan fee set in lending pool
-  uint256 public constant override FLASHLOAN_PREMIUM_TOTAL = 9;
   // USD oracle asset address
   address public constant override USD_ADDRESS = 0x10F7Fc1F91Ba351f9C629c5947AD69bD03C05b96;
 
@@ -47,8 +45,12 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     WETH_ADDRESS = wethAddress;
   }
 
-  function MAX_SLIPPAGE() public virtual pure returns (uint256) {
+  function MAX_SLIPPAGE() public pure virtual returns (uint256) {
     return MAX_SLIPPAGE_PERCENT;
+  }
+
+  function FLASHLOAN_PREMIUM_TOTAL() public view override returns (uint256) {
+    return LENDING_POOL.FLASHLOAN_PREMIUM_TOTAL();
   }
 
   /**
@@ -148,23 +150,24 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     address swapTo
   ) internal returns (uint256) {
     {
-    uint256 expectedMinAmountOut = amountToSwap
-      .mul(_getPrice(assetToSwapFromPrice).mul(10**_getDecimals(assetToSwapToPrice)))
-      .div(_getPrice(assetToSwapToPrice).mul(10**_getDecimals(assetToSwapFromPrice)))
-      .percentMul(PercentageMath.PERCENTAGE_FACTOR.sub(MAX_SLIPPAGE()));
+      uint256 expectedMinAmountOut = amountToSwap
+        .mul(_getPrice(assetToSwapFromPrice).mul(10**_getDecimals(assetToSwapToPrice)))
+        .div(_getPrice(assetToSwapToPrice).mul(10**_getDecimals(assetToSwapFromPrice)))
+        .percentMul(PercentageMath.PERCENTAGE_FACTOR.sub(MAX_SLIPPAGE()));
 
-    require(expectedMinAmountOut < minAmountOut, 'minAmountOut exceed max slippage');
+      require(expectedMinAmountOut < minAmountOut, 'minAmountOut exceed max slippage');
     }
 
-    return _swapExactTokensForTokensNoPriceCheck(
-      assetToSwapFrom,
-      assetToSwapTo,
-      amountToSwap,
-      minAmountOut,
-      useEthPath,
-      aTokenExist,
-      swapTo
-    );
+    return
+      _swapExactTokensForTokensNoPriceCheck(
+        assetToSwapFrom,
+        assetToSwapTo,
+        amountToSwap,
+        minAmountOut,
+        useEthPath,
+        aTokenExist,
+        swapTo
+      );
   }
 
   function _swapExactTokensForTokensNoPriceCheck(
@@ -456,7 +459,7 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     uint256 amountIn
   ) internal view returns (AmountCalc memory) {
     // Subtract flash loan fee
-    uint256 finalAmountIn = amountIn.sub(amountIn.mul(FLASHLOAN_PREMIUM_TOTAL).div(10000));
+    uint256 finalAmountIn = amountIn.sub(amountIn.mul(FLASHLOAN_PREMIUM_TOTAL()).div(10000));
 
     if (reserveIn == reserveOut) {
       uint256 reserveDecimals = _getDecimals(reserveIn);
@@ -548,7 +551,7 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
   ) internal view returns (AmountCalc memory) {
     if (reserveIn == reserveOut) {
       // Add flash loan fee
-      uint256 amountIn = amountOut.add(amountOut.mul(FLASHLOAN_PREMIUM_TOTAL).div(10000));
+      uint256 amountIn = amountOut.add(amountOut.mul(FLASHLOAN_PREMIUM_TOTAL()).div(10000));
       uint256 reserveDecimals = _getDecimals(reserveIn);
       address[] memory path = new address[](1);
       path[0] = reserveIn;
@@ -570,7 +573,7 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
     );
 
     // Add flash loan fee
-    uint256 finalAmountIn = amounts[0].add(amounts[0].mul(FLASHLOAN_PREMIUM_TOTAL).div(10000));
+    uint256 finalAmountIn = amounts[0].add(amounts[0].mul(FLASHLOAN_PREMIUM_TOTAL()).div(10000));
 
     uint256 reserveInDecimals = _getDecimals(reserveIn);
     uint256 reserveOutDecimals = _getDecimals(reserveOut);
@@ -674,10 +677,11 @@ abstract contract BaseUniswapAdapter is FlashLoanReceiverBase, IBaseUniswapAdapt
    * @param amountOut Amount of reserveOut
    * @return uint256[] amounts Array containing the amountIn and amountOut for a swap
    */
-  function _getAmountsInWIthPath(
-    address[] memory path,
-    uint256 amountOut
-  ) internal view returns (uint256[] memory) {
+  function _getAmountsInWIthPath(address[] memory path, uint256 amountOut)
+    internal
+    view
+    returns (uint256[] memory)
+  {
     return UNISWAP_ROUTER.getAmountsIn(amountOut, path);
   }
 

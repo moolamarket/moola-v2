@@ -192,8 +192,8 @@ const revertHead = async () => {
   await evmRevert(buidlerevmSnapshotId);
 };
 
-export function makeSuite(name: string, tests: (testEnv: TestEnv) => void) {
-  describe(name, () => {
+export function makeSuite(name: string, tests: (testEnv: TestEnv) => void, skip: bool = false) {
+  (skip ? describe.skip : describe)(name, () => {
     before(async () => {
       await setSnapshot();
     });
