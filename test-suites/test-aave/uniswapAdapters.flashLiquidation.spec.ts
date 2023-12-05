@@ -213,8 +213,15 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         await depositAndHFBelowOne();
         await increaseTime(100);
 
-        const { dai, weth, users, pool, oracle, helpersContract, flashLiquidationAdapter } =
-          testEnv;
+        const {
+          dai,
+          weth,
+          users,
+          pool,
+          oracle,
+          helpersContract,
+          flashLiquidationAdapter,
+        } = testEnv;
 
         const liquidator = users[3];
         const borrower = users[1];
@@ -453,8 +460,15 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         await depositAndHFBelowOne();
         await increaseTime(100);
 
-        const { dai, weth, users, pool, oracle, helpersContract, flashLiquidationAdapter } =
-          testEnv;
+        const {
+          dai,
+          weth,
+          users,
+          pool,
+          oracle,
+          helpersContract,
+          flashLiquidationAdapter,
+        } = testEnv;
 
         const liquidator = users[3];
         const borrower = users[1];
@@ -601,8 +615,15 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         await depositAndHFBelowOne();
         await increaseTime(100);
 
-        const { dai, weth, users, pool, oracle, helpersContract, flashLiquidationAdapter } =
-          testEnv;
+        const {
+          dai,
+          weth,
+          users,
+          pool,
+          oracle,
+          helpersContract,
+          flashLiquidationAdapter,
+        } = testEnv;
 
         const liquidator = users[3];
         const borrower = users[1];
