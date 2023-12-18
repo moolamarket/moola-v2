@@ -32,7 +32,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const { weth, dai, uniswapLiquiditySwapAdapter, oracle } = testEnv;
 
         const amountIn = parseEther('1');
-        const flashloanPremium = amountIn.mul(9).div(10000);
+        const flashloanPremium = amountIn.mul(1).div(10000);
         const amountToSwap = amountIn.sub(flashloanPremium);
 
         const wethPrice = await oracle.getAssetPrice(weth.address);
@@ -81,7 +81,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const { aave, usdc, uniswapLiquiditySwapAdapter, oracle } = testEnv;
 
         const amountIn = parseEther('10');
-        const flashloanPremium = amountIn.mul(9).div(10000);
+        const flashloanPremium = amountIn.mul(1).div(10000);
         const amountToSwap = amountIn.sub(flashloanPremium);
 
         const aavePrice = await oracle.getAssetPrice(aave.address);
@@ -135,7 +135,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const { weth, dai, uniswapLiquiditySwapAdapter, oracle } = testEnv;
 
         const amountIn = parseEther('1');
-        const flashloanPremium = amountIn.mul(9).div(10000);
+        const flashloanPremium = amountIn.mul(1).div(10000);
         const amountToSwap = amountIn.add(flashloanPremium);
 
         const wethPrice = await oracle.getAssetPrice(weth.address);
@@ -180,7 +180,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const { aave, usdc, uniswapLiquiditySwapAdapter, oracle } = testEnv;
 
         const amountIn = parseEther('10');
-        const flashloanPremium = amountIn.mul(9).div(10000);
+        const flashloanPremium = amountIn.mul(1).div(10000);
         const amountToSwap = amountIn.add(flashloanPremium);
 
         const aavePrice = await oracle.getAssetPrice(aave.address);

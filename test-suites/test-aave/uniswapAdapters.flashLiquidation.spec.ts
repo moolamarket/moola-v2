@@ -263,7 +263,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           .decimalPlaces(0, BigNumber.ROUND_DOWN);
 
         const flashLoanDebt = new BigNumber(amountToLiquidate.toString())
-          .multipliedBy(1.0009)
+          .multipliedBy(1.0001)
           .toFixed(0);
 
         const expectedProfit = ethers.BigNumber.from(expectedCollateralLiquidated.toString()).sub(
@@ -354,7 +354,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
 
         expect(daiReserveDataAfter.availableLiquidity.toString()).to.be.bignumber.almostEqual(
           new BigNumber(daiReserveDataBefore.availableLiquidity.toString())
-            .plus(flashLoanDebt)
+            .plus(amountToLiquidate)
             .toFixed(0),
           'Invalid principal available liquidity'
         );
@@ -408,7 +408,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           .decimalPlaces(0, BigNumber.ROUND_DOWN);
 
         const flashLoanDebt = new BigNumber(amountToLiquidate.toString())
-          .multipliedBy(1.0009)
+          .multipliedBy(1.0001)
           .toFixed(0);
 
         const params = buildFlashLiquidationAdapterParams(
@@ -505,7 +505,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           .decimalPlaces(0, BigNumber.ROUND_DOWN);
 
         const flashLoanDebt = new BigNumber(amountToLiquidate.toString())
-          .multipliedBy(1.0009)
+          .multipliedBy(1.0001)
           .toFixed(0);
 
         // Set how much ETH will be sold and swapped for DAI at Uniswap mock
@@ -661,7 +661,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           .decimalPlaces(0, BigNumber.ROUND_DOWN);
 
         const flashLoanDebt = new BigNumber(amountToLiquidate.toString())
-          .multipliedBy(1.0009)
+          .multipliedBy(1.0001)
           .toFixed(0);
 
         // Set how much ETH will be sold and swapped for DAI at Uniswap mock

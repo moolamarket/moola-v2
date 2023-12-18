@@ -126,7 +126,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userAEthBalanceBefore = await aWETH.balanceOf(userAddress);
         await mockUniswapRouter.connect(user).setAmountToSwap(weth.address, liquidityToSwap);
         const flashLoanDebt = new BigNumber(expectedDaiAmount.toString())
-          .multipliedBy(1.0009)
+          .multipliedBy(1.0001)
           .toFixed(0);
         await mockUniswapRouter.setAmountIn(
           flashLoanDebt,
@@ -222,7 +222,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const { v, r, s } = getSignatureFromTypedData(ownerPrivateKey, msgParams);
         await mockUniswapRouter.connect(user).setAmountToSwap(weth.address, liquidityToSwap);
         const flashLoanDebt = new BigNumber(expectedDaiAmount.toString())
-          .multipliedBy(1.0009)
+          .multipliedBy(1.0001)
           .toFixed(0);
         await mockUniswapRouter.setAmountIn(
           flashLoanDebt,
@@ -301,7 +301,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         await aWETH.connect(user).approve(autoRepay.address, liquidityToSwap.add(callerFee));
         await mockUniswapRouter.connect(user).setAmountToSwap(weth.address, liquidityToSwap);
         const flashLoanDebt = new BigNumber(expectedDaiAmount.toString())
-          .multipliedBy(1.0009)
+          .multipliedBy(1.0001)
           .toFixed(0);
         await mockUniswapRouter.setAmountIn(
           flashLoanDebt,
@@ -358,7 +358,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         await aWETH.connect(user).approve(autoRepay.address, liquidityToSwap.add(callerFee));
         await mockUniswapRouter.connect(user).setAmountToSwap(weth.address, liquidityToSwap);
         const flashLoanDebt = new BigNumber(expectedDaiAmount.toString())
-          .multipliedBy(1.0009)
+          .multipliedBy(1.0001)
           .toFixed(0);
         await mockUniswapRouter.setAmountIn(
           flashLoanDebt,
@@ -413,7 +413,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           await aWETH.connect(user).approve(autoRepay.address, liquidityToSwap.add(callerFee));
           await mockUniswapRouter.connect(user).setAmountToSwap(weth.address, liquidityToSwap);
           const flashLoanDebt = new BigNumber(expectedDaiAmount.toString())
-            .multipliedBy(1.0009)
+            .multipliedBy(1.0001)
             .toFixed(0);
           await mockUniswapRouter.setAmountIn(
             flashLoanDebt,
@@ -542,7 +542,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         await aWETH.connect(user).approve(autoRepay.address, liquidityToSwap.add(callerFee));
         await mockUniswapRouter.connect(user).setAmountToSwap(weth.address, liquidityToSwap);
         const flashLoanDebt = new BigNumber(expectedDaiAmount.toString())
-          .multipliedBy(1.0009)
+          .multipliedBy(1.0001)
           .toFixed(0);
         await mockUniswapRouter.setAmountIn(
           flashLoanDebt,
@@ -644,7 +644,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         await aWETH.connect(user).approve(autoRepay.address, bigMaxAmountToSwap.add(callerFee));
         await mockUniswapRouter.connect(user).setAmountToSwap(weth.address, bigMaxAmountToSwap);
         const flashLoanDebt = new BigNumber(expectedDaiAmount.toString())
-          .multipliedBy(1.0009)
+          .multipliedBy(1.0001)
           .toFixed(0);
         await mockUniswapRouter.setAmountIn(
           flashLoanDebt,
@@ -713,7 +713,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
           .div(await autoRepay.HUNDRED_PERCENT());
         await mockUniswapRouter.connect(user).setAmountToSwap(weth.address, actualWEthSwapped);
         const flashLoanDebt = new BigNumber(expectedDaiAmount.toString())
-          .multipliedBy(1.0009)
+          .multipliedBy(1.0001)
           .toFixed(0);
         await mockUniswapRouter.setAmountIn(
           flashLoanDebt,
@@ -950,7 +950,7 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
             .connect(user)
             .setMinMaxHealthFactor(userData.healthFactor.add('1'), MAX_UINT_AMOUNT);
           const flashLoanDebt = new BigNumber(amountCollateralToSwap.toString())
-            .multipliedBy(1.0009)
+            .multipliedBy(1.0001)
             .toFixed(0);
           await aDai
             .connect(user)

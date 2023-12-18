@@ -49,7 +49,7 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
   using PercentageMath for uint256;
   using SafeERC20 for IERC20;
 
-  uint256 public constant LENDINGPOOL_REVISION = 0x6;
+  uint256 public constant LENDINGPOOL_REVISION = 0x7;
 
   modifier whenNotPaused() {
     _whenNotPaused();
@@ -86,7 +86,7 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
   function initialize(ILendingPoolAddressesProvider provider) public initializer {
     _addressesProvider = provider;
     _maxStableRateBorrowSizePercent = 2500;
-    _flashLoanPremiumTotal = 9;
+    _flashLoanPremiumTotal = 1;
     _maxNumberOfReserves = 128;
   }
 
@@ -520,21 +520,22 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
 
       if (DataTypes.InterestRateMode(modes[vars.i]) == DataTypes.InterestRateMode.NONE) {
         _reserves[vars.currentAsset].updateState();
-        _reserves[vars.currentAsset].cumulateToLiquidityIndex(
-          IERC20(vars.currentATokenAddress).totalSupply(),
+        IERC20(vars.currentAsset).safeTransferFrom(
+          receiverAddress,
+          IAToken(vars.currentATokenAddress).RESERVE_TREASURY_ADDRESS(),
           vars.currentPremium
         );
         _reserves[vars.currentAsset].updateInterestRates(
           vars.currentAsset,
           vars.currentATokenAddress,
-          vars.currentAmountPlusPremium,
+          vars.currentAmount,
           0
         );
 
         IERC20(vars.currentAsset).safeTransferFrom(
           receiverAddress,
           vars.currentATokenAddress,
-          vars.currentAmountPlusPremium
+          vars.currentAmount
         );
       } else {
         // If the user chose to not return the funds, the system checks if there is enough collateral and
@@ -715,7 +716,7 @@ contract LendingPool is VersionedInitializable, ILendingPool, LendingPoolStorage
   /**
    * @dev Returns the fee on flash loans
    */
-  function FLASHLOAN_PREMIUM_TOTAL() public view returns (uint256) {
+  function FLASHLOAN_PREMIUM_TOTAL() public view override returns (uint256) {
     return _flashLoanPremiumTotal;
   }
 

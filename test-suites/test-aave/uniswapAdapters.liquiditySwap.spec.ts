@@ -102,8 +102,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         await aWETH.connect(user).approve(uniswapLiquiditySwapAdapter.address, liquidityToSwap);
         const userAEthBalanceBefore = await aWETH.balanceOf(userAddress);
 
-        // Subtract the FL fee from the amount to be swapped 0,09%
-        const flashloanAmount = new BigNumber(liquidityToSwap.toString()).div(1.0009).toFixed(0);
+        // Subtract the FL fee from the amount to be swapped 0,01%
+        const flashloanAmount = new BigNumber(liquidityToSwap.toString()).div(1.0001).toFixed(0);
 
         const params = buildLiquiditySwapParams(
           [dai.address],
@@ -200,12 +200,12 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         await aUsdc.connect(user).approve(uniswapLiquiditySwapAdapter.address, amountUSDCtoSwap);
         const userAUsdcBalanceBefore = await aUsdc.balanceOf(userAddress);
 
-        // Subtract the FL fee from the amount to be swapped 0,09%
+        // Subtract the FL fee from the amount to be swapped 0,01%
         const wethFlashloanAmount = new BigNumber(amountWETHtoSwap.toString())
-          .div(1.0009)
+          .div(1.0001)
           .toFixed(0);
         const usdcFlashloanAmount = new BigNumber(amountUSDCtoSwap.toString())
-          .div(1.0009)
+          .div(1.0001)
           .toFixed(0);
 
         const params = buildLiquiditySwapParams(
@@ -314,11 +314,11 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const userAUsdcBalanceBefore = await aUsdc.balanceOf(userAddress);
 
         const wethFlashloanAmount = new BigNumber(amountWETHtoSwap.toString())
-          .div(1.0009)
+          .div(1.0001)
           .toFixed(0);
 
         const usdcFlashloanAmount = new BigNumber(amountUSDCtoSwap.toString())
-          .div(1.0009)
+          .div(1.0001)
           .toFixed(0);
 
         const aWethNonce = (await aWETH._nonces(userAddress)).toNumber();
@@ -422,8 +422,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const liquidityToSwap = parseEther('10');
         const userAEthBalanceBefore = await aWETH.balanceOf(userAddress);
 
-        // Subtract the FL fee from the amount to be swapped 0,09%
-        const flashloanAmount = new BigNumber(liquidityToSwap.toString()).div(1.0009).toFixed(0);
+        // Subtract the FL fee from the amount to be swapped 0,01%
+        const flashloanAmount = new BigNumber(liquidityToSwap.toString()).div(1.0001).toFixed(0);
 
         const chainId = DRE.network.config.chainId || BUIDLEREVM_CHAINID;
         const deadline = MAX_UINT_AMOUNT;
@@ -513,8 +513,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const liquidityToSwap = parseEther('10');
         await aWETH.connect(user).approve(uniswapLiquiditySwapAdapter.address, liquidityToSwap);
 
-        // Subtract the FL fee from the amount to be swapped 0,09%
-        const flashloanAmount = new BigNumber(liquidityToSwap.toString()).div(1.0009).toFixed(0);
+        // Subtract the FL fee from the amount to be swapped 0,01%
+        const flashloanAmount = new BigNumber(liquidityToSwap.toString()).div(1.0001).toFixed(0);
 
         const params = buildLiquiditySwapParams(
           [dai.address, weth.address],
@@ -794,8 +794,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const liquidityToSwap = parseEther('10');
         await aWETH.connect(user).approve(uniswapLiquiditySwapAdapter.address, liquidityToSwap);
 
-        // Subtract the FL fee from the amount to be swapped 0,09%
-        const flashloanAmount = new BigNumber(liquidityToSwap.toString()).div(1.0009).toFixed(0);
+        // Subtract the FL fee from the amount to be swapped 0,01%
+        const flashloanAmount = new BigNumber(liquidityToSwap.toString()).div(1.0001).toFixed(0);
 
         const params = buildLiquiditySwapParams(
           [dai.address],
@@ -868,8 +868,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const aUsdc = await getContract<AToken>(eContractid.AToken, aUsdcData.aTokenAddress);
         const aUsdcBalance = await aUsdc.balanceOf(userAddress);
         await aUsdc.connect(user).approve(uniswapLiquiditySwapAdapter.address, aUsdcBalance);
-        // Subtract the FL fee from the amount to be swapped 0,09%
-        const flashloanAmount = new BigNumber(amountUSDCtoSwap.toString()).div(1.0009).toFixed(0);
+        // Subtract the FL fee from the amount to be swapped 0,01%
+        const flashloanAmount = new BigNumber(amountUSDCtoSwap.toString()).div(1.0001).toFixed(0);
 
         const params = buildLiquiditySwapParams(
           [dai.address],
@@ -935,8 +935,8 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
         const liquidityToSwap = parseEther('10');
         await aWETH.connect(user).approve(uniswapLiquiditySwapAdapter.address, liquidityToSwap);
 
-        // Subtract the FL fee from the amount to be swapped 0,09%
-        const flashloanAmount = new BigNumber(liquidityToSwap.toString()).div(1.0009).toFixed(0);
+        // Subtract the FL fee from the amount to be swapped 0,01%
+        const flashloanAmount = new BigNumber(liquidityToSwap.toString()).div(1.0001).toFixed(0);
 
         const params = buildLiquiditySwapParams(
           [dai.address],
@@ -1811,4 +1811,4 @@ makeSuite('Uniswap adapters', (testEnv: TestEnv) => {
       });
     });
   });
-});
+}, true);
