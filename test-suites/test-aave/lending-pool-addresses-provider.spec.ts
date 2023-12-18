@@ -41,6 +41,15 @@ makeSuite('LendingPoolAddressesProvider', (testEnv: TestEnv) => {
     ).to.be.revertedWith(INVALID_OWNER_REVERT_MSG);
   });
 
+  it('Test impossibility to initialize an implementation contract', async () => {
+    const { addressesProvider } = testEnv;
+    const lendingPoolImpl = await deployLendingPool();
+
+    await expect(
+      lendingPoolImpl.initialize(addressesProvider.address)
+    ).to.be.revertedWith('Contract instance has already been initialized');
+  });
+
   it('Tests adding  a proxied address with `setAddressAsProxy()`', async () => {
     const { addressesProvider, users } = testEnv;
     const { INVALID_OWNER_REVERT_MSG } = ProtocolErrors;
