@@ -18,8 +18,9 @@ pragma solidity 0.6.12;
 abstract contract VersionedInitializable {
   /**
    * @dev Indicates that the contract has been initialized.
+   * @dev Implementation initialization is disabled.
    */
-  uint256 private lastInitializedRevision = 0;
+  uint256 private lastInitializedRevision = type(uint256).max;
 
   /**
    * @dev Indicates that the contract is in the process of being initialized.
